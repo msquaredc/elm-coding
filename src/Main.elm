@@ -31,10 +31,10 @@ init : Value -> ( Model, Cmd msg )
 init flags =
     case Decode.decodeValue Form.decoder flags of
         Ok model ->
-            ( Model model, Cmd.none )
+            ( Model (Form.Model model), Cmd.none )
 
         Err err ->
-            ( Model (Form.Model (Decode.errorToString err) Form.InputString "ERROR"), Cmd.none )
+            ( Model (Form.Model [Form.Form (Decode.errorToString err) Form.InputString "ERROR"]), Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -65,7 +65,6 @@ view : Model -> Html Msg
 view model =
     Html.div []
         [ Html.map FormMsg (Form.view model.form)
-        , Html.map FormMsg (Form.view model.form)
         ]
 
 

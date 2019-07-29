@@ -4310,11 +4310,14 @@ function _Browser_load(url)
 		}
 	}));
 }
-var author$project$Form$InputString = {$: 'InputString'};
-var author$project$Form$Model = F3(
+var author$project$Form$Form = F3(
 	function (label, formtype, content) {
 		return {content: content, formtype: formtype, label: label};
 	});
+var author$project$Form$InputString = {$: 'InputString'};
+var author$project$Form$Model = function (forms) {
+	return {forms: forms};
+};
 var author$project$Form$InputNumber = function (a) {
 	return {$: 'InputNumber', a: a};
 };
@@ -4827,13 +4830,15 @@ var author$project$Form$inputTypeDecoder = A2(
 	},
 	elm$json$Json$Decode$string);
 var elm$json$Json$Decode$field = _Json_decodeField;
+var elm$json$Json$Decode$list = _Json_decodeList;
 var elm$json$Json$Decode$map3 = _Json_map3;
-var author$project$Form$decoder = A4(
-	elm$json$Json$Decode$map3,
-	author$project$Form$Model,
-	A2(elm$json$Json$Decode$field, 'label', elm$json$Json$Decode$string),
-	A2(elm$json$Json$Decode$field, 'formtype', author$project$Form$inputTypeDecoder),
-	elm$json$Json$Decode$succeed(''));
+var author$project$Form$decoder = elm$json$Json$Decode$list(
+	A4(
+		elm$json$Json$Decode$map3,
+		author$project$Form$Form,
+		A2(elm$json$Json$Decode$field, 'label', elm$json$Json$Decode$string),
+		A2(elm$json$Json$Decode$field, 'formtype', author$project$Form$inputTypeDecoder),
+		elm$json$Json$Decode$succeed('')));
 var author$project$Main$Model = function (form) {
 	return {form: form};
 };
@@ -4845,17 +4850,22 @@ var author$project$Main$init = function (flags) {
 	if (_n0.$ === 'Ok') {
 		var model = _n0.a;
 		return _Utils_Tuple2(
-			author$project$Main$Model(model),
+			author$project$Main$Model(
+				author$project$Form$Model(model)),
 			elm$core$Platform$Cmd$none);
 	} else {
 		var err = _n0.a;
 		return _Utils_Tuple2(
 			author$project$Main$Model(
-				A3(
-					author$project$Form$Model,
-					elm$json$Json$Decode$errorToString(err),
-					author$project$Form$InputString,
-					'ERROR')),
+				author$project$Form$Model(
+					_List_fromArray(
+						[
+							A3(
+							author$project$Form$Form,
+							elm$json$Json$Decode$errorToString(err),
+							author$project$Form$InputString,
+							'ERROR')
+						]))),
 			elm$core$Platform$Cmd$none);
 	}
 };
@@ -4864,14 +4874,26 @@ var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
 var author$project$Main$subscriptions = function (model) {
 	return elm$core$Platform$Sub$none;
 };
+var author$project$Form$updateElement = F3(
+	function (list, id, value) {
+		var alter = F2(
+			function (idx, form) {
+				return _Utils_eq(id, idx) ? _Utils_update(
+					form,
+					{content: value}) : form;
+			});
+		return A2(elm$core$List$indexedMap, alter, list);
+	});
 var author$project$Form$update = F2(
 	function (msg, model) {
 		if (msg.$ === 'Change') {
-			var newContent = msg.a;
+			var index = msg.a;
+			var newContent = msg.b;
+			var forms_ = A3(author$project$Form$updateElement, model.forms, index, newContent);
 			return _Utils_Tuple2(
 				_Utils_update(
 					model,
-					{content: newContent}),
+					{forms: forms_}),
 				elm$core$Platform$Cmd$none);
 		} else {
 			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
@@ -4902,9 +4924,10 @@ var author$project$Main$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Main$FormMsg, formCmd));
 		}
 	});
-var author$project$Form$Change = function (a) {
-	return {$: 'Change', a: a};
-};
+var author$project$Form$Change = F2(
+	function (a, b) {
+		return {$: 'Change', a: a, b: b};
+	});
 var elm$json$Json$Decode$map = _Json_map1;
 var elm$json$Json$Decode$map2 = _Json_map2;
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
@@ -5020,8 +5043,8 @@ var elm$html$Html$Events$onInput = function (tagger) {
 			elm$html$Html$Events$alwaysStop,
 			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
 };
-var author$project$Form$viewInputNumber = F2(
-	function (model, bounds) {
+var author$project$Form$viewInputChoice = F2(
+	function (index, model) {
 		return A2(
 			elm$html$Html$div,
 			_List_Nil,
@@ -5034,58 +5057,73 @@ var author$project$Form$viewInputNumber = F2(
 						[
 							elm$html$Html$Attributes$placeholder('Your answer'),
 							elm$html$Html$Attributes$value(model.content),
-							elm$html$Html$Events$onInput(author$project$Form$Change)
+							elm$html$Html$Events$onInput(
+							author$project$Form$Change(index))
 						]),
 					_List_Nil),
 					elm$html$Html$text(model.content)
 				]));
 	});
-var author$project$Form$viewInputString = function (model) {
+var author$project$Form$viewInputNumber = F3(
+	function (index, model, bounds) {
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$text(model.label),
+					A2(
+					elm$html$Html$input,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$placeholder('Your answer'),
+							elm$html$Html$Attributes$value(model.content),
+							elm$html$Html$Events$onInput(
+							author$project$Form$Change(index))
+						]),
+					_List_Nil),
+					elm$html$Html$text(model.content)
+				]));
+	});
+var author$project$Form$viewInputString = F2(
+	function (index, model) {
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$text(model.label),
+					A2(
+					elm$html$Html$input,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$placeholder('Your answer'),
+							elm$html$Html$Attributes$value(model.content),
+							elm$html$Html$Events$onInput(
+							author$project$Form$Change(index))
+						]),
+					_List_Nil),
+					elm$html$Html$text(model.content)
+				]));
+	});
+var author$project$Form$viewForm = F2(
+	function (index, form) {
+		var _n0 = form.formtype;
+		switch (_n0.$) {
+			case 'InputString':
+				return A2(author$project$Form$viewInputString, index, form);
+			case 'InputNumber':
+				var n = _n0.a;
+				return A3(author$project$Form$viewInputNumber, index, form, n);
+			default:
+				return A2(author$project$Form$viewInputChoice, index, form);
+		}
+	});
+var author$project$Form$view = function (model) {
 	return A2(
 		elm$html$Html$div,
 		_List_Nil,
-		_List_fromArray(
-			[
-				elm$html$Html$text(model.label),
-				A2(
-				elm$html$Html$input,
-				_List_fromArray(
-					[
-						elm$html$Html$Attributes$placeholder('Your answer'),
-						elm$html$Html$Attributes$value(model.content),
-						elm$html$Html$Events$onInput(author$project$Form$Change)
-					]),
-				_List_Nil),
-				elm$html$Html$text(model.content)
-			]));
-};
-var author$project$Form$view = function (model) {
-	var _n0 = model.formtype;
-	switch (_n0.$) {
-		case 'InputString':
-			return author$project$Form$viewInputString(model);
-		case 'InputNumber':
-			var n = _n0.a;
-			return A2(author$project$Form$viewInputNumber, model, n);
-		default:
-			return A2(
-				elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(model.label),
-						A2(
-						elm$html$Html$input,
-						_List_fromArray(
-							[
-								elm$html$Html$Attributes$placeholder('Your answer'),
-								elm$html$Html$Attributes$value(model.content),
-								elm$html$Html$Events$onInput(author$project$Form$Change)
-							]),
-						_List_Nil),
-						elm$html$Html$text(model.content)
-					]));
-	}
+		A2(elm$core$List$indexedMap, author$project$Form$viewForm, model.forms));
 };
 var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
@@ -5095,10 +5133,6 @@ var author$project$Main$view = function (model) {
 		_List_Nil,
 		_List_fromArray(
 			[
-				A2(
-				elm$html$Html$map,
-				author$project$Main$FormMsg,
-				author$project$Form$view(model.form)),
 				A2(
 				elm$html$Html$map,
 				author$project$Main$FormMsg,

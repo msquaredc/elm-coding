@@ -1,4 +1,4 @@
-module Form exposing (InputType(..), Model, Msg, decoder, update, view)
+module Form exposing (InputType(..), Model, Msg, decoder, update, view, Form)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -56,7 +56,7 @@ inputTypeDecoder =
 
 view : Model -> Html Msg
 view model =
-    List.indexedMap viewForm model.forms
+    div [] ( List.indexedMap viewForm model.forms)
 
 
 viewForm : Int -> Form -> Html Msg
@@ -135,7 +135,7 @@ update msg model =
         Change index newContent ->
             let
                 forms_ =
-                    model.forms
+                    updateElement model.forms index newContent
             in
             ( { model | forms = forms_ }, Cmd.none )
 
