@@ -4315,9 +4315,10 @@ var author$project$Form$Form = F3(
 		return {content: content, formtype: formtype, label: label};
 	});
 var author$project$Form$InputString = {$: 'InputString'};
-var author$project$Form$Model = function (forms) {
-	return {forms: forms};
-};
+var author$project$Form$Model = F2(
+	function (name, forms) {
+		return {forms: forms, name: name};
+	});
 var author$project$Form$InputNumber = function (a) {
 	return {$: 'InputNumber', a: a};
 };
@@ -4831,14 +4832,22 @@ var author$project$Form$inputTypeDecoder = A2(
 	elm$json$Json$Decode$string);
 var elm$json$Json$Decode$field = _Json_decodeField;
 var elm$json$Json$Decode$list = _Json_decodeList;
+var elm$json$Json$Decode$map2 = _Json_map2;
 var elm$json$Json$Decode$map3 = _Json_map3;
-var author$project$Form$decoder = elm$json$Json$Decode$list(
-	A4(
-		elm$json$Json$Decode$map3,
-		author$project$Form$Form,
-		A2(elm$json$Json$Decode$field, 'label', elm$json$Json$Decode$string),
-		A2(elm$json$Json$Decode$field, 'formtype', author$project$Form$inputTypeDecoder),
-		elm$json$Json$Decode$succeed('')));
+var author$project$Form$decoder = A3(
+	elm$json$Json$Decode$map2,
+	author$project$Form$Model,
+	A2(elm$json$Json$Decode$field, 'name', elm$json$Json$Decode$string),
+	A2(
+		elm$json$Json$Decode$field,
+		'form',
+		elm$json$Json$Decode$list(
+			A4(
+				elm$json$Json$Decode$map3,
+				author$project$Form$Form,
+				A2(elm$json$Json$Decode$field, 'label', elm$json$Json$Decode$string),
+				A2(elm$json$Json$Decode$field, 'formtype', author$project$Form$inputTypeDecoder),
+				elm$json$Json$Decode$succeed('')))));
 var author$project$Main$Model = function (form) {
 	return {form: form};
 };
@@ -4850,14 +4859,15 @@ var author$project$Main$init = function (flags) {
 	if (_n0.$ === 'Ok') {
 		var model = _n0.a;
 		return _Utils_Tuple2(
-			author$project$Main$Model(
-				author$project$Form$Model(model)),
+			author$project$Main$Model(model),
 			elm$core$Platform$Cmd$none);
 	} else {
 		var err = _n0.a;
 		return _Utils_Tuple2(
 			author$project$Main$Model(
-				author$project$Form$Model(
+				A2(
+					author$project$Form$Model,
+					'blupp',
 					_List_fromArray(
 						[
 							A3(
@@ -4929,7 +4939,6 @@ var author$project$Form$Change = F2(
 		return {$: 'Change', a: a, b: b};
 	});
 var elm$json$Json$Decode$map = _Json_map1;
-var elm$json$Json$Decode$map2 = _Json_map2;
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
 		case 'Normal':
@@ -5119,11 +5128,25 @@ var author$project$Form$viewForm = F2(
 				return A2(author$project$Form$viewInputChoice, index, form);
 		}
 	});
+var elm$html$Html$h1 = _VirtualDom_node('h1');
 var author$project$Form$view = function (model) {
 	return A2(
 		elm$html$Html$div,
 		_List_Nil,
-		A2(elm$core$List$indexedMap, author$project$Form$viewForm, model.forms));
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h1,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(model.name)
+					])),
+				A2(
+				elm$html$Html$div,
+				_List_Nil,
+				A2(elm$core$List$indexedMap, author$project$Form$viewForm, model.forms))
+			]));
 };
 var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;

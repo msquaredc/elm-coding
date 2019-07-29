@@ -1,4 +1,4 @@
-module Form exposing (InputType(..), Model, Msg, decoder, update, view, Form)
+module Form exposing (Form, InputType(..), Model, Msg, decoder, update, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -19,7 +19,9 @@ type Msg
 
 
 type alias Model =
-    { forms : List Form }
+    { name : String
+    , forms : List Form
+    }
 
 
 type alias Form =
@@ -30,11 +32,16 @@ type alias Form =
 
 
 decoder =
-    Decode.list
-        (Decode.map3 Form
-            (Decode.field "label" Decode.string)
-            (Decode.field "formtype" inputTypeDecoder)
-            (Decode.succeed "")
+    Decode.map2 Model
+        (Decode.field "name" Decode.string)
+        (Decode.field "form"
+            (Decode.list
+                (Decode.map3 Form
+                    (Decode.field "label" Decode.string)
+                    (Decode.field "formtype" inputTypeDecoder)
+                    (Decode.succeed "")
+                )
+            )
         )
 
 
@@ -56,7 +63,10 @@ inputTypeDecoder =
 
 view : Model -> Html Msg
 view model =
-    div [] ( List.indexedMap viewForm model.forms)
+    div []
+        [ h1 [] [ text model.name ]
+        , div [] (List.indexedMap viewForm model.forms)
+        ]
 
 
 viewForm : Int -> Form -> Html Msg

@@ -31,10 +31,10 @@ init : Value -> ( Model, Cmd msg )
 init flags =
     case Decode.decodeValue Form.decoder flags of
         Ok model ->
-            ( Model (Form.Model model), Cmd.none )
+            ( Model model, Cmd.none )
 
         Err err ->
-            ( Model (Form.Model [Form.Form (Decode.errorToString err) Form.InputString "ERROR"]), Cmd.none )
+            ( Model (Form.Model "blupp" [Form.Form (Decode.errorToString err) Form.InputString "ERROR"]), Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
