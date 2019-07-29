@@ -1,4 +1,4 @@
-module Main exposing (suite)
+module Stub exposing (suite)
 
 import Expect exposing (..)
 import Fuzz exposing (..)
