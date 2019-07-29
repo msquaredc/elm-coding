@@ -1,7 +1,7 @@
 module Main exposing (suite)
 
-import Test exposing (..)
 import Expect exposing (..)
+import Test exposing (..)
 
 
 suite : Test
