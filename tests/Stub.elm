@@ -1,6 +1,7 @@
 module Main exposing (suite)
 
 import Expect exposing (..)
+import Fuzz exposing (..)
 import Test exposing (..)
 
 
