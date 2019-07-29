@@ -1,5 +1,6 @@
 module Main exposing (suite)
 
+import Test exposing (..)
 
 suite : Test
 suite =
