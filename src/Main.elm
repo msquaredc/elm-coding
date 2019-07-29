@@ -47,10 +47,13 @@ update msg model =
             ( model, Cmd.none )
 
         FormMsg fmsg ->
-            let (formModel, formCmd) = Form.update fmsg model.form
+            let
+                ( formModel, formCmd ) =
+                    Form.update fmsg model.form
             in
-            ( { model | form = formModel}, 
-            Cmd.map FormMsg formCmd )
+            ( { model | form = formModel }
+            , Cmd.map FormMsg formCmd
+            )
 
 
 subscriptions : Model -> Sub Msg

@@ -58,6 +58,7 @@ view : Model -> Html Msg
 view model =
     List.indexedMap viewForm model.forms
 
+
 viewForm : Int -> Form -> Html Msg
 viewForm index form =
     case form.formtype of
@@ -117,21 +118,25 @@ viewInputChoice index model =
 
 
 updateElement list id value =
-  let
-    alter idx form =
-      if id == idx then
-        { form | content = value}
-      else
-        form
-  in
+    let
+        alter idx form =
+            if id == idx then
+                { form | content = value }
+
+            else
+                form
+    in
     List.indexedMap alter list
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Change index newContent ->
-            let forms_ = model.forms 
-            in 
+            let
+                forms_ =
+                    model.forms
+            in
             ( { model | forms = forms_ }, Cmd.none )
 
         Message ->

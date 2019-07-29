@@ -1,4 +1,4 @@
-module Input exposing (Model, Msg(..), init, update, view, Form(..))
+module Input exposing (Form(..), Model, Msg(..), init, update, view)
 
 {- This is an input module, which emits messages, when user types anything,
    focuses on it, or when focus leaves the field.
@@ -12,14 +12,15 @@ import Html.Events exposing (onBlur, onFocus, onInput)
 type alias Model =
     String
 
-type Form 
+
+type Form
     = Text
     | Number (Maybe Bounds)
 
-type alias Bounds = 
-    {
-        
-    }
+
+type alias Bounds =
+    {}
+
 
 init : Model -> Form -> ( Model, Cmd Msg )
 init text formtype =
