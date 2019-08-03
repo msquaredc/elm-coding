@@ -1,20 +1,21 @@
 port module Main exposing (Msg(..), activeUsers)
 
 import Browser exposing (..)
-import Form exposing (..)
+import Dict exposing (..)
 import Html exposing (..)
 import Json.Decode as Decode exposing (..)
 import Json.Encode as E
+import Research exposing (..)
 
 
 type Msg
     = Searched String
     | Changed E.Value
-    | FormMsg Form.Msg
+    | ResearchMsg Research.Msg
 
 
 type alias Model =
-    { form : Form.Model
+    { research : Research.Model
     }
 
 
@@ -29,12 +30,12 @@ main =
 
 init : Value -> ( Model, Cmd msg )
 init flags =
-    case Decode.decodeValue Form.decoder flags of
+    case Decode.decodeValue Research.decode flags of
         Ok model ->
             ( Model model, Cmd.none )
 
         Err err ->
-            ( Model (Form.Model "blupp" [Form.Form (Decode.errorToString err) Form.InputString "ERROR"]), Cmd.none )
+            ( Model (Research.error (Debug.toString err)), Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -46,13 +47,13 @@ update msg model =
         Changed v ->
             ( model, Cmd.none )
 
-        FormMsg fmsg ->
+        ResearchMsg fmsg ->
             let
-                ( formModel, formCmd ) =
-                    Form.update fmsg model.form
+                ( researchModel, researchCmd ) =
+                    Research.update fmsg model.research
             in
-            ( { model | form = formModel }
-            , Cmd.map FormMsg formCmd
+            ( { model | research = researchModel }
+            , Cmd.map ResearchMsg researchCmd
             )
 
 
@@ -64,7 +65,7 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     Html.div []
-        [ Html.map FormMsg (Form.view model.form)
+        [ Html.map ResearchMsg (Research.view model.research)
         ]
 
 

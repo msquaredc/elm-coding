@@ -2314,6 +2314,43 @@ function _Platform_mergeExportsDebug(moduleName, obj, exports)
 
 
 
+var _Bitwise_and = F2(function(a, b)
+{
+	return a & b;
+});
+
+var _Bitwise_or = F2(function(a, b)
+{
+	return a | b;
+});
+
+var _Bitwise_xor = F2(function(a, b)
+{
+	return a ^ b;
+});
+
+function _Bitwise_complement(a)
+{
+	return ~a;
+};
+
+var _Bitwise_shiftLeftBy = F2(function(offset, a)
+{
+	return a << offset;
+});
+
+var _Bitwise_shiftRightBy = F2(function(offset, a)
+{
+	return a >> offset;
+});
+
+var _Bitwise_shiftRightZfBy = F2(function(offset, a)
+{
+	return a >>> offset;
+});
+
+
+
 
 // HELPERS
 
@@ -4310,18 +4347,17 @@ function _Browser_load(url)
 		}
 	}));
 }
-var author$project$Form$Form = F3(
+var author$project$Main$Model = function (research) {
+	return {research: research};
+};
+var author$project$Form$Model = F3(
 	function (label, formtype, content) {
 		return {content: content, formtype: formtype, label: label};
-	});
-var author$project$Form$InputString = {$: 'InputString'};
-var author$project$Form$Model = F2(
-	function (name, forms) {
-		return {forms: forms, name: name};
 	});
 var author$project$Form$InputNumber = function (a) {
 	return {$: 'InputNumber', a: a};
 };
+var author$project$Form$InputString = {$: 'InputString'};
 var elm$core$Basics$apL = F2(
 	function (f, x) {
 		return f(x);
@@ -4831,31 +4867,95 @@ var author$project$Form$inputTypeDecoder = A2(
 	},
 	elm$json$Json$Decode$string);
 var elm$json$Json$Decode$field = _Json_decodeField;
-var elm$json$Json$Decode$list = _Json_decodeList;
-var elm$json$Json$Decode$map2 = _Json_map2;
 var elm$json$Json$Decode$map3 = _Json_map3;
-var author$project$Form$decoder = A3(
-	elm$json$Json$Decode$map2,
+var author$project$Form$decode = A4(
+	elm$json$Json$Decode$map3,
 	author$project$Form$Model,
+	A2(elm$json$Json$Decode$field, 'label', elm$json$Json$Decode$string),
+	A2(elm$json$Json$Decode$field, 'formtype', author$project$Form$inputTypeDecoder),
+	elm$json$Json$Decode$succeed(''));
+var author$project$Questionary$Model = F2(
+	function (question, coding_questions) {
+		return {coding_questions: coding_questions, question: question};
+	});
+var elm$json$Json$Decode$array = _Json_decodeArray;
+var elm$json$Json$Decode$map2 = _Json_map2;
+var author$project$Questionary$decode = A3(
+	elm$json$Json$Decode$map2,
+	author$project$Questionary$Model,
+	A2(elm$json$Json$Decode$field, 'question', elm$json$Json$Decode$string),
+	A2(
+		elm$json$Json$Decode$field,
+		'coding_questions',
+		elm$json$Json$Decode$array(author$project$Form$decode)));
+var author$project$Research$Model = F2(
+	function (name, questionaries) {
+		return {name: name, questionaries: questionaries};
+	});
+var author$project$Research$decode = A3(
+	elm$json$Json$Decode$map2,
+	author$project$Research$Model,
 	A2(elm$json$Json$Decode$field, 'name', elm$json$Json$Decode$string),
 	A2(
 		elm$json$Json$Decode$field,
-		'form',
-		elm$json$Json$Decode$list(
-			A4(
-				elm$json$Json$Decode$map3,
-				author$project$Form$Form,
-				A2(elm$json$Json$Decode$field, 'label', elm$json$Json$Decode$string),
-				A2(elm$json$Json$Decode$field, 'formtype', author$project$Form$inputTypeDecoder),
-				elm$json$Json$Decode$succeed('')))));
-var author$project$Main$Model = function (form) {
-	return {form: form};
+		'questionaries',
+		elm$json$Json$Decode$array(author$project$Questionary$decode)));
+var author$project$Form$error = A3(author$project$Form$Model, 'Error', author$project$Form$InputString, 'Error');
+var elm$core$Array$fromListHelp = F3(
+	function (list, nodeList, nodeListSize) {
+		fromListHelp:
+		while (true) {
+			var _n0 = A2(elm$core$Elm$JsArray$initializeFromList, elm$core$Array$branchFactor, list);
+			var jsArray = _n0.a;
+			var remainingItems = _n0.b;
+			if (_Utils_cmp(
+				elm$core$Elm$JsArray$length(jsArray),
+				elm$core$Array$branchFactor) < 0) {
+				return A2(
+					elm$core$Array$builderToArray,
+					true,
+					{nodeList: nodeList, nodeListSize: nodeListSize, tail: jsArray});
+			} else {
+				var $temp$list = remainingItems,
+					$temp$nodeList = A2(
+					elm$core$List$cons,
+					elm$core$Array$Leaf(jsArray),
+					nodeList),
+					$temp$nodeListSize = nodeListSize + 1;
+				list = $temp$list;
+				nodeList = $temp$nodeList;
+				nodeListSize = $temp$nodeListSize;
+				continue fromListHelp;
+			}
+		}
+	});
+var elm$core$Array$fromList = function (list) {
+	if (!list.b) {
+		return elm$core$Array$empty;
+	} else {
+		return A3(elm$core$Array$fromListHelp, list, _List_Nil, 0);
+	}
 };
+var author$project$Questionary$error = A2(
+	author$project$Questionary$Model,
+	'error',
+	elm$core$Array$fromList(
+		_List_fromArray(
+			[author$project$Form$error])));
+var author$project$Research$error = function (err) {
+	return A2(
+		author$project$Research$Model,
+		err,
+		elm$core$Array$fromList(
+			_List_fromArray(
+				[author$project$Questionary$error])));
+};
+var elm$core$Debug$toString = _Debug_toString;
 var elm$core$Platform$Cmd$batch = _Platform_batch;
 var elm$core$Platform$Cmd$none = elm$core$Platform$Cmd$batch(_List_Nil);
 var elm$json$Json$Decode$decodeValue = _Json_run;
 var author$project$Main$init = function (flags) {
-	var _n0 = A2(elm$json$Json$Decode$decodeValue, author$project$Form$decoder, flags);
+	var _n0 = A2(elm$json$Json$Decode$decodeValue, author$project$Research$decode, flags);
 	if (_n0.$ === 'Ok') {
 		var model = _n0.a;
 		return _Utils_Tuple2(
@@ -4865,17 +4965,8 @@ var author$project$Main$init = function (flags) {
 		var err = _n0.a;
 		return _Utils_Tuple2(
 			author$project$Main$Model(
-				A2(
-					author$project$Form$Model,
-					'blupp',
-					_List_fromArray(
-						[
-							A3(
-							author$project$Form$Form,
-							elm$json$Json$Decode$errorToString(err),
-							author$project$Form$InputString,
-							'ERROR')
-						]))),
+				author$project$Research$error(
+					elm$core$Debug$toString(err))),
 			elm$core$Platform$Cmd$none);
 	}
 };
@@ -4884,35 +4975,174 @@ var elm$core$Platform$Sub$none = elm$core$Platform$Sub$batch(_List_Nil);
 var author$project$Main$subscriptions = function (model) {
 	return elm$core$Platform$Sub$none;
 };
-var author$project$Form$updateElement = F3(
-	function (list, id, value) {
-		var alter = F2(
-			function (idx, form) {
-				return _Utils_eq(id, idx) ? _Utils_update(
-					form,
-					{content: value}) : form;
-			});
-		return A2(elm$core$List$indexedMap, alter, list);
+var author$project$Main$ResearchMsg = function (a) {
+	return {$: 'ResearchMsg', a: a};
+};
+var author$project$Research$QuestionaryMsg = F2(
+	function (a, b) {
+		return {$: 'QuestionaryMsg', a: a, b: b};
+	});
+var author$project$Questionary$FormMsg = F2(
+	function (a, b) {
+		return {$: 'FormMsg', a: a, b: b};
 	});
 var author$project$Form$update = F2(
 	function (msg, model) {
-		if (msg.$ === 'Change') {
-			var index = msg.a;
-			var newContent = msg.b;
-			var forms_ = A3(author$project$Form$updateElement, model.forms, index, newContent);
-			return _Utils_Tuple2(
-				_Utils_update(
-					model,
-					{forms: forms_}),
-				elm$core$Platform$Cmd$none);
-		} else {
-			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		var newContent = msg.a;
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{content: newContent}),
+			elm$core$Platform$Cmd$none);
+	});
+var elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
+var elm$core$Array$bitMask = 4294967295 >>> (32 - elm$core$Array$shiftStep);
+var elm$core$Bitwise$and = _Bitwise_and;
+var elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
+var elm$core$Array$getHelp = F3(
+	function (shift, index, tree) {
+		getHelp:
+		while (true) {
+			var pos = elm$core$Array$bitMask & (index >>> shift);
+			var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, pos, tree);
+			if (_n0.$ === 'SubTree') {
+				var subTree = _n0.a;
+				var $temp$shift = shift - elm$core$Array$shiftStep,
+					$temp$index = index,
+					$temp$tree = subTree;
+				shift = $temp$shift;
+				index = $temp$index;
+				tree = $temp$tree;
+				continue getHelp;
+			} else {
+				var values = _n0.a;
+				return A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, values);
+			}
 		}
 	});
-var author$project$Main$FormMsg = function (a) {
-	return {$: 'FormMsg', a: a};
+var elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
+var elm$core$Array$tailIndex = function (len) {
+	return (len >>> 5) << 5;
 };
+var elm$core$Basics$ge = _Utils_ge;
+var elm$core$Array$get = F2(
+	function (index, _n0) {
+		var len = _n0.a;
+		var startShift = _n0.b;
+		var tree = _n0.c;
+		var tail = _n0.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? elm$core$Maybe$Nothing : ((_Utils_cmp(
+			index,
+			elm$core$Array$tailIndex(len)) > -1) ? elm$core$Maybe$Just(
+			A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, tail)) : elm$core$Maybe$Just(
+			A3(elm$core$Array$getHelp, startShift, index, tree)));
+	});
+var elm$core$Elm$JsArray$unsafeSet = _JsArray_unsafeSet;
+var elm$core$Array$setHelp = F4(
+	function (shift, index, value, tree) {
+		var pos = elm$core$Array$bitMask & (index >>> shift);
+		var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, pos, tree);
+		if (_n0.$ === 'SubTree') {
+			var subTree = _n0.a;
+			var newSub = A4(elm$core$Array$setHelp, shift - elm$core$Array$shiftStep, index, value, subTree);
+			return A3(
+				elm$core$Elm$JsArray$unsafeSet,
+				pos,
+				elm$core$Array$SubTree(newSub),
+				tree);
+		} else {
+			var values = _n0.a;
+			var newLeaf = A3(elm$core$Elm$JsArray$unsafeSet, elm$core$Array$bitMask & index, value, values);
+			return A3(
+				elm$core$Elm$JsArray$unsafeSet,
+				pos,
+				elm$core$Array$Leaf(newLeaf),
+				tree);
+		}
+	});
+var elm$core$Array$set = F3(
+	function (index, value, array) {
+		var len = array.a;
+		var startShift = array.b;
+		var tree = array.c;
+		var tail = array.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? array : ((_Utils_cmp(
+			index,
+			elm$core$Array$tailIndex(len)) > -1) ? A4(
+			elm$core$Array$Array_elm_builtin,
+			len,
+			startShift,
+			tree,
+			A3(elm$core$Elm$JsArray$unsafeSet, elm$core$Array$bitMask & index, value, tail)) : A4(
+			elm$core$Array$Array_elm_builtin,
+			len,
+			startShift,
+			A4(elm$core$Array$setHelp, startShift, index, value, tree),
+			tail));
+	});
+var author$project$Questionary$updateForms = F3(
+	function (model, index, msg) {
+		var _n0 = A2(elm$core$Array$get, index, model.coding_questions);
+		if (_n0.$ === 'Just') {
+			var form = _n0.a;
+			var _n1 = A2(author$project$Form$update, msg, form);
+			var newValue = _n1.a;
+			var formCmd = _n1.b;
+			return _Utils_Tuple2(
+				A3(elm$core$Array$set, index, newValue, model.coding_questions),
+				formCmd);
+		} else {
+			return _Utils_Tuple2(model.coding_questions, elm$core$Platform$Cmd$none);
+		}
+	});
 var elm$core$Platform$Cmd$map = _Platform_map;
+var author$project$Questionary$update = F2(
+	function (msg, model) {
+		var index = msg.a;
+		var fmsg = msg.b;
+		var _n1 = A3(author$project$Questionary$updateForms, model, index, fmsg);
+		var formsNew = _n1.a;
+		var formsCmd = _n1.b;
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{coding_questions: formsNew}),
+			A2(
+				elm$core$Platform$Cmd$map,
+				author$project$Questionary$FormMsg(index),
+				formsCmd));
+	});
+var author$project$Research$updateQuestionary = F3(
+	function (model, index, msg) {
+		var _n0 = A2(elm$core$Array$get, index, model.questionaries);
+		if (_n0.$ === 'Just') {
+			var questionary = _n0.a;
+			var _n1 = A2(author$project$Questionary$update, msg, questionary);
+			var newValue = _n1.a;
+			var questionaryCmd = _n1.b;
+			return _Utils_Tuple2(
+				A3(elm$core$Array$set, index, newValue, model.questionaries),
+				questionaryCmd);
+		} else {
+			return _Utils_Tuple2(model.questionaries, elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Research$update = F2(
+	function (msg, model) {
+		var index = msg.a;
+		var fmsg = msg.b;
+		var _n1 = A3(author$project$Research$updateQuestionary, model, index, fmsg);
+		var formsNew = _n1.a;
+		var formsCmd = _n1.b;
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{questionaries: formsNew}),
+			A2(
+				elm$core$Platform$Cmd$map,
+				author$project$Research$QuestionaryMsg(index),
+				formsCmd));
+	});
 var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -4924,20 +5154,19 @@ var author$project$Main$update = F2(
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 			default:
 				var fmsg = msg.a;
-				var _n1 = A2(author$project$Form$update, fmsg, model.form);
-				var formModel = _n1.a;
-				var formCmd = _n1.b;
+				var _n1 = A2(author$project$Research$update, fmsg, model.research);
+				var researchModel = _n1.a;
+				var researchCmd = _n1.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{form: formModel}),
-					A2(elm$core$Platform$Cmd$map, author$project$Main$FormMsg, formCmd));
+						{research: researchModel}),
+					A2(elm$core$Platform$Cmd$map, author$project$Main$ResearchMsg, researchCmd));
 		}
 	});
-var author$project$Form$Change = F2(
-	function (a, b) {
-		return {$: 'Change', a: a, b: b};
-	});
+var author$project$Form$Change = function (a) {
+	return {$: 'Change', a: a};
+};
 var elm$json$Json$Decode$map = _Json_map1;
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
@@ -5052,8 +5281,27 @@ var elm$html$Html$Events$onInput = function (tagger) {
 			elm$html$Html$Events$alwaysStop,
 			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
 };
-var author$project$Form$viewInputChoice = F2(
-	function (index, model) {
+var author$project$Form$viewInputChoice = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				elm$html$Html$text(model.label),
+				A2(
+				elm$html$Html$input,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$placeholder('Your answer'),
+						elm$html$Html$Attributes$value(model.content),
+						elm$html$Html$Events$onInput(author$project$Form$Change)
+					]),
+				_List_Nil),
+				elm$html$Html$text(model.content)
+			]));
+};
+var author$project$Form$viewInputNumber = F2(
+	function (model, bounds) {
 		return A2(
 			elm$html$Html$div,
 			_List_Nil,
@@ -5066,70 +5314,125 @@ var author$project$Form$viewInputChoice = F2(
 						[
 							elm$html$Html$Attributes$placeholder('Your answer'),
 							elm$html$Html$Attributes$value(model.content),
-							elm$html$Html$Events$onInput(
-							author$project$Form$Change(index))
+							elm$html$Html$Events$onInput(author$project$Form$Change)
 						]),
 					_List_Nil),
 					elm$html$Html$text(model.content)
 				]));
 	});
-var author$project$Form$viewInputNumber = F3(
-	function (index, model, bounds) {
+var author$project$Form$viewInputString = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				elm$html$Html$text(model.label),
+				A2(
+				elm$html$Html$input,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$placeholder('Your answer'),
+						elm$html$Html$Attributes$value(model.content),
+						elm$html$Html$Events$onInput(author$project$Form$Change)
+					]),
+				_List_Nil),
+				elm$html$Html$text(model.content)
+			]));
+};
+var author$project$Form$view = function (model) {
+	var _n0 = model.formtype;
+	switch (_n0.$) {
+		case 'InputString':
+			return author$project$Form$viewInputString(model);
+		case 'InputNumber':
+			var n = _n0.a;
+			return A2(author$project$Form$viewInputNumber, model, n);
+		default:
+			return author$project$Form$viewInputChoice(model);
+	}
+};
+var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
+var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
+var author$project$Questionary$viewForm = F2(
+	function (index, element) {
 		return A2(
-			elm$html$Html$div,
-			_List_Nil,
-			_List_fromArray(
-				[
-					elm$html$Html$text(model.label),
-					A2(
-					elm$html$Html$input,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$placeholder('Your answer'),
-							elm$html$Html$Attributes$value(model.content),
-							elm$html$Html$Events$onInput(
-							author$project$Form$Change(index))
-						]),
-					_List_Nil),
-					elm$html$Html$text(model.content)
-				]));
+			elm$html$Html$map,
+			author$project$Questionary$FormMsg(index),
+			A2(
+				elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						author$project$Form$view(element)
+					])));
 	});
-var author$project$Form$viewInputString = F2(
-	function (index, model) {
+var elm$core$Elm$JsArray$foldl = _JsArray_foldl;
+var elm$core$Elm$JsArray$indexedMap = _JsArray_indexedMap;
+var elm$core$Array$indexedMap = F2(
+	function (func, _n0) {
+		var len = _n0.a;
+		var tree = _n0.c;
+		var tail = _n0.d;
+		var initialBuilder = {
+			nodeList: _List_Nil,
+			nodeListSize: 0,
+			tail: A3(
+				elm$core$Elm$JsArray$indexedMap,
+				func,
+				elm$core$Array$tailIndex(len),
+				tail)
+		};
+		var helper = F2(
+			function (node, builder) {
+				if (node.$ === 'SubTree') {
+					var subTree = node.a;
+					return A3(elm$core$Elm$JsArray$foldl, helper, builder, subTree);
+				} else {
+					var leaf = node.a;
+					var offset = builder.nodeListSize * elm$core$Array$branchFactor;
+					var mappedLeaf = elm$core$Array$Leaf(
+						A3(elm$core$Elm$JsArray$indexedMap, func, offset, leaf));
+					return {
+						nodeList: A2(elm$core$List$cons, mappedLeaf, builder.nodeList),
+						nodeListSize: builder.nodeListSize + 1,
+						tail: builder.tail
+					};
+				}
+			});
 		return A2(
-			elm$html$Html$div,
-			_List_Nil,
-			_List_fromArray(
-				[
-					elm$html$Html$text(model.label),
-					A2(
-					elm$html$Html$input,
-					_List_fromArray(
-						[
-							elm$html$Html$Attributes$placeholder('Your answer'),
-							elm$html$Html$Attributes$value(model.content),
-							elm$html$Html$Events$onInput(
-							author$project$Form$Change(index))
-						]),
-					_List_Nil),
-					elm$html$Html$text(model.content)
-				]));
+			elm$core$Array$builderToArray,
+			true,
+			A3(elm$core$Elm$JsArray$foldl, helper, initialBuilder, tree));
 	});
-var author$project$Form$viewForm = F2(
-	function (index, form) {
-		var _n0 = form.formtype;
-		switch (_n0.$) {
-			case 'InputString':
-				return A2(author$project$Form$viewInputString, index, form);
-			case 'InputNumber':
-				var n = _n0.a;
-				return A3(author$project$Form$viewInputNumber, index, form, n);
-			default:
-				return A2(author$project$Form$viewInputChoice, index, form);
-		}
+var author$project$Questionary$view = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				elm$html$Html$text(model.question),
+				A2(
+				elm$html$Html$div,
+				_List_Nil,
+				elm$core$Array$toList(
+					A2(elm$core$Array$indexedMap, author$project$Questionary$viewForm, model.coding_questions)))
+			]));
+};
+var author$project$Research$viewQuestionary = F2(
+	function (index, element) {
+		return A2(
+			elm$html$Html$map,
+			author$project$Research$QuestionaryMsg(index),
+			A2(
+				elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						author$project$Questionary$view(element)
+					])));
 	});
 var elm$html$Html$h1 = _VirtualDom_node('h1');
-var author$project$Form$view = function (model) {
+var author$project$Research$view = function (model) {
 	return A2(
 		elm$html$Html$div,
 		_List_Nil,
@@ -5145,11 +5448,10 @@ var author$project$Form$view = function (model) {
 				A2(
 				elm$html$Html$div,
 				_List_Nil,
-				A2(elm$core$List$indexedMap, author$project$Form$viewForm, model.forms))
+				elm$core$Array$toList(
+					A2(elm$core$Array$indexedMap, author$project$Research$viewQuestionary, model.questionaries)))
 			]));
 };
-var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
-var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
 var author$project$Main$view = function (model) {
 	return A2(
 		elm$html$Html$div,
@@ -5158,8 +5460,8 @@ var author$project$Main$view = function (model) {
 			[
 				A2(
 				elm$html$Html$map,
-				author$project$Main$FormMsg,
-				author$project$Form$view(model.form))
+				author$project$Main$ResearchMsg,
+				author$project$Research$view(model.research))
 			]));
 };
 var elm$browser$Browser$External = function (a) {

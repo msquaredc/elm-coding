@@ -12,10 +12,26 @@
 	<div id="elm"></div>
 	<script>
 		var app = Elm.Main.init({
-			flags: {name:"testname",
-						form:[
-							{ label: "It Works11!", formtype: "Number" }, 
-							{ label: "Second entry", formtype: "String" }
+			flags: {
+						name:"testname",
+						data: [
+							{ "name": "Jerome","Was?":"das.","Wo?":"da."}
+						],
+						questionaries:[
+							{
+							"question":"Was?",
+							"coding_questions":[
+								{ label: "It Works11!", formtype: "Number" }, 
+								{ label: "Second entry", formtype: "String" }
+							]
+							},
+							{
+							"question":"Wo?",
+							"coding_questions":[
+								{ label: "Kram!", formtype: "Number" }, 
+								{ label: "Stuff", formtype: "String" }
+							]
+							}
 						]
 					},
 			node: document.getElementById('elm')

@@ -1,5 +1,6 @@
-module Form exposing (Form, InputType(..), Model, Msg, decoder, update, view)
+module Form exposing (InputType(..), Model, Msg, decode, error, update, view)
 
+import Dict exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -14,35 +15,26 @@ type InputType
 
 
 type Msg
-    = Change Int String
-    | Message
+    = Change String
 
 
 type alias Model =
-    { name : String
-    , forms : List Form
-    }
-
-
-type alias Form =
     { label : String
     , formtype : InputType
     , content : String
     }
 
 
-decoder =
-    Decode.map2 Model
-        (Decode.field "name" Decode.string)
-        (Decode.field "form"
-            (Decode.list
-                (Decode.map3 Form
-                    (Decode.field "label" Decode.string)
-                    (Decode.field "formtype" inputTypeDecoder)
-                    (Decode.succeed "")
-                )
-            )
-        )
+error =
+    Model "Error" InputString "Error"
+
+
+decode : Decode.Decoder Model
+decode =
+    Decode.map3 Model
+        (Decode.field "label" Decode.string)
+        (Decode.field "formtype" inputTypeDecoder)
+        (Decode.succeed "")
 
 
 inputTypeDecoder =
@@ -63,91 +55,87 @@ inputTypeDecoder =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ h1 [] [ text model.name ]
-        , div [] (List.indexedMap viewForm model.forms)
-        ]
-
-
-viewForm : Int -> Form -> Html Msg
-viewForm index form =
-    case form.formtype of
+    case model.formtype of
         InputString ->
-            viewInputString index form
+            viewInputString model
 
         InputNumber n ->
-            viewInputNumber index form n
+            viewInputNumber model n
 
         InputChoice ->
-            viewInputChoice index form
+            viewInputChoice model
 
 
-viewInputString : Int -> Form -> Html Msg
-viewInputString index model =
+viewInputString : Model -> Html Msg
+viewInputString model =
     Html.div
         []
         [ text model.label
         , Html.input
             [ Html.Attributes.placeholder "Your answer"
             , Html.Attributes.value model.content
-            , Html.Events.onInput (Change index)
+            , Html.Events.onInput Change
             ]
             []
         , text model.content
         ]
 
 
-viewInputNumber : Int -> Form -> Maybe (Bounded Int) -> Html Msg
-viewInputNumber index model bounds =
+viewInputNumber : Model -> Maybe (Bounded Int) -> Html Msg
+viewInputNumber model bounds =
     Html.div
         []
         [ text model.label
         , Html.input
             [ Html.Attributes.placeholder "Your answer"
             , Html.Attributes.value model.content
-            , Html.Events.onInput (Change index)
+            , Html.Events.onInput Change
             ]
             []
         , text model.content
         ]
 
 
-viewInputChoice : Int -> Form -> Html Msg
-viewInputChoice index model =
+viewInputChoice : Model -> Html Msg
+viewInputChoice model =
     Html.div
         []
         [ text model.label
         , Html.input
             [ Html.Attributes.placeholder "Your answer"
             , Html.Attributes.value model.content
-            , Html.Events.onInput (Change index)
+            , Html.Events.onInput Change
             ]
             []
         , text model.content
         ]
 
 
-updateElement list id value =
-    let
-        alter idx form =
-            if id == idx then
-                { form | content = value }
 
-            else
-                form
-    in
-    List.indexedMap alter list
+{- updateCodingQuestion : Dict String Questionary -> String -> String -> Dict String Questionary
+   updateCodingQuestion question key value =
+       Dict.update key (Maybe.map (\x -> x)) question
+
+   updateElement list id value =
+       let
+           alter idx form =
+               if id == idx then
+                   { form | content = value }
+
+               else
+                   form
+       in
+       List.indexedMap alter list
+
+   updateForm : Questionary -> Int -> String -> Questionary
+   updateForm questionary index value =
+       let newforms = updateElement questionary.coding_questions index value
+       in ({questionary | coding_questions = newforms})
+-}
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Change index newContent ->
-            let
-                forms_ =
-                    updateElement model.forms index newContent
-            in
-            ( { model | forms = forms_ }, Cmd.none )
-
-        Message ->
-            ( model, Cmd.none )
+        Change newContent ->
+            ( { model | content = newContent }, Cmd.none )
