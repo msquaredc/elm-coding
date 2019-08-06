@@ -1,4 +1,4 @@
-module Form exposing (InputType(..), Model, Msg, decoder, error, update, view, inputTypeDecoder)
+module Form exposing (InputType(..), Model, Msg, decoder, error, inputTypeDecoder, update, view)
 
 import Dict exposing (..)
 import Html exposing (..)

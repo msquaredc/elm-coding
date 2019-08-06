@@ -35,7 +35,7 @@ init flags =
             ( Model model, Cmd.none )
 
         Err err ->
-            ( Model (Research.error (Debug.toString err)), Cmd.none )
+            ( Model (Research.empty (Debug.toString err)), Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

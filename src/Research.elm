@@ -1,8 +1,8 @@
-module Research exposing (Model, Msg, decode, error, update, view)
+module Research exposing (Model, Msg, decode, empty, update, view)
 
 import Array exposing (..)
+import Data exposing (..)
 import Db exposing (Db)
-import DataBase exposing (..)
 import Dict exposing (..)
 import Html exposing (..)
 import Id exposing (Id)
@@ -13,25 +13,20 @@ import Table exposing (..)
 
 
 type Msg
-    = QuestionaryMsg Int Questionary.Msg
-    | TableMsg Table.Msg
+    = DataMsg Data.Msg
 
 
 type alias Model =
     { name : String
-    , database : DataBase.Model
+    , database : Data.Model
     }
+
 
 type alias RawJsonModel =
     { name : String
     , data : List (Dict String String)
     , questionaries : Array Questionary.Model
     }
-
-
-error : String -> Model
-error err =
-    Model err Table.error (Array.fromList [ Questionary.error ]) ResultTable.error
 
 
 decodeRawJson : Decode.Decoder RawJsonModel
@@ -46,16 +41,9 @@ decodeRawJson =
 
 decode : Decode.Decoder Model
 decode =
-    Decode.map rawToDivided decodeRawJson
-
-
-rawToDivided : RawJsonModel -> Model
-rawToDivided rjmodel =
-    let
-        tableRows =
-            List.map (splitDict (questions rjmodel)) rjmodel.data
-    in
-    Model rjmodel.name (Table.Model tableRows) rjmodel.questionaries (ResultTable.new tableRows rjmodel.questionaries)
+    Decode.map2 Model
+        Decode.string
+        (Decode.map (\( a, b ) -> a) (Decode.map Data.init Data.decoder))
 
 
 splitDict : List String -> Dict String String -> Table.TableRow
@@ -71,51 +59,30 @@ view : Model -> Html Msg
 view model =
     div []
         [ h1 [] [ text model.name ]
-        , div [] (Array.toList (Array.indexedMap viewQuestionary model.questionaries))
-        , Html.map TableMsg (Table.view model.data)
+        , Html.map DataMsg (Data.view model.database)
         ]
-
-
-viewQuestionary index element =
-    Html.map (QuestionaryMsg index) <| div [] [ Questionary.view element ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        QuestionaryMsg index fmsg ->
+        DataMsg dmsg ->
             let
-                ( questionaryNew, questionaryCmd ) =
-                    updateQuestionary model index fmsg
+                ( dataNew, dataCmd ) =
+                    Data.update dmsg model.database
             in
-            ( { model | questionaries = questionaryNew }
-            , Cmd.map (QuestionaryMsg index) questionaryCmd
+            ( { model | database = dataNew }
+            , Cmd.map DataMsg dataCmd
             )
-
-        TableMsg tmsg ->
-            let
-                ( tableNew, tableCmd ) =
-                    Table.update tmsg model.data
-            in
-            ( { model | data = tableNew }
-            , Cmd.map TableMsg tableCmd
-            )
-
-
-updateQuestionary : Model -> Int -> Questionary.Msg -> ( Array Questionary.Model, Cmd Questionary.Msg )
-updateQuestionary model index msg =
-    case Array.get index model.questionaries of
-        Just questionary ->
-            let
-                ( newValue, questionaryCmd ) =
-                    Questionary.update msg questionary
-            in
-            ( Array.set index newValue model.questionaries, questionaryCmd )
-
-        Nothing ->
-            ( model.questionaries, Cmd.none )
 
 
 questions : RawJsonModel -> List String
 questions model =
     List.map .question (Array.toList model.questionaries)
+
+
+empty : String -> Model
+empty str =
+    { name = str
+    , database = Data.empty
+    }

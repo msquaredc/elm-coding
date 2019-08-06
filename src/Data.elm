@@ -1,4 +1,22 @@
-module Data exposing (Answer, Coder, Coding, CodingAnswer, CodingFrame, CodingQuestion, CodingQuestionary, Model, Question, Questionary, User)
+module Data exposing
+    ( Answer
+    , Coder
+    , Coding
+    , CodingAnswer
+    , CodingFrame
+    , CodingQuestion
+    , CodingQuestionary
+    , Model
+    , Msg
+    , Question
+    , Questionary
+    , User
+    , decoder
+    , empty
+    , init
+    , update
+    , view
+    )
 
 import Db exposing (Db, Row)
 import Dict exposing (..)
@@ -18,13 +36,13 @@ type alias Flags =
     { answers : Dict String Answer
     , coders : Dict String Coder
     , codings : Dict String Coding
-    , coding_answers: Dict String CodingAnswer
+    , coding_answers : Dict String CodingAnswer
     , coding_frames : Dict String CodingFrame
     , coding_questionaries : Dict String CodingQuestionary
     , coding_questions : Dict String CodingQuestion
     , name : String
     , questions : Dict String Question
-    , questionaries : Dict String  Questionary
+    , questionaries : Dict String Questionary
     , users : Dict String User
     }
 
@@ -68,46 +86,55 @@ decoderCoding =
     Decode.succeed Coding
         |> required "coder" Id.decoder
 
+
 decoderCodingAnswers : Decode.Decoder CodingAnswer
-decoderCodingAnswers = 
+decoderCodingAnswers =
     Decode.succeed CodingAnswer
         |> required "coding_question" Id.decoder
         |> required "coding_frame" Id.decoder
         |> required "value" string
 
+
 decoderCodingFrame : Decode.Decoder CodingFrame
-decoderCodingFrame = 
+decoderCodingFrame =
     Decode.succeed CodingFrame
-    |> required "answer" Id.decoder
-    |> required "coding" Id.decoder
-    |> required "index" int
+        |> required "answer" Id.decoder
+        |> required "coding" Id.decoder
+        |> required "index" int
+
 
 decoderCodingQuestionary : Decode.Decoder CodingQuestionary
-decoderCodingQuestionary = 
+decoderCodingQuestionary =
     Decode.succeed CodingQuestionary
-    |> required "question" Id.decoder
+        |> required "question" Id.decoder
+
 
 decoderCodingQuestion : Decode.Decoder CodingQuestion
-decoderCodingQuestion = 
+decoderCodingQuestion =
     Decode.succeed CodingQuestion
-    |> required "coding_questionary" Id.decoder
-    |> required "text" string
-    |> required "input_type" Form.inputTypeDecoder
+        |> required "coding_questionary" Id.decoder
+        |> required "text" string
+        |> required "input_type" Form.inputTypeDecoder
+
 
 decoderQuestion : Decode.Decoder Question
-decoderQuestion = 
+decoderQuestion =
     Decode.succeed Question
-    |> required "questionary" Id.decoder
+        |> required "questionary" Id.decoder
+
 
 decoderQuestionary : Decode.Decoder Questionary
-decoderQuestionary = 
+decoderQuestionary =
     Decode.succeed Questionary
-    |> required "name" string
+        |> required "name" string
+
 
 decoderUser : Decode.Decoder User
-decoderUser = 
+decoderUser =
     Decode.succeed User
-    |> required "infos" (Decode.dict string)
+        |> required "infos" (Decode.dict string)
+
+
 
 -- Data Structure
 
@@ -191,27 +218,44 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         model =
-            Model 
-            (initDictToDb flags.answers)
-            (initDictToDb flags.coders)
-            (initDictToDb flags.codings)
-            (initDictToDb flags.coding_answers)
-            (initDictToDb flags.coding_frames)
-            (initDictToDb flags.coding_questionaries)
-            (initDictToDb flags.coding_questions)
-            flags.name
-            (initDictToDb flags.questions)
-            (initDictToDb flags.questionaries)
-            (initDictToDb flags.users)
-    in  
+            Model
+                (initDictToDb flags.answers)
+                (initDictToDb flags.coders)
+                (initDictToDb flags.codings)
+                (initDictToDb flags.coding_answers)
+                (initDictToDb flags.coding_frames)
+                (initDictToDb flags.coding_questionaries)
+                (initDictToDb flags.coding_questions)
+                flags.name
+                (initDictToDb flags.questions)
+                (initDictToDb flags.questionaries)
+                (initDictToDb flags.users)
+    in
     ( model, Cmd.none )
 
+
 initDictToDb : Dict String item -> Db item
-initDictToDb values = 
+initDictToDb values =
     values
-    |> Dict.toList
-    |> List.map (\(key, value) -> ( Id.fromString key, value ))
-    |> Db.fromList
+        |> Dict.toList
+        |> List.map (\( key, value ) -> ( Id.fromString key, value ))
+        |> Db.fromList
+
+
+empty : Model
+empty =
+    { answers = Db.empty
+    , coders = Db.empty
+    , codings = Db.empty
+    , coding_answers = Db.empty
+    , coding_frames = Db.empty
+    , coding_questionaries = Db.empty
+    , coding_questions = Db.empty
+    , name = "String"
+    , question = Db.empty
+    , questionaries = Db.empty
+    , users = Db.empty
+    }
 
 
 

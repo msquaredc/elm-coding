@@ -1,4 +1,4 @@
-module Table exposing (Model, Msg(..), ResearchRow, TableRow, UserRow, error, update, view, getAllUser)
+module Table exposing (Model, Msg(..), ResearchRow, TableRow, UserRow, error, getAllUser, update, view)
 
 import Dict exposing (..)
 import Html exposing (..)
