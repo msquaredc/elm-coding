@@ -1,8 +1,11 @@
 module Research exposing (Model, Msg, decode, error, update, view)
 
 import Array exposing (..)
+import Db exposing (Db)
+import DataBase exposing (..)
 import Dict exposing (..)
 import Html exposing (..)
+import Id exposing (Id)
 import Json.Decode as Decode exposing (..)
 import Questionary exposing (..)
 import ResultTable exposing (..)
@@ -16,10 +19,7 @@ type Msg
 
 type alias Model =
     { name : String
-    , users : User
-    , data : Table.Model
-    , questionaries : Array Questionary.Model
-    , result : ResultTable.Model
+    , database : DataBase.Model
     }
 
 type alias RawJsonModel =
@@ -27,6 +27,7 @@ type alias RawJsonModel =
     , data : List (Dict String String)
     , questionaries : Array Questionary.Model
     }
+
 
 error : String -> Model
 error err =
@@ -51,7 +52,7 @@ decode =
 rawToDivided : RawJsonModel -> Model
 rawToDivided rjmodel =
     let
-        tableRows = 
+        tableRows =
             List.map (splitDict (questions rjmodel)) rjmodel.data
     in
     Model rjmodel.name (Table.Model tableRows) rjmodel.questionaries (ResultTable.new tableRows rjmodel.questionaries)
