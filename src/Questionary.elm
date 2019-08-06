@@ -26,7 +26,7 @@ decode =
         (Decode.field "question" Decode.string)
         (Decode.field "coding_questions"
             (Decode.array
-                Form.decode
+                Form.decoder
             )
         )
 
