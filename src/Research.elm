@@ -17,8 +17,7 @@ type Msg
 
 
 type alias Model =
-    { name : String
-    , database : Data.Model
+    { database : Data.Model
     }
 
 
@@ -41,8 +40,7 @@ decodeRawJson =
 
 decode : Decode.Decoder Model
 decode =
-    Decode.map2 Model
-        Decode.string
+    Decode.map Model
         (Decode.map (\( a, b ) -> a) (Decode.map Data.init Data.decoder))
 
 
@@ -58,8 +56,7 @@ splitDict q row =
 view : Model -> Html Msg
 view model =
     div []
-        [ h1 [] [ text model.name ]
-        , Html.map DataMsg (Data.view model.database)
+        [ Html.map DataMsg (Data.view model.database)
         ]
 
 
@@ -83,6 +80,5 @@ questions model =
 
 empty : String -> Model
 empty str =
-    { name = str
-    , database = Data.empty
+    { database = Data.empty str
     }

@@ -5359,14 +5359,12 @@ var author$project$Data$init = function (flags) {
 		author$project$Data$initDictToDb(flags.users));
 	return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 };
-var author$project$Research$Model = F2(
-	function (name, database) {
-		return {database: database, name: name};
-	});
-var author$project$Research$decode = A3(
-	elm$json$Json$Decode$map2,
+var author$project$Research$Model = function (database) {
+	return {database: database};
+};
+var author$project$Research$decode = A2(
+	elm$json$Json$Decode$map,
 	author$project$Research$Model,
-	elm$json$Json$Decode$string,
 	A2(
 		elm$json$Json$Decode$map,
 		function (_n0) {
@@ -5376,9 +5374,13 @@ var author$project$Research$decode = A3(
 		},
 		A2(elm$json$Json$Decode$map, author$project$Data$init, author$project$Data$decoder)));
 var Chadtech$elm_relational_database$Db$empty = Chadtech$elm_relational_database$Db$Db(elm$core$Dict$empty);
-var author$project$Data$empty = {answers: Chadtech$elm_relational_database$Db$empty, coders: Chadtech$elm_relational_database$Db$empty, coding_answers: Chadtech$elm_relational_database$Db$empty, coding_frames: Chadtech$elm_relational_database$Db$empty, coding_questionaries: Chadtech$elm_relational_database$Db$empty, coding_questions: Chadtech$elm_relational_database$Db$empty, codings: Chadtech$elm_relational_database$Db$empty, name: 'String', question: Chadtech$elm_relational_database$Db$empty, questionaries: Chadtech$elm_relational_database$Db$empty, users: Chadtech$elm_relational_database$Db$empty};
+var author$project$Data$empty = function (str) {
+	return {answers: Chadtech$elm_relational_database$Db$empty, coders: Chadtech$elm_relational_database$Db$empty, coding_answers: Chadtech$elm_relational_database$Db$empty, coding_frames: Chadtech$elm_relational_database$Db$empty, coding_questionaries: Chadtech$elm_relational_database$Db$empty, coding_questions: Chadtech$elm_relational_database$Db$empty, codings: Chadtech$elm_relational_database$Db$empty, name: str, question: Chadtech$elm_relational_database$Db$empty, questionaries: Chadtech$elm_relational_database$Db$empty, users: Chadtech$elm_relational_database$Db$empty};
+};
 var author$project$Research$empty = function (str) {
-	return {database: author$project$Data$empty, name: str};
+	return {
+		database: author$project$Data$empty(str)
+	};
 };
 var elm$core$Debug$toString = _Debug_toString;
 var author$project$Main$init = function (flags) {
@@ -5446,6 +5448,13 @@ var author$project$Main$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Main$ResearchMsg, researchCmd));
 		}
 	});
+var Chadtech$elm_relational_database$Db$toList = function (_n0) {
+	var dict = _n0.a;
+	return A2(
+		elm$core$List$map,
+		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
+		elm$core$Dict$toList(dict));
+};
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
 		case 'Normal':
@@ -5458,13 +5467,100 @@ var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 			return 3;
 	}
 };
+var elm$html$Html$div = _VirtualDom_node('div');
+var elm$html$Html$h3 = _VirtualDom_node('h3');
+var elm$html$Html$p = _VirtualDom_node('p');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
-var author$project$Data$view = function (model) {
-	return elm$html$Html$text('Implement Me!');
+var author$project$Data$viewAnswer = function (_n0) {
+	var id = _n0.a;
+	var answer = _n0.b;
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						'Answer: ' + Chadtech$elm_relational_database$Id$toString(id))
+					])),
+				A2(
+				elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						'Question: ' + Chadtech$elm_relational_database$Id$toString(answer.question))
+					])),
+				A2(
+				elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						'User: ' + Chadtech$elm_relational_database$Id$toString(answer.user))
+					])),
+				A2(
+				elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Value: ' + answer.value)
+					]))
+			]));
 };
-var elm$html$Html$div = _VirtualDom_node('div');
-var elm$html$Html$h1 = _VirtualDom_node('h1');
+var author$project$Data$viewCoder = function (_n0) {
+	var id = _n0.a;
+	var coder = _n0.b;
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						'Coder: ' + Chadtech$elm_relational_database$Id$toString(id))
+					])),
+				A2(
+				elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Name: ' + coder.name)
+					]))
+			]));
+};
+var author$project$Data$view = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$div,
+				_List_Nil,
+				A2(
+					elm$core$List$map,
+					author$project$Data$viewAnswer,
+					Chadtech$elm_relational_database$Db$toList(model.answers))),
+				A2(
+				elm$html$Html$div,
+				_List_Nil,
+				A2(
+					elm$core$List$map,
+					author$project$Data$viewCoder,
+					Chadtech$elm_relational_database$Db$toList(model.coders))),
+				elm$html$Html$text('Name: ' + model.name)
+			]));
+};
 var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
 var author$project$Research$view = function (model) {
@@ -5473,13 +5569,6 @@ var author$project$Research$view = function (model) {
 		_List_Nil,
 		_List_fromArray(
 			[
-				A2(
-				elm$html$Html$h1,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(model.name)
-					])),
 				A2(
 				elm$html$Html$map,
 				author$project$Research$DataMsg,
@@ -5492,6 +5581,7 @@ var author$project$Main$view = function (model) {
 		_List_Nil,
 		_List_fromArray(
 			[
+				elm$html$Html$text('it works!'),
 				A2(
 				elm$html$Html$map,
 				author$project$Main$ResearchMsg,

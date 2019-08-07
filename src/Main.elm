@@ -65,7 +65,8 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     Html.div []
-        [ Html.map ResearchMsg (Research.view model.research)
+        [ Html.text "it works!"
+            ,Html.map ResearchMsg (Research.view model.research)
         ]
 
 

@@ -1,0 +1,21 @@
+var data = {
+    answers: {"ebnf":{
+        "user":"1",
+        "question":"42",
+        "value":"I have a value, i swear!"
+    }},
+    coders: {
+        "papa":{
+            "name":"Jerome Bergmann"
+        }
+    },
+    codings: {},
+    coding_answers: {},
+    coding_frames: {},
+    coding_questionaries: {},
+    coding_questions: {},
+    name: "No name",
+    questions: {},
+    questionaries: {},
+    users: {} 
+}

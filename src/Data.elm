@@ -242,8 +242,8 @@ initDictToDb values =
         |> Db.fromList
 
 
-empty : Model
-empty =
+empty : String -> Model
+empty str =
     { answers = Db.empty
     , coders = Db.empty
     , codings = Db.empty
@@ -251,7 +251,7 @@ empty =
     , coding_frames = Db.empty
     , coding_questionaries = Db.empty
     , coding_questions = Db.empty
-    , name = "String"
+    , name = str
     , question = Db.empty
     , questionaries = Db.empty
     , users = Db.empty
@@ -284,4 +284,26 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    Html.text "Implement Me!"
+    div []
+        [ div [] (List.map viewAnswer (Db.toList model.answers))
+        , div [] (List.map viewCoder (Db.toList model.coders))
+        , text ("Name: " ++ model.name)
+        ]
+
+
+viewAnswer : ( Id Answer, Answer ) -> Html Msg
+viewAnswer ( id, answer ) =
+    div []
+        [ h3 [] [ text ("Answer: " ++ Id.toString id) ]
+        , p [] [ text ("Question: " ++ Id.toString answer.question) ]
+        , p [] [ text ("User: " ++ Id.toString answer.user) ]
+        , p [] [ text ("Value: " ++ answer.value) ]
+        ]
+
+
+viewCoder : ( Id Coder, Coder ) -> Html Msg
+viewCoder ( id, coder ) =
+    div []
+        [ h3 [] [ text ("Coder: " ++ Id.toString id) ]
+        , p [] [ text ("Name: " ++ coder.name) ]
+        ]

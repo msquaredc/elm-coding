@@ -6,35 +6,15 @@
 	<title>Main</title>
 	<link rel="stylesheet" href="whatever-you-want.css">
 	<script src="main.js"></script>
+	<script type="text/javascript" src="test_data.json"></script>,
 </head>
 
 <body>
+	<h1>Title2</h1>
 	<div id="elm"></div>
 	<script>
 		var app = Elm.Main.init({
-			flags: {
-						name:"testname",
-						data: [
-							{ "name": "Jerome","Was?":"das.","Wo?":"da."},
-							{ "name": "Paul", "Was?":"yep","Wo?":"nope."}
-						],
-						questionaries:[
-							{
-							"question":"Was?",
-							"coding_questions":[
-								{ label: "It Works11!", formtype: "Number" }, 
-								{ label: "Second entry", formtype: "String" }
-							]
-							},
-							{
-							"question":"Wo?",
-							"coding_questions":[
-								{ label: "Kram!", formtype: "Number" }, 
-								{ label: "Stuff", formtype: "String" }
-							]
-							}
-						]
-					},
+			flags: data,
 			node: document.getElementById('elm')
 		});
 	</script>
