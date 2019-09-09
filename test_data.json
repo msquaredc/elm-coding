@@ -1,21 +1,21 @@
 var data = {
     answers: {"ebnf":{
-        "user":"1",
-        "question":"42",
+        "user":"paul",
+        "question":"question1",
         "value":"I have a value, i swear!"
     }},
     coders: {
-        "papa":{
+        "coder1":{
             "name":"Jerome Bergmann"
         }
     },
-    codings: {},
+    codings: {"coding1":{coder:"coder1"}},
     coding_answers: {},
     coding_frames: {},
-    coding_questionaries: {},
-    coding_questions: {},
+    coding_questionaries: {"coding_questionary1":{name:"First Coding Questionary", question:"question1"}},
+    coding_questions: {"coding_question1":{coding_questionary:"coding_questionary1",text:"Coding Question 1",input_type:"String"}},
     name: "No name",
-    questions: {},
-    questionaries: {},
-    users: {} 
+    questions: {"question1":{questionary:"questionary1",text:"Question 1",input_type:"String"}},
+    questionaries: {"questionary1":{name:"First Questionary"}},
+    users: {"paul":{infos:{name:"Paul"}}} 
 }

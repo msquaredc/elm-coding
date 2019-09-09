@@ -1,12 +1,14 @@
 module Research exposing (Model, Msg, decode, empty, update, view)
 
 import Array exposing (..)
+import Coding exposing (..)
 import Data exposing (..)
 import Db exposing (Db)
 import Dict exposing (..)
 import Html exposing (..)
 import Id exposing (Id)
 import Json.Decode as Decode exposing (..)
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Questionary exposing (..)
 import ResultTable exposing (..)
 import Table exposing (..)
@@ -42,6 +44,7 @@ decode : Decode.Decoder Model
 decode =
     Decode.map Model
         (Decode.map (\( a, b ) -> a) (Decode.map Data.init Data.decoder))
+        
 
 
 splitDict : List String -> Dict String String -> Table.TableRow
@@ -56,7 +59,8 @@ splitDict q row =
 view : Model -> Html Msg
 view model =
     div []
-        [ Html.map DataMsg (Data.view model.database)
+        [ Html.h2 [] [text "Research:"]
+        ,   Html.map DataMsg (Data.viewCoding model.database "Monica" "questionary_name")
         ]
 
 

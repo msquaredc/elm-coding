@@ -1644,6 +1644,43 @@ var _Json_encodeNull = _Json_wrap(null);
 
 
 
+var _Bitwise_and = F2(function(a, b)
+{
+	return a & b;
+});
+
+var _Bitwise_or = F2(function(a, b)
+{
+	return a | b;
+});
+
+var _Bitwise_xor = F2(function(a, b)
+{
+	return a ^ b;
+});
+
+function _Bitwise_complement(a)
+{
+	return ~a;
+};
+
+var _Bitwise_shiftLeftBy = F2(function(offset, a)
+{
+	return a << offset;
+});
+
+var _Bitwise_shiftRightBy = F2(function(offset, a)
+{
+	return a >> offset;
+});
+
+var _Bitwise_shiftRightZfBy = F2(function(offset, a)
+{
+	return a >>> offset;
+});
+
+
+
 // TASKS
 
 function _Scheduler_succeed(value)
@@ -4790,12 +4827,18 @@ var elm$json$Json$Decode$errorToStringHelp = F2(
 	});
 var elm$json$Json$Decode$map2 = _Json_map2;
 var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = elm$json$Json$Decode$map2(elm$core$Basics$apR);
+var elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var elm$json$Json$Decode$succeed = _Json_succeed;
+var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$hardcoded = A2(elm$core$Basics$composeR, elm$json$Json$Decode$succeed, NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom);
 var elm$json$Json$Decode$andThen = _Json_andThen;
 var elm$json$Json$Decode$decodeValue = _Json_run;
 var elm$json$Json$Decode$fail = _Json_fail;
 var elm$json$Json$Decode$null = _Json_decodeNull;
 var elm$json$Json$Decode$oneOf = _Json_oneOf;
-var elm$json$Json$Decode$succeed = _Json_succeed;
 var elm$json$Json$Decode$value = _Json_decodeValue;
 var NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalDecoder = F3(
 	function (pathDecoder, valDecoder, fallback) {
@@ -4852,7 +4895,9 @@ var author$project$Data$Flags = function (answers) {
 								return function (questions) {
 									return function (questionaries) {
 										return function (users) {
-											return {answers: answers, coders: coders, coding_answers: coding_answers, coding_frames: coding_frames, coding_questionaries: coding_questionaries, coding_questions: coding_questions, codings: codings, name: name, questionaries: questionaries, questions: questions, users: users};
+											return function (seed) {
+												return {answers: answers, coders: coders, coding_answers: coding_answers, coding_frames: coding_frames, coding_questionaries: coding_questionaries, coding_questions: coding_questions, codings: codings, name: name, questionaries: questionaries, questions: questions, seed: seed, users: users};
+											};
 										};
 									};
 								};
@@ -4906,14 +4951,25 @@ var author$project$Data$decoderCoder = A3(
 	'name',
 	elm$json$Json$Decode$string,
 	elm$json$Json$Decode$succeed(author$project$Data$Coder));
-var author$project$Data$Coding = function (coder) {
-	return {coder: coder};
-};
-var author$project$Data$decoderCoding = A3(
-	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'coder',
-	Chadtech$elm_relational_database$Id$decoder,
-	elm$json$Json$Decode$succeed(author$project$Data$Coding));
+var author$project$Data$Coding = F3(
+	function (coder, question, current_index) {
+		return {coder: coder, current_index: current_index, question: question};
+	});
+var elm$json$Json$Decode$int = _Json_decodeInt;
+var author$project$Data$decoderCoding = A4(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+	'index',
+	elm$json$Json$Decode$int,
+	0,
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'question',
+		Chadtech$elm_relational_database$Id$decoder,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'coder',
+			Chadtech$elm_relational_database$Id$decoder,
+			elm$json$Json$Decode$succeed(author$project$Data$Coding))));
 var author$project$Data$CodingAnswer = F3(
 	function (coding_question, coding_frame, value) {
 		return {coding_frame: coding_frame, coding_question: coding_question, value: value};
@@ -4935,7 +4991,6 @@ var author$project$Data$CodingFrame = F3(
 	function (answer, coding, index) {
 		return {answer: answer, coding: coding, index: index};
 	});
-var elm$json$Json$Decode$int = _Json_decodeInt;
 var author$project$Data$decoderCodingFrame = A3(
 	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 	'index',
@@ -5004,14 +5059,23 @@ var author$project$Data$decoderCodingQuestionary = A3(
 	'question',
 	Chadtech$elm_relational_database$Id$decoder,
 	elm$json$Json$Decode$succeed(author$project$Data$CodingQuestionary));
-var author$project$Data$Question = function (questionary) {
-	return {questionary: questionary};
-};
+var author$project$Data$Question = F3(
+	function (questionary, text, input_type) {
+		return {input_type: input_type, questionary: questionary, text: text};
+	});
 var author$project$Data$decoderQuestion = A3(
 	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'questionary',
-	Chadtech$elm_relational_database$Id$decoder,
-	elm$json$Json$Decode$succeed(author$project$Data$Question));
+	'input_type',
+	author$project$Form$inputTypeDecoder,
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'text',
+		elm$json$Json$Decode$string,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'questionary',
+			Chadtech$elm_relational_database$Id$decoder,
+			elm$json$Json$Decode$succeed(author$project$Data$Question))));
 var author$project$Data$Questionary = function (name) {
 	return {name: name};
 };
@@ -5158,62 +5222,84 @@ var author$project$Data$decoderUser = A3(
 	'infos',
 	elm$json$Json$Decode$dict(elm$json$Json$Decode$string),
 	elm$json$Json$Decode$succeed(author$project$Data$User));
-var author$project$Data$decoder = A4(
-	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-	'users',
-	elm$json$Json$Decode$dict(author$project$Data$decoderUser),
-	elm$core$Dict$empty,
+var elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
+var elm$random$Random$Seed = F2(
+	function (a, b) {
+		return {$: 'Seed', a: a, b: b};
+	});
+var elm$random$Random$next = function (_n0) {
+	var state0 = _n0.a;
+	var incr = _n0.b;
+	return A2(elm$random$Random$Seed, ((state0 * 1664525) + incr) >>> 0, incr);
+};
+var elm$random$Random$initialSeed = function (x) {
+	var _n0 = elm$random$Random$next(
+		A2(elm$random$Random$Seed, 0, 1013904223));
+	var state1 = _n0.a;
+	var incr = _n0.b;
+	var state2 = (state1 + x) >>> 0;
+	return elm$random$Random$next(
+		A2(elm$random$Random$Seed, state2, incr));
+};
+var author$project$Data$decoder = A2(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$hardcoded,
+	elm$random$Random$initialSeed(0),
 	A4(
 		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-		'questionaries',
-		elm$json$Json$Decode$dict(author$project$Data$decoderQuestionary),
+		'users',
+		elm$json$Json$Decode$dict(author$project$Data$decoderUser),
 		elm$core$Dict$empty,
 		A4(
 			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-			'question',
-			elm$json$Json$Decode$dict(author$project$Data$decoderQuestion),
+			'questionaries',
+			elm$json$Json$Decode$dict(author$project$Data$decoderQuestionary),
 			elm$core$Dict$empty,
 			A4(
 				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-				'name',
-				elm$json$Json$Decode$string,
-				'',
+				'question',
+				elm$json$Json$Decode$dict(author$project$Data$decoderQuestion),
+				elm$core$Dict$empty,
 				A4(
 					NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-					'coding_questions',
-					elm$json$Json$Decode$dict(author$project$Data$decoderCodingQuestion),
-					elm$core$Dict$empty,
+					'name',
+					elm$json$Json$Decode$string,
+					'',
 					A4(
 						NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-						'coding_questionaries',
-						elm$json$Json$Decode$dict(author$project$Data$decoderCodingQuestionary),
+						'coding_questions',
+						elm$json$Json$Decode$dict(author$project$Data$decoderCodingQuestion),
 						elm$core$Dict$empty,
 						A4(
 							NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-							'coding_frames',
-							elm$json$Json$Decode$dict(author$project$Data$decoderCodingFrame),
+							'coding_questionaries',
+							elm$json$Json$Decode$dict(author$project$Data$decoderCodingQuestionary),
 							elm$core$Dict$empty,
 							A4(
 								NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-								'coding_answers',
-								elm$json$Json$Decode$dict(author$project$Data$decoderCodingAnswers),
+								'coding_frames',
+								elm$json$Json$Decode$dict(author$project$Data$decoderCodingFrame),
 								elm$core$Dict$empty,
 								A4(
 									NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-									'codings',
-									elm$json$Json$Decode$dict(author$project$Data$decoderCoding),
+									'coding_answers',
+									elm$json$Json$Decode$dict(author$project$Data$decoderCodingAnswers),
 									elm$core$Dict$empty,
 									A4(
 										NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-										'coders',
-										elm$json$Json$Decode$dict(author$project$Data$decoderCoder),
+										'codings',
+										elm$json$Json$Decode$dict(author$project$Data$decoderCoding),
 										elm$core$Dict$empty,
 										A4(
 											NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
-											'answers',
-											elm$json$Json$Decode$dict(author$project$Data$decoderAnswer),
+											'coders',
+											elm$json$Json$Decode$dict(author$project$Data$decoderCoder),
 											elm$core$Dict$empty,
-											elm$json$Json$Decode$succeed(author$project$Data$Flags))))))))))));
+											A4(
+												NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+												'answers',
+												elm$json$Json$Decode$dict(author$project$Data$decoderAnswer),
+												elm$core$Dict$empty,
+												elm$json$Json$Decode$succeed(author$project$Data$Flags)))))))))))));
 var author$project$Data$Model = function (answers) {
 	return function (coders) {
 		return function (codings) {
@@ -5225,7 +5311,9 @@ var author$project$Data$Model = function (answers) {
 								return function (question) {
 									return function (questionaries) {
 										return function (users) {
-											return {answers: answers, coders: coders, coding_answers: coding_answers, coding_frames: coding_frames, coding_questionaries: coding_questionaries, coding_questions: coding_questions, codings: codings, name: name, question: question, questionaries: questionaries, users: users};
+											return function (seed) {
+												return {answers: answers, coders: coders, coding_answers: coding_answers, coding_frames: coding_frames, coding_questionaries: coding_questionaries, coding_questions: coding_questions, codings: codings, name: name, question: question, questionaries: questionaries, seed: seed, users: users};
+											};
 										};
 									};
 								};
@@ -5356,7 +5444,7 @@ var author$project$Data$init = function (flags) {
 		author$project$Data$initDictToDb(flags.coding_questions))(flags.name)(
 		author$project$Data$initDictToDb(flags.questions))(
 		author$project$Data$initDictToDb(flags.questionaries))(
-		author$project$Data$initDictToDb(flags.users));
+		author$project$Data$initDictToDb(flags.users))(flags.seed);
 	return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 };
 var author$project$Research$Model = function (database) {
@@ -5375,7 +5463,20 @@ var author$project$Research$decode = A2(
 		A2(elm$json$Json$Decode$map, author$project$Data$init, author$project$Data$decoder)));
 var Chadtech$elm_relational_database$Db$empty = Chadtech$elm_relational_database$Db$Db(elm$core$Dict$empty);
 var author$project$Data$empty = function (str) {
-	return {answers: Chadtech$elm_relational_database$Db$empty, coders: Chadtech$elm_relational_database$Db$empty, coding_answers: Chadtech$elm_relational_database$Db$empty, coding_frames: Chadtech$elm_relational_database$Db$empty, coding_questionaries: Chadtech$elm_relational_database$Db$empty, coding_questions: Chadtech$elm_relational_database$Db$empty, codings: Chadtech$elm_relational_database$Db$empty, name: str, question: Chadtech$elm_relational_database$Db$empty, questionaries: Chadtech$elm_relational_database$Db$empty, users: Chadtech$elm_relational_database$Db$empty};
+	return {
+		answers: Chadtech$elm_relational_database$Db$empty,
+		coders: Chadtech$elm_relational_database$Db$empty,
+		coding_answers: Chadtech$elm_relational_database$Db$empty,
+		coding_frames: Chadtech$elm_relational_database$Db$empty,
+		coding_questionaries: Chadtech$elm_relational_database$Db$empty,
+		coding_questions: Chadtech$elm_relational_database$Db$empty,
+		codings: Chadtech$elm_relational_database$Db$empty,
+		name: str,
+		question: Chadtech$elm_relational_database$Db$empty,
+		questionaries: Chadtech$elm_relational_database$Db$empty,
+		seed: elm$random$Random$initialSeed(0),
+		users: Chadtech$elm_relational_database$Db$empty
+	};
 };
 var author$project$Research$empty = function (str) {
 	return {
@@ -5407,9 +5508,32 @@ var author$project$Main$subscriptions = function (model) {
 var author$project$Main$ResearchMsg = function (a) {
 	return {$: 'ResearchMsg', a: a};
 };
+var author$project$Data$updateCreation = F2(
+	function (msg, model) {
+		if (msg.$ === 'CreateCoder') {
+			var name = msg.a;
+			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		} else {
+			var coder = msg.a;
+			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		}
+	});
 var author$project$Data$update = F2(
 	function (msg, model) {
-		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		switch (msg.$) {
+			case 'Create':
+				var creationMsg = msg.a;
+				return A2(author$project$Data$updateCreation, creationMsg, model);
+			case 'FillFrames':
+				var coder_id = msg.a;
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			case 'InitFrames':
+				var question = msg.a;
+				var coding = msg.b;
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		}
 	});
 var author$project$Research$DataMsg = function (a) {
 	return {$: 'DataMsg', a: a};
@@ -5448,13 +5572,6 @@ var author$project$Main$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Main$ResearchMsg, researchCmd));
 		}
 	});
-var Chadtech$elm_relational_database$Db$toList = function (_n0) {
-	var dict = _n0.a;
-	return A2(
-		elm$core$List$map,
-		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
-		elm$core$Dict$toList(dict));
-};
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
 		case 'Normal':
@@ -5467,100 +5584,14 @@ var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 			return 3;
 	}
 };
-var elm$html$Html$div = _VirtualDom_node('div');
-var elm$html$Html$h3 = _VirtualDom_node('h3');
-var elm$html$Html$p = _VirtualDom_node('p');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
-var author$project$Data$viewAnswer = function (_n0) {
-	var id = _n0.a;
-	var answer = _n0.b;
-	return A2(
-		elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$h3,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						'Answer: ' + Chadtech$elm_relational_database$Id$toString(id))
-					])),
-				A2(
-				elm$html$Html$p,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						'Question: ' + Chadtech$elm_relational_database$Id$toString(answer.question))
-					])),
-				A2(
-				elm$html$Html$p,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						'User: ' + Chadtech$elm_relational_database$Id$toString(answer.user))
-					])),
-				A2(
-				elm$html$Html$p,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text('Value: ' + answer.value)
-					]))
-			]));
-};
-var author$project$Data$viewCoder = function (_n0) {
-	var id = _n0.a;
-	var coder = _n0.b;
-	return A2(
-		elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$h3,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						'Coder: ' + Chadtech$elm_relational_database$Id$toString(id))
-					])),
-				A2(
-				elm$html$Html$p,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text('Name: ' + coder.name)
-					]))
-			]));
-};
-var author$project$Data$view = function (model) {
-	return A2(
-		elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$div,
-				_List_Nil,
-				A2(
-					elm$core$List$map,
-					author$project$Data$viewAnswer,
-					Chadtech$elm_relational_database$Db$toList(model.answers))),
-				A2(
-				elm$html$Html$div,
-				_List_Nil,
-				A2(
-					elm$core$List$map,
-					author$project$Data$viewCoder,
-					Chadtech$elm_relational_database$Db$toList(model.coders))),
-				elm$html$Html$text('Name: ' + model.name)
-			]));
-};
+var author$project$Data$viewCoding = F3(
+	function (model, coder_name, questionary_name) {
+		return elm$html$Html$text('Coding');
+	});
+var elm$html$Html$div = _VirtualDom_node('div');
+var elm$html$Html$h2 = _VirtualDom_node('h2');
 var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
 var author$project$Research$view = function (model) {
@@ -5570,9 +5601,16 @@ var author$project$Research$view = function (model) {
 		_List_fromArray(
 			[
 				A2(
+				elm$html$Html$h2,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Research:')
+					])),
+				A2(
 				elm$html$Html$map,
 				author$project$Research$DataMsg,
-				author$project$Data$view(model.database))
+				A3(author$project$Data$viewCoding, model.database, 'Monica', 'questionary_name'))
 			]));
 };
 var author$project$Main$view = function (model) {
