@@ -5572,6 +5572,117 @@ var author$project$Main$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Main$ResearchMsg, researchCmd));
 		}
 	});
+var elm$core$Dict$foldl = F3(
+	function (func, acc, dict) {
+		foldl:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return acc;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var $temp$func = func,
+					$temp$acc = A3(
+					func,
+					key,
+					value,
+					A3(elm$core$Dict$foldl, func, acc, left)),
+					$temp$dict = right;
+				func = $temp$func;
+				acc = $temp$acc;
+				dict = $temp$dict;
+				continue foldl;
+			}
+		}
+	});
+var elm$core$Dict$filter = F2(
+	function (isGood, dict) {
+		return A3(
+			elm$core$Dict$foldl,
+			F3(
+				function (k, v, d) {
+					return A2(isGood, k, v) ? A3(elm$core$Dict$insert, k, v, d) : d;
+				}),
+			elm$core$Dict$empty,
+			dict);
+	});
+var Chadtech$elm_relational_database$Db$filter = F2(
+	function (rowFilterFunction, _n0) {
+		var dict = _n0.a;
+		var uncurried = F2(
+			function (key, value) {
+				return rowFilterFunction(
+					_Utils_Tuple2(
+						Chadtech$elm_relational_database$Id$fromString(key),
+						value));
+			});
+		return Chadtech$elm_relational_database$Db$Db(
+			A2(elm$core$Dict$filter, uncurried, dict));
+	});
+var Chadtech$elm_relational_database$Db$toList = function (_n0) {
+	var dict = _n0.a;
+	return A2(
+		elm$core$List$map,
+		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
+		elm$core$Dict$toList(dict));
+};
+var author$project$Data$Create = function (a) {
+	return {$: 'Create', a: a};
+};
+var author$project$Data$CreateCoder = function (a) {
+	return {$: 'CreateCoder', a: a};
+};
+var author$project$Data$getCoderFromString = F2(
+	function (model, name) {
+		getCoderFromString:
+		while (true) {
+			var coder_db = A2(
+				Chadtech$elm_relational_database$Db$filter,
+				function (_n2) {
+					var id = _n2.a;
+					var coder = _n2.b;
+					return _Utils_eq(coder.name, name);
+				},
+				model.coders);
+			var _n0 = Chadtech$elm_relational_database$Db$toList(coder_db);
+			if (!_n0.b) {
+				var _n1 = A2(
+					author$project$Data$update,
+					author$project$Data$Create(
+						author$project$Data$CreateCoder(name)),
+					model);
+				var newmodel = _n1.a;
+				var cmd = _n1.b;
+				var $temp$model = newmodel,
+					$temp$name = name;
+				model = $temp$model;
+				name = $temp$name;
+				continue getCoderFromString;
+			} else {
+				if (!_n0.b.b) {
+					var f = _n0.a;
+					return elm$core$Result$Ok(coder_db);
+				} else {
+					return elm$core$Result$Err('Multiple Coder with same name');
+				}
+			}
+		}
+	});
+var author$project$Data$getEqual = F3(
+	function (mapper, target_value, data) {
+		return A2(
+			Chadtech$elm_relational_database$Db$filter,
+			function (_n0) {
+				var id = _n0.a;
+				var value = _n0.b;
+				return _Utils_eq(
+					mapper(value),
+					target_value);
+			},
+			data);
+	});
 var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 	switch (handler.$) {
 		case 'Normal':
@@ -5584,13 +5695,35 @@ var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
 			return 3;
 	}
 };
+var elm$html$Html$div = _VirtualDom_node('div');
+var elm$html$Html$h1 = _VirtualDom_node('h1');
 var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
 var author$project$Data$viewCoding = F3(
 	function (model, coder_name, questionary_name) {
-		return elm$html$Html$text('Coding');
+		var questions2 = model.questionaries;
+		var coding_frames2 = A3(
+			author$project$Data$getEqual,
+			function ($) {
+				return $.name;
+			},
+			coder_name,
+			model.coders);
+		var coding_frames = A2(author$project$Data$getCoderFromString, model, coder_name);
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$h1,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('Coding of ' + (coder_name + ('. Questionary: ' + (questionary_name + '.'))))
+						]))
+				]));
 	});
-var elm$html$Html$div = _VirtualDom_node('div');
 var elm$html$Html$h2 = _VirtualDom_node('h2');
 var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;

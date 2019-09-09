@@ -16,6 +16,7 @@ module Data exposing
     , init
     , update
     , view
+    , viewCoding
     )
 
 --import Query exposing (..)
@@ -462,25 +463,21 @@ viewCoding : Model -> String -> String -> Html Msg
 viewCoding model coder_name questionary_name =
     let
         coding_frames = getCoderFromString model coder_name
-                        |> getIDMatchLast
+--                        |> getIDMatchLast
 
         coding_frames2 =
             model.coders
                 |> getEqual .name coder_name
-                |> getIDMatchLast .coder model.codings
-                |> getIDMatchLast .coding_frame model.coding_frames
+--                |> getIDMatchLast .coder model.codings
+--                |> getIDMatchLast .coding_frame model.coding_frames
         questions2 = 
             model.questionaries
-                |> getEqual .name questionary_name
-                |> getIDMatchLast .questionary model.question
+--                |> getEqual .name questionary_name
+--                |> getIDMatchLast .questionary model.question
     in
         Html.div [] [Html.h1 [] [text ("Coding of "++ coder_name ++ ". Questionary: "++ questionary_name ++ ".")]]
                 
-currentCodingFrames : Model -> String -> String -> Db CodingFrame
-currentCodingFrames model coder questionary = 
-    let
-        coding_frames = getCoderFromString model coder
-                        |> 
+                        
 
 
 -- getCoderFromString model coder_name
