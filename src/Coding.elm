@@ -1,9 +1,7 @@
-module Coding exposing (Model, Msg, update, view, subscriptions, init, empty)
+module Coding exposing (Model, Msg, empty, init, subscriptions, update, view)
 
-import Html exposing (..)
 import Data exposing (..)
-
-
+import Html exposing (..)
 
 
 type alias Model =
@@ -15,17 +13,20 @@ type Msg
     = Msg1
     | Msg2
 
-empty : Model
-empty = Model (Data.empty "")
 
-update : Msg -> Model -> (Model, Cmd Msg)
+empty : Model
+empty =
+    Model (Data.empty "")
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Msg1 ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         Msg2 ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -39,6 +40,6 @@ subscriptions model =
     Sub.none
 
 
-init : Data.Model -> (Model, Cmd Msg)
-init db = 
-    (Model db, Cmd.none)
+init : Data.Model -> ( Model, Cmd Msg )
+init db =
+    ( Model db, Cmd.none )

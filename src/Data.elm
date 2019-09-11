@@ -1,16 +1,6 @@
 module Data exposing
-    ( Answer
-    , Coder
-    , Coding
-    , CodingAnswer
-    , CodingFrame
-    , CodingQuestion
-    , CodingQuestionary
-    , Model
+    ( Model
     , Msg
-    , Question
-    , Questionary
-    , User
     , decoder
     , empty
     , init
@@ -19,15 +9,27 @@ module Data exposing
     , viewCoding
     )
 
---import Query exposing (..)
-
 import Db exposing (Db, Row)
+import Db.Extra exposing (..)
 import Dict exposing (..)
+import Entities.Answer as Answer
+import Entities.Coder as Coder
+import Entities.Coding as Coding
+import Entities.Coding.Answer as CodingAnswer
+import Entities.Coding.Frame as CodingFrame
+import Entities.Coding.Question as CodingQuestion
+import Entities.Coding.Questionary as CodingQuestionary
+import Entities.Question as Question
+import Entities.Questionary as Questionary
+import Entities.User as User
 import Form exposing (..)
 import Html exposing (..)
 import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+import Material
+import Material.Options as Options
+import Material.TabBar as TabBar
 import Random exposing (Seed)
 
 
@@ -37,19 +39,22 @@ import Random exposing (Seed)
 
 
 type alias Flags =
-    { answers : Dict String Answer
-    , coders : Dict String Coder
-    , codings : Dict String Coding
-    , coding_answers : Dict String CodingAnswer
-    , coding_frames : Dict String CodingFrame
-    , coding_questionaries : Dict String CodingQuestionary
-    , coding_questions : Dict String CodingQuestion
+    { answers : Dict String Answer.Model
+    , coders : Dict String Coder.Model
+    , codings : Dict String Coding.Model
+    , coding_answers : Dict String CodingAnswer.Model
+    , coding_frames : Dict String CodingFrame.Model
+    , coding_questionaries : Dict String CodingQuestionary.Model
+    , coding_questions : Dict String CodingQuestion.Model
     , name : String
-    , questions : Dict String Question
-    , questionaries : Dict String Questionary
-    , users : Dict String User
+    , questions : Dict String Question.Model
+    , questionaries : Dict String Questionary.Model
+    , users : Dict String User.Model
     , seed : Seed
+    , mdc : Material.Model Msg
+    , current_tab : Int
     }
+
 
 
 -- Decoders
@@ -58,90 +63,20 @@ type alias Flags =
 decoder : Decode.Decoder Flags
 decoder =
     Decode.succeed Flags
-        |> optional "answers" (Decode.dict decoderAnswer) Dict.empty
-        |> optional "coders" (Decode.dict decoderCoder) Dict.empty
-        |> optional "codings" (Decode.dict decoderCoding) Dict.empty
-        |> optional "coding_answers" (Decode.dict decoderCodingAnswers) Dict.empty
-        |> optional "coding_frames" (Decode.dict decoderCodingFrame) Dict.empty
-        |> optional "coding_questionaries" (Decode.dict decoderCodingQuestionary) Dict.empty
-        |> optional "coding_questions" (Decode.dict decoderCodingQuestion) Dict.empty
+        |> optional "answers" (Decode.dict Answer.decoder) Dict.empty
+        |> optional "coders" (Decode.dict Coder.decoder) Dict.empty
+        |> optional "codings" (Decode.dict Coding.decoder) Dict.empty
+        |> optional "coding_answers" (Decode.dict CodingAnswer.decoder) Dict.empty
+        |> optional "coding_frames" (Decode.dict CodingFrame.decoder) Dict.empty
+        |> optional "coding_questionaries" (Decode.dict CodingQuestionary.decoder) Dict.empty
+        |> optional "coding_questions" (Decode.dict CodingQuestion.decoder) Dict.empty
         |> optional "name" string ""
-        |> optional "question" (Decode.dict decoderQuestion) Dict.empty
-        |> optional "questionaries" (Decode.dict decoderQuestionary) Dict.empty
-        |> optional "users" (Decode.dict decoderUser) Dict.empty
+        |> optional "questions" (Decode.dict Question.decoder) Dict.empty
+        |> optional "questionaries" (Decode.dict Questionary.decoder) Dict.empty
+        |> optional "users" (Decode.dict User.decoder) Dict.empty
         |> hardcoded (Random.initialSeed 0)
-
-
-decoderAnswer : Decode.Decoder Answer
-decoderAnswer =
-    Decode.succeed Answer
-        |> required "question" Id.decoder
-        |> required "user" Id.decoder
-        |> optional "value" string ""
-
-
-decoderCoder : Decode.Decoder Coder
-decoderCoder =
-    Decode.succeed Coder
-        |> required "name" string
-
-
-decoderCoding : Decode.Decoder Coding
-decoderCoding =
-    Decode.succeed Coding
-        |> required "coder" Id.decoder
-        |> required "question" Id.decoder
-        |> optional "index" Decode.int 0
-
-
-decoderCodingAnswers : Decode.Decoder CodingAnswer
-decoderCodingAnswers =
-    Decode.succeed CodingAnswer
-        |> required "coding_question" Id.decoder
-        |> required "coding_frame" Id.decoder
-        |> required "value" string
-
-
-decoderCodingFrame : Decode.Decoder CodingFrame
-decoderCodingFrame =
-    Decode.succeed CodingFrame
-        |> required "answer" Id.decoder
-        |> required "coding" Id.decoder
-        |> required "index" int
-
-
-decoderCodingQuestionary : Decode.Decoder CodingQuestionary
-decoderCodingQuestionary =
-    Decode.succeed CodingQuestionary
-        |> required "question" Id.decoder
-
-
-decoderCodingQuestion : Decode.Decoder CodingQuestion
-decoderCodingQuestion =
-    Decode.succeed CodingQuestion
-        |> required "coding_questionary" Id.decoder
-        |> required "text" string
-        |> required "input_type" Form.inputTypeDecoder
-
-
-decoderQuestion : Decode.Decoder Question
-decoderQuestion =
-    Decode.succeed Question
-        |> required "questionary" Id.decoder
-        |> required "text" string
-        |> required "input_type" Form.inputTypeDecoder
-
-
-decoderQuestionary : Decode.Decoder Questionary
-decoderQuestionary =
-    Decode.succeed Questionary
-        |> required "name" string
-
-
-decoderUser : Decode.Decoder User
-decoderUser =
-    Decode.succeed User
-        |> required "infos" (Decode.dict string)
+        |> hardcoded Material.defaultModel
+        |> hardcoded 0
 
 
 
@@ -149,79 +84,20 @@ decoderUser =
 
 
 type alias Model =
-    { answers : Db Answer
-    , coders : Db Coder
-    , codings : Db Coding
-    , coding_answers : Db CodingAnswer
-    , coding_frames : Db CodingFrame
-    , coding_questionaries : Db CodingQuestionary
-    , coding_questions : Db CodingQuestion
+    { answers : Db Answer.Model
+    , coders : Db Coder.Model
+    , codings : Db Coding.Model
+    , coding_answers : Db CodingAnswer.Model
+    , coding_frames : Db CodingFrame.Model
+    , coding_questionaries : Db CodingQuestionary.Model
+    , coding_questions : Db CodingQuestion.Model
     , name : String
-    , question : Db Question
-    , questionaries : Db Questionary
-    , users : Db User
+    , questions : Db Question.Model
+    , questionaries : Db Questionary.Model
+    , users : Db User.Model
     , seed : Seed
-    }
-
-
-type alias Answer =
-    { question : Id Question
-    , user : Id User
-    , value : String
-    }
-
-
-type alias Coder =
-    { name : String
-    }
-
-
-type alias Coding =
-    { coder : Id Coder
-    , question : Id Question
-    , current_index : Int
-    }
-
-
-type alias CodingAnswer =
-    { coding_question : Id CodingQuestion
-    , coding_frame : Id CodingFrame
-    , value : String
-    }
-
-
-type alias CodingFrame =
-    { answer : Id Answer
-    , coding : Id Coding
-    , index : Int
-    }
-
-
-type alias CodingQuestionary =
-    { question : Id Question }
-
-
-type alias CodingQuestion =
-    { coding_questionary : Id CodingQuestionary
-    , text : String
-    , input_type : Form.InputType
-    }
-
-
-type alias Question =
-    { questionary : Id Questionary
-    , text : String
-    , input_type : Form.InputType
-    }
-
-
-type alias Questionary =
-    { name : String
-    }
-
-
-type alias User =
-    { infos : Dict String String
+    , mdc : Material.Model Msg
+    , current_tab : Int
     }
 
 
@@ -246,6 +122,8 @@ init flags =
                 (initDictToDb flags.questionaries)
                 (initDictToDb flags.users)
                 flags.seed
+                flags.mdc
+                flags.current_tab
     in
     ( model, Cmd.none )
 
@@ -268,10 +146,12 @@ empty str =
     , coding_questionaries = Db.empty
     , coding_questions = Db.empty
     , name = str
-    , question = Db.empty
+    , questions = Db.empty
     , questionaries = Db.empty
     , users = Db.empty
     , seed = Random.initialSeed 0
+    , mdc = Material.defaultModel
+    , current_tab = 0
     }
 
 
@@ -281,15 +161,23 @@ empty str =
 
 
 type Msg
-    = Create CreationMsg
-    | Error ErrorMsg
-    | FillFrames (Row Coding)
-    | InitFrames String (Row Coding)
+    = Entity EntityMsg
+    | Mdc (Material.Msg Msg)
+    | Click Int
+
+
+type EntityMsg
+    = AnswerMsg (Maybe (Id Answer.Model)) Answer.Msg
+    | CoderMsg (Maybe (Id Coder.Model)) Coder.Msg
+    | CodingMsg (Maybe (Id Coding.Model)) Coding.Msg
+    | CodingFrameMsg (Maybe (Id CodingFrame.Model)) CodingFrame.Msg
+    | QuestionMsg (Maybe (Id Question.Model)) Question.Msg
+    | QuestionaryMsg (Maybe (Id Questionary.Model)) Questionary.Msg
 
 
 type CreationMsg
     = CreateCoder String
-    | CreateCoding (Db Coder)
+    | CreateCoding (Db Coder.Model)
 
 
 type ErrorMsg
@@ -303,17 +191,55 @@ type ErrorMsg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Create creationMsg ->
-            updateCreation creationMsg model
+        Entity emsg ->
+            updateEntity emsg model
 
-        FillFrames coder_id ->
-            ( model, Cmd.none )
+        Mdc msg_ ->
+            Material.update Mdc msg_ model
 
-        InitFrames question coding ->
-            ( model, Cmd.none )
+        Click tab ->
+            ( { model | current_tab = tab }, Cmd.none )
 
-        Error _ ->
-            ( model, Cmd.none )
+
+updateEntity : EntityMsg -> Model -> ( Model, Cmd Msg )
+updateEntity umsg model =
+    case umsg of
+        AnswerMsg id msg ->
+            ( { model | answers = optionalUpdate id model.answers (Answer.update msg) }, Cmd.none )
+
+        CoderMsg id msg ->
+            ( { model | coders = optionalUpdate id model.coders (Coder.update msg) }, Cmd.none )
+
+        CodingMsg id msg ->
+            ( { model | codings = optionalUpdate id model.codings (Coding.update msg) }, Cmd.none )
+
+        CodingFrameMsg id msg ->
+            ( { model | coding_frames = optionalUpdate id model.coding_frames (CodingFrame.update msg) }, Cmd.none )
+
+        QuestionaryMsg id msg ->
+            ( { model | questionaries = optionalUpdate id model.questionaries (Questionary.update msg) }, Cmd.none )
+
+        QuestionMsg id msg ->
+            ( { model | questions = optionalUpdate id model.questions (Question.update msg) }, Cmd.none )
+
+
+optionalUpdate : Maybe (Id m) -> Db m -> (m -> ( m, Cmd n )) -> Db m
+optionalUpdate id database updater =
+    case id of
+        Just id_value ->
+            case Db.get database id_value of
+                Just value ->
+                    let
+                        ( newValue, newCmd ) =
+                            updater value
+                    in
+                    Db.insert ( id_value, newValue ) database
+
+                Nothing ->
+                    database
+
+        Nothing ->
+            database
 
 
 updateCreation : CreationMsg -> Model -> ( Model, Cmd Msg )
@@ -330,26 +256,104 @@ updateCreation msg model =
 -- Views
 
 
+viewTabBar : Model -> Html Msg
+viewTabBar model =
+    TabBar.view Mdc
+        "my-tab-bar"
+        model.mdc
+        [ TabBar.activeTab model.current_tab
+        ]
+        [ TabBar.tab [ Options.onClick (Click 0) ] [ text "Answer" ]
+        , TabBar.tab [ Options.onClick (Click 1) ] [ text "Coder" ]
+        , TabBar.tab [ Options.onClick (Click 2) ] [ text "Coding" ]
+        , TabBar.tab [ Options.onClick (Click 3) ] [ text "Coding Frame" ]
+        , TabBar.tab [ Options.onClick (Click 4) ] [ text "Question" ]
+        , TabBar.tab [ Options.onClick (Click 5) ] [ text "Questionary" ]
+        ]
+
+
 view : Model -> Html Msg
 view model =
     div []
-        [ div [] (List.map viewAnswer (Db.toList model.answers))
-        , div [] (List.map viewCoder (Db.toList model.coders))
-        , text ("Name: " ++ model.name)
+        [ text ("Name: " ++ model.name)
+        , viewContent2 model "Jerome Bergmann" "First Questionary"
+        , viewTabBar model
+        , viewTabContent model
         ]
 
+viewContent : Model -> String -> String -> Html Msg
+viewContent model coder_name questionary_name =
+    let
+        coder_result = Coder.selectCoder model.coders coder_name
+        codings_result = Coding.selectCodings model.codings coder_result
+        coding_frame_result1 = CodingFrame.selectFramesFromCodings model.coding_frames codings_result
+        coding_frame_result = 
+            case coding_frame_result1 of
+                Ok coding_frames ->
+                    Ok (Db.filter (
+                        \(cf_id,cf_value)-> Db.get model.answers cf_value.answer
+                                            |> Maybe.andThen (\c -> Db.get model.questions c.question)
+                                            |> Maybe.andThen (\c -> Db.get model.questionaries c.questionary)
+                                            |> Maybe.map (\c -> c.name == questionary_name)
+                                            |> Maybe.withDefault False) coding_frames)
+                Err msg -> Err msg
+                    
+            
+    in
+        case coding_frame_result of
+            Ok coding ->
+                Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable coding)
+        
+            Err msg ->
+                text msg
 
-viewAnswer : ( Id Answer, Answer ) -> Html Msg
-viewAnswer ( id, answer ) =
-    div []
-        [ h3 [] [ text ("Answer: " ++ Id.toString id) ]
-        , p [] [ text ("Question: " ++ Id.toString answer.question) ]
-        , p [] [ text ("User: " ++ Id.toString answer.user) ]
-        , p [] [ text ("Value: " ++ answer.value) ]
-        ]
+viewContent2 : Model -> String -> String -> Html Msg
+viewContent2 model coder_name questionary_name =
+    let 
+        coder_frames = Coder.selectCoder model.coders coder_name
+                       |> Result.map (Db.Extra.selectFrom model.codings (\c -> c.coder))
+                       |> Result.map (Db.Extra.selectFrom model.coding_frames (\c -> c.coding))
+        questionary_frames = Db.Extra.selectBy model.questionaries (\c -> c.name) (\c -> c == questionary_name)
+                                |> Db.Extra.selectFrom model.questions (\c -> c.questionary)
+                                |> Db.Extra.selectFrom model.answers (\c -> c.question)
+                                |> Db.Extra.selectFrom model.coding_frames (\c -> c.answer)
+    
+    in
+        case coder_frames of
+            Ok coding ->
+                div [][
+                Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable coding)
+                ,Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable questionary_frames)
+                ]
+            Err msg ->
+                text msg
+
+viewTabContent : Model -> Html Msg
+viewTabContent model =
+    case model.current_tab of
+        0 ->
+            Html.map (Entity << AnswerMsg Nothing) (Answer.viewTable model.answers)
+
+        1 ->
+            Html.map (Entity << CoderMsg Nothing) (Coder.viewTable model.coders)
+
+        2 ->
+            Html.map (Entity << CodingMsg Nothing) (Coding.viewTable model.codings)
+
+        3 ->
+            Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable model.coding_frames)
+
+        4 ->
+            Html.map (Entity << QuestionMsg Nothing) (Question.viewTable model.questions)
+
+        5 ->
+            Html.map (Entity << QuestionaryMsg Nothing) (Questionary.viewTable model.questionaries)
+
+        _ ->
+            text "Tab not Found!"
 
 
-viewCoder : ( Id Coder, Coder ) -> Html Msg
+viewCoder : ( Id Coder.Model, Coder.Model ) -> Html Msg
 viewCoder ( id, coder ) =
     div []
         [ h3 [] [ text ("Coder: " ++ Id.toString id) ]
@@ -357,36 +361,53 @@ viewCoder ( id, coder ) =
         ]
 
 
-newCoder : Seed -> String -> ( Row Coder, Seed )
+viewCoding : ( Id Coding.Model, Coding.Model ) -> Html Msg
+viewCoding ( id, coding ) =
+    div []
+        [ h3 [] [ text ("Coding: " ++ Id.toString id) ]
+        , p [] [ text ("Coder: " ++ Id.toString coding.coder) ]
+        ]
+
+
+viewCodingFrame : ( Id CodingFrame.Model, CodingFrame.Model ) -> Html Msg
+viewCodingFrame ( id, coding_frame ) =
+    div []
+        [ h3 [] [ text ("Coding Frame: " ++ Id.toString id) ]
+        , p [] [ text ("Coding: " ++ Id.toString coding_frame.coding) ]
+        , p [] [ text ("Answer: " ++ Id.toString coding_frame.answer) ]
+        ]
+
+
+newCoder : Seed -> String -> ( Row Coder.Model, Seed )
 newCoder seed name =
     let
         ( id, nextSeed ) =
             Random.step Id.generator seed
     in
-    ( ( id, Coder name )
+    ( ( id, Coder.Model name )
     , nextSeed
     )
 
 
-newCoding : Seed -> Id Coder -> Id Question -> ( Row Coding, Seed )
-newCoding seed cid qid =
+newCoding : Seed -> Id Coder.Model -> ( Row Coding.Model, Seed )
+newCoding seed cid =
     let
         ( id, nextSeed ) =
             Random.step Id.generator seed
     in
-    ( ( id, Coding cid qid 0 )
+    ( ( id, Coding.Model cid )
     , nextSeed
     )
 
 
-getCodingFromCoder : Db Coding -> Db.Row Coder -> Result String (Maybe (Db Coding))
+getCodingFromCoder : Db Coding.Model -> Db.Row Coder.Model -> Result String (Maybe (Db Coding.Model))
 getCodingFromCoder codings ( cid, coder ) =
     case Db.toList (Db.filter (\( id, coding ) -> coding.coder == cid) codings) of
         [] ->
             Ok Nothing
 
         [ f ] ->
-            Ok (Just (Db.fromList [f]))
+            Ok (Just (Db.fromList [ f ]))
 
         _ ->
             Err "More than one Codings found for a coder"
@@ -399,7 +420,7 @@ getEqual mapper target_value data =
 
 getIDInList : List (Id a) -> Db a -> Db a
 getIDInList target_values data =
-    Db.filter (\( id, value ) -> (List.member id target_values)) data
+    Db.filter (\( id, value ) -> List.member id target_values) data
 
 
 getSublist : (a -> b) -> Db a -> List b
@@ -425,28 +446,7 @@ getIDMatchLast accessor first_data second_data =
     getIDInList second_sublist first_data
 
 
-getCoderFromString : Model -> String -> Result String (Db Coder)
-getCoderFromString model name =
-    let
-        coder_db =
-            Db.filter (\( id, coder ) -> coder.name == name) model.coders
-    in
-    case Db.toList coder_db of
-        [] ->
-            let
-                ( newmodel, cmd ) =
-                    update (Create (CreateCoder name)) model
-            in
-            getCoderFromString newmodel name
-
-        [ f ] ->
-            Ok coder_db
-
-        _ ->
-            Err "Multiple Coder with same name"
-
-
-getQuestionaryFromString : Db Questionary -> String -> Result String (Maybe (Row Questionary))
+getQuestionaryFromString : Db Questionary.Model -> String -> Result String (Maybe (Row Questionary.Model))
 getQuestionaryFromString questionaries name =
     case Db.toList (Db.filter (\( id, questionary ) -> questionary.name == name) questionaries) of
         [] ->
@@ -459,25 +459,24 @@ getQuestionaryFromString questionaries name =
             Err "Questionary not found!"
 
 
-viewCoding : Model -> String -> String -> Html Msg
-viewCoding model coder_name questionary_name =
+viewCoding2 : Model -> String -> String -> Html Msg
+viewCoding2 model coder_name questionary_name =
     let
-        coding_frames = getCoderFromString model coder_name
---                        |> getIDMatchLast
-
+        --                        |> getIDMatchLast
         coding_frames2 =
             model.coders
                 |> getEqual .name coder_name
---                |> getIDMatchLast .coder model.codings
---                |> getIDMatchLast .coding_frame model.coding_frames
-        questions2 = 
+
+        --                |> getIDMatchLast .coder model.codings
+        --                |> getIDMatchLast .coding_frame model.coding_frames
+        questions2 =
             model.questionaries
---                |> getEqual .name questionary_name
---                |> getIDMatchLast .questionary model.question
+
+        --                |> getEqual .name questionary_name
+        --                |> getIDMatchLast .questionary model.question
     in
-        Html.div [] [Html.h1 [] [text ("Coding of "++ coder_name ++ ". Questionary: "++ questionary_name ++ ".")]]
-                
-                        
+    Html.div [] [ Html.h1 [] [ text ("Coding of " ++ coder_name ++ ". Questionary: " ++ questionary_name ++ ".") ] ]
+
 
 
 -- getCoderFromString model coder_name
@@ -536,6 +535,7 @@ viewCoding model coder_name questionary_name =
                                text "Too much current frames"
 -}
 
-viewCurrentFrame : Model -> Row CodingFrame -> Html Msg
+
+viewCurrentFrame : Model -> Row CodingFrame.Model -> Html Msg
 viewCurrentFrame model frame =
     text "Displaying a frame"

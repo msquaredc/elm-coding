@@ -6,16 +6,19 @@ import Html exposing (..)
 import Json.Decode as Decode exposing (..)
 import Json.Encode as E
 import Research exposing (..)
+import Material
 
 
 type Msg
     = Searched String
     | Changed E.Value
     | ResearchMsg Research.Msg
+    | Mdc (Material.Msg Msg)
 
 
 type alias Model =
-    { research : Research.Model
+    { research : Research.Model,
+    mdc : Material.Model Msg
     }
 
 
@@ -32,10 +35,10 @@ init : Value -> ( Model, Cmd msg )
 init flags =
     case Decode.decodeValue Research.decode flags of
         Ok model ->
-            ( Model model, Cmd.none )
+            ( Model model Material.defaultModel, Cmd.none )
 
         Err err ->
-            ( Model (Research.empty (Debug.toString err)), Cmd.none )
+            ( Model (Research.empty (Debug.toString err)) Material.defaultModel, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -55,12 +58,14 @@ update msg model =
             ( { model | research = researchModel }
             , Cmd.map ResearchMsg researchCmd
             )
+        
+        Mdc msg_ ->
+            Material.update Mdc msg_ model
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
-
+    Material.subscriptions Mdc model
 
 view : Model -> Html Msg
 view model =

@@ -60,7 +60,7 @@ view : Model -> Html Msg
 view model =
     div []
         [ Html.h2 [] [text "Research:"]
-        ,   Html.map DataMsg (Data.viewCoding model.database "Monica" "questionary_name")
+        ,   Html.map DataMsg (Data.view model.database)
         ]
 
 

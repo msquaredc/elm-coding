@@ -1,5 +1,5 @@
 var data = {
-    answers: {"ebnf":{
+    answers: {"answer1":{
         "user":"paul",
         "question":"question1",
         "value":"I have a value, i swear!"
@@ -11,10 +11,10 @@ var data = {
     },
     codings: {"coding1":{coder:"coder1"}},
     coding_answers: {},
-    coding_frames: {},
+    coding_frames: {"coding_frame1":{coding:"coding1",answer:"answer1"},"coding_frame99":{coding:"a28",answer:"answer1123"}},
     coding_questionaries: {"coding_questionary1":{name:"First Coding Questionary", question:"question1"}},
     coding_questions: {"coding_question1":{coding_questionary:"coding_questionary1",text:"Coding Question 1",input_type:"String"}},
-    name: "No name",
+    name: "My very special Name",
     questions: {"question1":{questionary:"questionary1",text:"Question 1",input_type:"String"}},
     questionaries: {"questionary1":{name:"First Questionary"}},
     users: {"paul":{infos:{name:"Paul"}}} 
