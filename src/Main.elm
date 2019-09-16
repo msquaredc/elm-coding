@@ -1,9 +1,16 @@
 port module Main exposing (Msg(..), activeUsers)
 
 import Browser exposing (..)
+import Browser.Navigation
+import Url exposing (..)
 import Dict exposing (..)
 import Html exposing (..)
-import Json.Decode as Decode exposing (..)
+import Page exposing (..)
+import Page.Error
+import Page.Data
+import Data
+import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string,Value)
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as E
 import Research exposing (..)
 import Material
@@ -12,67 +19,96 @@ import Material
 type Msg
     = Searched String
     | Changed E.Value
-    | ResearchMsg Research.Msg
+    | GotResearchMsg Research.Msg
+    | GotErrorMsg Page.Error.Msg
+    | GotDataMsg Page.Data.Msg
     | Mdc (Material.Msg Msg)
+    | Noop
 
+type DefaultModel 
+    = MdcModel {mdc : (Material.Model Msg)}
+    | Data Data.Model
+    | Error Decode.Error
 
 type alias Model =
-    { research : Research.Model,
-    mdc : Material.Model Msg
+    { data : Data.Model,
+    mdc : Material.Model Msg,
+    title : String,
+    body : List (Html Msg)
     }
 
+type alias Flags =
+    { research : Research.Flags}
 
+main : Program Value Model Msg
 main =
-    Browser.element
+    Browser.application
         { init = init
+        , onUrlChange = onUrlChange
+        , onUrlRequest = onUrlRequest
         , update = update
         , subscriptions = subscriptions
         , view = view
         }
 
+onUrlChange : Url -> Msg
+onUrlChange url = Noop
 
-init : Value -> ( Model, Cmd msg )
-init flags =
-    case Decode.decodeValue Research.decode flags of
-        Ok model ->
-            ( Model model Material.defaultModel, Cmd.none )
+onUrlRequest : UrlRequest -> Msg
+onUrlRequest a = Noop
 
-        Err err ->
-            ( Model (Research.empty (Debug.toString err)) Material.defaultModel, Cmd.none )
+{-
+decode : Decoder Flags
+decode = 
+    Decode.succeed Flags
+    |> required "research" Research.decode
+-}
+
+init : Value -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd msg )
+init flags url key =
+    let 
+        result_flags = Decode.decodeValue Data.decoder flags
+    in
+        case result_flags of
+            Ok flag_value ->
+                let
+                    (data, rcmd) = Data.init flag_value
+                in 
+                    ({title = "", body = [], mdc = Material.defaultModel,data = data}, Cmd.none)
+            Err error ->
+                ({title = "Error", body = [text (Decode.errorToString error)], mdc = Material.defaultModel, data = Data.empty}, Cmd.none)
+        
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        Searched str ->
-            ( model, Cmd.none )
-
-        Changed v ->
-            ( model, Cmd.none )
-
-        ResearchMsg fmsg ->
+    case (msg, model) of
+{-      (GotResearchMsg rMsg, Research research) ->
             let
                 ( researchModel, researchCmd ) =
-                    Research.update fmsg model.research
+                    Research.update rMsg research
             in
-            ( { model | research = researchModel }
-            , Cmd.map ResearchMsg researchCmd
-            )
-        
-        Mdc msg_ ->
-            Material.update Mdc msg_ model
+                ( Research researchModel 
+                , Cmd.map GotResearchMsg researchCmd
+                )
+-}        
+        (_,_) -> 
+            (model, Cmd.none)
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Material.subscriptions Mdc model
+    
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-    Html.div []
-        [ Html.text "it works!"
-            ,Html.map ResearchMsg (Research.view model.research)
-        ]
+    viewPage Page.Data GotDataMsg model 
+
+viewPage : Page -> (msg -> Msg) -> Model -> Document Msg
+viewPage page pMsg model = 
+    {title = model.title,
+    body = [Page.view page model Mdc]}
 
 
 port activeUsers : (E.Value -> msg) -> Sub msg

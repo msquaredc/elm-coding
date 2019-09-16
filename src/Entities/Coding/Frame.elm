@@ -1,19 +1,26 @@
-module Entities.Coding.Frame exposing (Model, Msg(..), decoder, toTableRow, update, view, viewRow, viewTable, selectFramesFromCodings)
+module Entities.Coding.Frame exposing (Model, Msg(..), decoder, empty, selectFramesFromCodings, toTableRow, update, view, viewRow, viewTable)
 
 import Db exposing (Db, Row)
+import Db.Extra
 import Entities.Answer as Answer
+import Entities.Coder as Coder
 import Entities.Coding as Coding
+import Entities.Question as Question
+import Entities.Questionary as Questionary
 import Html exposing (Html, div, h3, p, text)
 import Html.Attributes exposing (..)
 import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Material.DataTable as DataTable exposing (numeric, table, tbody, td, th, thead, tr, trh)
+import Time
 
 
 type alias Model =
     { answer : Id Answer.Model
     , coding : Id Coding.Model
+    , created : Int
+    , modified : Int
     }
 
 
@@ -22,16 +29,27 @@ decoder =
     Decode.succeed Model
         |> required "answer" Id.decoder
         |> required "coding" Id.decoder
+        |> required "created" Decode.int
+        |> required "modified" Decode.int
+
+
+empty : Model
+empty =
+    { answer = Id.fromString "empty"
+    , coding = Id.fromString "empty"
+    , created = 0
+    , modified = 0
+    }
 
 
 type Msg
-    = NoOp
+    = Error String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NoOp ->
+        Error e_msg ->
             ( model, Cmd.none )
 
 
@@ -48,6 +66,8 @@ view model =
     div []
         [ p [] [ text ("Answer: " ++ Id.toString model.answer) ]
         , p [] [ text ("Coding: " ++ Id.toString model.coding) ]
+        , p [] [ text ("Created: " ++ String.fromInt model.created) ]
+        , p [] [ text ("Modified: " ++ String.fromInt model.modified) ]
         ]
 
 
@@ -62,6 +82,8 @@ viewTable model =
                         [ th [] [ text "ID" ]
                         , th [] [ text "Answer" ]
                         , th [] [ text "Coding" ]
+                        , th [] [ text "Created" ]
+                        , th [] [ text "Modified" ]
                         ]
                     ]
                 , tbody []
@@ -77,7 +99,10 @@ toTableRow ( id, model ) =
         [ td [] [ text (Id.toString id) ]
         , td [] [ text (Id.toString model.answer) ]
         , td [] [ text (Id.toString model.coding) ]
+        , td [] [ text (String.fromInt model.created) ]
+        , td [] [ text (String.fromInt model.modified) ]
         ]
+
 
 selectFramesFromCodings : Db Model -> Result String (Db Coding.Model) -> Result String (Db Model)
 selectFramesFromCodings db coders =
@@ -88,3 +113,7 @@ selectFramesFromCodings db coders =
     in
     Result.map (\c -> Db.filter (\( id, value ) -> List.member value.coding c) db) coding_ids
 
+lastFrame : Db Model -> Row Model
+lastFrame frames =
+    Db.toList frames
+    |> List.foldl (\(idf,first) -> (\(ids,second) -> if first.modified > second.modified then (idf,first) else (ids,second))) (Id.fromString "empty", empty)

@@ -6,7 +6,7 @@ module Data exposing
     , init
     , update
     , view
-    , viewCoding
+    , Flags
     )
 
 import Db exposing (Db, Row)
@@ -136,8 +136,8 @@ initDictToDb values =
         |> Db.fromList
 
 
-empty : String -> Model
-empty str =
+empty : Model
+empty =
     { answers = Db.empty
     , coders = Db.empty
     , codings = Db.empty
@@ -145,7 +145,7 @@ empty str =
     , coding_frames = Db.empty
     , coding_questionaries = Db.empty
     , coding_questions = Db.empty
-    , name = str
+    , name = ""
     , questions = Db.empty
     , questionaries = Db.empty
     , users = Db.empty
@@ -173,6 +173,7 @@ type EntityMsg
     | CodingFrameMsg (Maybe (Id CodingFrame.Model)) CodingFrame.Msg
     | QuestionMsg (Maybe (Id Question.Model)) Question.Msg
     | QuestionaryMsg (Maybe (Id Questionary.Model)) Questionary.Msg
+    | CodingQuestionMsg (Maybe (Id CodingQuestion.Model)) CodingQuestion.Msg
 
 
 type CreationMsg
@@ -181,7 +182,11 @@ type CreationMsg
 
 
 type ErrorMsg
-    = TooMuch String
+    = TooFewCoders String
+    | TooMuchCoders String
+    | TooFewQuestionaries String
+    | TooMuchQuestionaries String
+    | AbsentAnswer (Id CodingFrame.Model)
 
 
 
@@ -221,6 +226,9 @@ updateEntity umsg model =
 
         QuestionMsg id msg ->
             ( { model | questions = optionalUpdate id model.questions (Question.update msg) }, Cmd.none )
+
+        CodingQuestionMsg id msg ->
+            ( { model | coding_questions = optionalUpdate id model.coding_questions (CodingQuestion.update msg) }, Cmd.none )
 
 
 optionalUpdate : Maybe (Id m) -> Db m -> (m -> ( m, Cmd n )) -> Db m
@@ -276,57 +284,117 @@ view : Model -> Html Msg
 view model =
     div []
         [ text ("Name: " ++ model.name)
-        , viewContent2 model "Jerome Bergmann" "First Questionary"
+        , viewAnswers model "Jerome Bergmann" "First Questionary"
+        , viewContent3 model "Jerome Bergmann" "First Questionary"
+        , text "Before"
+        , div [] (List.map (viewCodingQuestions model) (unwrap (selectCodingFrames model "Jerome Bergmann" "First Questionary")))
+        , text "After"
         , viewTabBar model
         , viewTabContent model
         ]
 
+
+unwrap : Result Error (Db a) -> List (Row a)
+unwrap res =
+    case res of
+        Ok value ->
+            Db.toList value
+
+        Err _ ->
+            []
+
 viewContent : Model -> String -> String -> Html Msg
 viewContent model coder_name questionary_name =
     let
-        coder_result = Coder.selectCoder model.coders coder_name
-        codings_result = Coding.selectCodings model.codings coder_result
-        coding_frame_result1 = CodingFrame.selectFramesFromCodings model.coding_frames codings_result
-        coding_frame_result = 
+        coder_result =
+            Coder.selectCoder model.coders coder_name
+
+        codings_result =
+            Coding.selectCodings model.codings coder_result
+
+        coding_frame_result1 =
+            CodingFrame.selectFramesFromCodings model.coding_frames codings_result
+
+        coding_frame_result =
             case coding_frame_result1 of
                 Ok coding_frames ->
-                    Ok (Db.filter (
-                        \(cf_id,cf_value)-> Db.get model.answers cf_value.answer
-                                            |> Maybe.andThen (\c -> Db.get model.questions c.question)
-                                            |> Maybe.andThen (\c -> Db.get model.questionaries c.questionary)
-                                            |> Maybe.map (\c -> c.name == questionary_name)
-                                            |> Maybe.withDefault False) coding_frames)
-                Err msg -> Err msg
-                    
-            
+                    Ok
+                        (Db.filter
+                            (\( cf_id, cf_value ) ->
+                                Db.get model.answers cf_value.answer
+                                    |> Maybe.andThen (\c -> Db.get model.questions c.question)
+                                    |> Maybe.andThen (\c -> Db.get model.questionaries c.questionary)
+                                    |> Maybe.map (\c -> c.name == questionary_name)
+                                    |> Maybe.withDefault False
+                            )
+                            coding_frames
+                        )
+
+                Err msg ->
+                    Err msg
     in
-        case coding_frame_result of
-            Ok coding ->
-                Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable coding)
-        
-            Err msg ->
-                text msg
+    case coding_frame_result of
+        Ok coding ->
+            Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable coding)
+
+        Err msg ->
+            text msg
+
 
 viewContent2 : Model -> String -> String -> Html Msg
 viewContent2 model coder_name questionary_name =
-    let 
-        coder_frames = Coder.selectCoder model.coders coder_name
-                       |> Result.map (Db.Extra.selectFrom model.codings (\c -> c.coder))
-                       |> Result.map (Db.Extra.selectFrom model.coding_frames (\c -> c.coding))
-        questionary_frames = Db.Extra.selectBy model.questionaries (\c -> c.name) (\c -> c == questionary_name)
-                                |> Db.Extra.selectFrom model.questions (\c -> c.questionary)
-                                |> Db.Extra.selectFrom model.answers (\c -> c.question)
-                                |> Db.Extra.selectFrom model.coding_frames (\c -> c.answer)
-    
+    let
+        coder_frames =
+            Coder.selectCoder model.coders coder_name
+                |> Result.map (Db.Extra.selectFrom model.codings (\c -> c.coder))
+                |> Result.map (Db.Extra.selectFrom model.coding_frames (\c -> c.coding))
+
+        questionary_frames =
+            Db.Extra.selectBy model.questionaries (\c -> c.name) (\c -> c == questionary_name)
+                |> Result.map (Db.Extra.selectFrom model.questions (\c -> c.questionary))
+                |> Result.map (Db.Extra.selectFrom model.answers (\c -> c.question))
+                |> Result.map (Db.Extra.selectFrom model.coding_frames (\c -> c.answer))
     in
-        case coder_frames of
-            Ok coding ->
-                div [][
-                Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable coding)
-                ,Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable questionary_frames)
+    case coder_frames of
+        Ok coding ->
+            div []
+                [ Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable coding)
+--               , Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable questionary_frames)
                 ]
-            Err msg ->
-                text msg
+
+        Err msg ->
+            text msg
+
+
+viewContent3 : Model -> String -> String -> Html Msg
+viewContent3 model coder questionary =
+    case selectCodingFrames model coder questionary of
+        Ok value ->
+            Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable value)
+
+        Err error ->
+            text "An error occured."
+
+
+viewAnswers : Model -> String -> String -> Html Msg
+viewAnswers model coder questionary =
+    case selectMissingAnswers model coder questionary of
+        Ok value ->
+            Html.map (Entity << AnswerMsg Nothing) (Answer.viewTable value)
+
+        Err error ->
+            text "An error occured."
+
+
+viewCodingQuestions : Model -> Row CodingFrame.Model -> Html Msg
+viewCodingQuestions model frame =
+    case selectCodingQuestions model frame of
+        Ok value ->
+            Html.map (Entity << CodingQuestionMsg Nothing) (CodingQuestion.viewTable value)
+
+        Err _ ->
+            text "An error occured."
+
 
 viewTabContent : Model -> Html Msg
 viewTabContent model =
@@ -353,30 +421,88 @@ viewTabContent model =
             text "Tab not Found!"
 
 
-viewCoder : ( Id Coder.Model, Coder.Model ) -> Html Msg
-viewCoder ( id, coder ) =
-    div []
-        [ h3 [] [ text ("Coder: " ++ Id.toString id) ]
-        , p [] [ text ("Name: " ++ coder.name) ]
-        ]
+selectFramesFromCoderName : Model -> String -> Result Db.Extra.Error (Db CodingFrame.Model)
+selectFramesFromCoderName model name =
+    Db.Extra.selectBy model.coders (\c -> c.name) (\c -> c == name)
+        |> Result.andThen (Db.Extra.assertSizeLeq 1 name)
+        |> Result.andThen (Db.Extra.assertSizeGeq 1 name)
+        |> Result.map (Db.Extra.selectFrom model.codings (\c -> c.coder))
+        |> Result.map (Db.Extra.selectFrom model.coding_frames (\c -> c.coding))
 
 
-viewCoding : ( Id Coding.Model, Coding.Model ) -> Html Msg
-viewCoding ( id, coding ) =
-    div []
-        [ h3 [] [ text ("Coding: " ++ Id.toString id) ]
-        , p [] [ text ("Coder: " ++ Id.toString coding.coder) ]
-        ]
+selectFramesFromQuestionaryName : Model -> String -> Result Db.Extra.Error (Db CodingFrame.Model)
+selectFramesFromQuestionaryName model name =
+    Db.Extra.selectBy model.questionaries (\c -> c.name) (\c -> c == name)
+        |> Result.andThen (Db.Extra.assertSizeLeq 1 name)
+        |> Result.andThen (Db.Extra.assertSizeGeq 1 name)
+        |> Result.map (Db.Extra.selectFrom model.questions (\c -> c.questionary))
+        |> Result.map (Db.Extra.selectFrom model.answers (\c -> c.question))
+        |> Result.map (Db.Extra.selectFrom model.coding_frames (\c -> c.answer))
 
 
-viewCodingFrame : ( Id CodingFrame.Model, CodingFrame.Model ) -> Html Msg
-viewCodingFrame ( id, coding_frame ) =
-    div []
-        [ h3 [] [ text ("Coding Frame: " ++ Id.toString id) ]
-        , p [] [ text ("Coding: " ++ Id.toString coding_frame.coding) ]
-        , p [] [ text ("Answer: " ++ Id.toString coding_frame.answer) ]
-        ]
+selectCodingFrames : Model -> String -> String -> Result Db.Extra.Error (Db CodingFrame.Model)
+selectCodingFrames model coder questionary =
+    let
+        coder_frames =
+            selectFramesFromCoderName model coder
 
+        questionary_frames =
+            selectFramesFromQuestionaryName model questionary
+    in
+    Result.map2 Db.Extra.intersection coder_frames questionary_frames
+
+
+
+selectAllAnswers : Model -> String -> Result Db.Extra.Error (Db Answer.Model)
+selectAllAnswers model questionary =
+    Db.Extra.selectBy model.questionaries (\c -> c.name) (\c -> c == questionary)
+        |> Result.map (Db.Extra.selectFrom model.questions (\c -> c.questionary))
+        |> Result.map (Db.Extra.selectFrom model.answers (\c -> c.question))
+
+
+selectMissingAnswers : Model -> String -> String -> Result Db.Extra.Error (Db Answer.Model)
+selectMissingAnswers model coder questionary =
+    let
+        frame_answers =
+            selectCodingFrames model coder questionary
+                |> Result.map Db.toList
+                |> Result.map (List.map (\( id, value ) -> value.answer))
+                |> Result.map (Db.getMany model.answers)
+                |> Result.map Db.filterMissing
+                |> Result.map Db.fromList
+
+        result_answers =
+            Result.map2 (Db.Extra.difference) (selectAllAnswers model questionary) frame_answers
+    in
+    result_answers
+
+
+selectCodingQuestions : Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
+selectCodingQuestions model frame =
+    frame
+        |> Db.Extra.get model.answers (\c -> c.answer)
+        |> Result.andThen (Db.Extra.get model.questions (\c -> c.question))
+        |> Result.map (\c -> Db.insert c Db.empty)
+        |> Result.map (Db.Extra.selectFrom model.coding_questionaries (\c -> c.question))
+        |> Result.map (Db.Extra.selectFrom model.coding_questions (\c -> c.coding_questionary))
+
+{-selectCurrentCodingQuestions : Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
+selectCurrentCodingQuestions model (id,frame) =
+    let
+        current_answers = Db.Extra.selectBy model.coding_answers (\c -> c.coding_frame) (\c -> c == id)
+        coding_question = case current_answers of
+                            Ok value -> value
+    in
+        current_answers
+-}
+selectMissingCodingQuestions : Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
+selectMissingCodingQuestions model (id,frame) = 
+    let
+        frame_questions = Db.Extra.selectBy model.coding_answers (\c -> c.coding_frame) (\c -> c == id)
+                            |> Result.map (Db.Extra.getMulti model.coding_questions (\c -> c.coding_question))
+        all_questions = selectCodingQuestions model (id,frame)
+    in
+        Result.map2 (\c -> Db.Extra.difference c) frame_questions all_questions 
 
 newCoder : Seed -> String -> ( Row Coder.Model, Seed )
 newCoder seed name =
@@ -398,144 +524,3 @@ newCoding seed cid =
     ( ( id, Coding.Model cid )
     , nextSeed
     )
-
-
-getCodingFromCoder : Db Coding.Model -> Db.Row Coder.Model -> Result String (Maybe (Db Coding.Model))
-getCodingFromCoder codings ( cid, coder ) =
-    case Db.toList (Db.filter (\( id, coding ) -> coding.coder == cid) codings) of
-        [] ->
-            Ok Nothing
-
-        [ f ] ->
-            Ok (Just (Db.fromList [ f ]))
-
-        _ ->
-            Err "More than one Codings found for a coder"
-
-
-getEqual : (a -> b) -> b -> Db a -> Db a
-getEqual mapper target_value data =
-    Db.filter (\( id, value ) -> mapper value == target_value) data
-
-
-getIDInList : List (Id a) -> Db a -> Db a
-getIDInList target_values data =
-    Db.filter (\( id, value ) -> List.member id target_values) data
-
-
-getSublist : (a -> b) -> Db a -> List b
-getSublist mapper data =
-    List.map (\( id, value ) -> mapper value) (Db.toList data)
-
-
-filterByForeignTable : (a -> Id c) -> Db a -> Db c -> Db c
-filterByForeignTable accessor first_data second_data =
-    let
-        first_sublist =
-            getSublist accessor first_data
-    in
-    getIDInList first_sublist second_data
-
-
-getIDMatchLast : (c -> Id a) -> Db a -> Db c -> Db a
-getIDMatchLast accessor first_data second_data =
-    let
-        second_sublist =
-            getSublist accessor second_data
-    in
-    getIDInList second_sublist first_data
-
-
-getQuestionaryFromString : Db Questionary.Model -> String -> Result String (Maybe (Row Questionary.Model))
-getQuestionaryFromString questionaries name =
-    case Db.toList (Db.filter (\( id, questionary ) -> questionary.name == name) questionaries) of
-        [] ->
-            Ok Nothing
-
-        [ f ] ->
-            Ok (Just f)
-
-        _ ->
-            Err "Questionary not found!"
-
-
-viewCoding2 : Model -> String -> String -> Html Msg
-viewCoding2 model coder_name questionary_name =
-    let
-        --                        |> getIDMatchLast
-        coding_frames2 =
-            model.coders
-                |> getEqual .name coder_name
-
-        --                |> getIDMatchLast .coder model.codings
-        --                |> getIDMatchLast .coding_frame model.coding_frames
-        questions2 =
-            model.questionaries
-
-        --                |> getEqual .name questionary_name
-        --                |> getIDMatchLast .questionary model.question
-    in
-    Html.div [] [ Html.h1 [] [ text ("Coding of " ++ coder_name ++ ". Questionary: " ++ questionary_name ++ ".") ] ]
-
-
-
--- getCoderFromString model coder_name
--- |> Result.andThen filterCodingsByCoder (CreateCoding model.codings) model
-{- case getCoderFromSting model.coders coder_name of
-   Ok Nothing ->
-       let
-           ( newmodel, cmd ) =
-               update (CreateCoder coder_name) model
-       in
-       viewCoding newmodel coder_name questionary_name
-
-   Err err ->
-       text ("Error: " ++ err)
-
-   Ok (Just ( coder_id, coder )) ->
-       (coder_id, coder)
-       |> getCodingsFromCoder model.codings
-       case getCodingFromCoder model.codings ( coder_id, coder ) of
-           Ok Nothing ->
-               let
-                   ( newmodel, cmd ) =
-                       update (CreateCoding coder_id) model
-               in
-               viewCoding newmodel coder_name questionary_name
-
-           Err err ->
-               text ("Error: " ++ err)
-
-           Ok (Just ( coding_id, coding )) ->
-               let
-                   coding_frames =
-                       getCodingFramesFromCoding model.coding_frames ( coding_id, coding )
-               in
-               case Db.toList coding_frames of
-                   [] ->
-                       let
-                           ( newmodel, cmd ) =
-                               update (InitFrames questionary_name ( coding_id, coding )) model
-                       in
-                       viewCoding newmodel coder_name questionary_name
-
-                   list ->
-                       case Db.toList (Db.filter (\( x, y ) -> y.index == coding.current_index) coding_frames) of
-                           [] ->
-                               let
-                                   ( newmodel, cmd ) =
-                                       update (FillFrames ( coding_id, coding )) model
-                               in
-                               viewCoding newmodel coder_name questionary_name
-
-                           [ current_frame ] ->
-                               viewCurrentFrame model current_frame
-
-                           _ ->
-                               text "Too much current frames"
--}
-
-
-viewCurrentFrame : Model -> Row CodingFrame.Model -> Html Msg
-viewCurrentFrame model frame =
-    text "Displaying a frame"

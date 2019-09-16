@@ -20,6 +20,9 @@ type alias Model =
     { name : String
     }
 
+type Name = 
+    String
+
 type Msg
     = NoOp
 
@@ -76,3 +79,4 @@ selectCoder db name =
             1 -> Ok result
             0 -> Err ("No match for " ++ name ++ ".")
             _ -> Err ("Too many matches for " ++ name ++ ".")
+

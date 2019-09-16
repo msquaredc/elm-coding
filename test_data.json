@@ -1,9 +1,16 @@
 var data = {
-    answers: {"answer1":{
-        "user":"paul",
-        "question":"question1",
-        "value":"I have a value, i swear!"
-    }},
+    answers: {
+        "answer1":{
+            "user":"paul",
+            "question":"question1",
+            "value":"I have a value, i swear!"
+        },
+        "answer2":{
+            "user":"peter",
+            "question":"question1",
+            "value":"I have a value, i swear too!"
+        }
+    },
     coders: {
         "coder1":{
             "name":"Jerome Bergmann"
@@ -11,9 +18,29 @@ var data = {
     },
     codings: {"coding1":{coder:"coder1"}},
     coding_answers: {},
-    coding_frames: {"coding_frame1":{coding:"coding1",answer:"answer1"},"coding_frame99":{coding:"a28",answer:"answer1123"}},
-    coding_questionaries: {"coding_questionary1":{name:"First Coding Questionary", question:"question1"}},
-    coding_questions: {"coding_question1":{coding_questionary:"coding_questionary1",text:"Coding Question 1",input_type:"String"}},
+    coding_frames: {"coding_frame1":{coding:"coding1",answer:"answer1",created:13,modified:33},"coding_frame99":{coding:"a28",answer:"answer1123",created:15, modified:22}},
+    coding_questionaries: {
+        "coding_questionary1":{
+            name:"First Coding Questionary", 
+            question:"question1"
+        },
+        "coding_questionary2":{
+            name:"Second Coding Questionary", 
+            question:"question1"
+        },
+    },
+    coding_questions: {
+        "coding_question1":{
+            coding_questionary:"coding_questionary1",
+            text:"Coding Question 1",
+            input_type:"String"
+        },
+        "coding_question2a":{
+            coding_questionary:"coding_questionary2",
+            text:"Coding Question 2a",
+            input_type:"String"
+        }
+    },
     name: "My very special Name",
     questions: {"question1":{questionary:"questionary1",text:"Question 1",input_type:"String"}},
     questionaries: {"questionary1":{name:"First Questionary"}},
