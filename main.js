@@ -5470,20 +5470,12 @@ var author$project$Data$init = function (flags) {
 		author$project$Data$initDictToDb(flags.users))(flags.seed)(flags.mdc)(flags.current_tab);
 	return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 };
-var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
-	switch (handler.$) {
-		case 'Normal':
-			return 0;
-		case 'MayStopPropagation':
-			return 1;
-		case 'MayPreventDefault':
-			return 2;
-		default:
-			return 3;
-	}
+var author$project$Main$Data = function (a) {
+	return {$: 'Data', a: a};
 };
-var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
+var author$project$Main$Error = function (a) {
+	return {$: 'Error', a: a};
+};
 var author$project$Main$init = F3(
 	function (flags, url, key) {
 		var result_flags = A2(elm$json$Json$Decode$decodeValue, author$project$Data$decoder, flags);
@@ -5493,20 +5485,20 @@ var author$project$Main$init = F3(
 			var data = _n1.a;
 			var rcmd = _n1.b;
 			return _Utils_Tuple2(
-				{body: _List_Nil, data: data, mdc: author$project$Material$defaultModel, title: ''},
+				{
+					data: data,
+					mdc: author$project$Material$defaultModel,
+					page: author$project$Main$Data(
+						{})
+				},
 				elm$core$Platform$Cmd$none);
 		} else {
 			var error = result_flags.a;
 			return _Utils_Tuple2(
 				{
-					body: _List_fromArray(
-						[
-							elm$html$Html$text(
-							elm$json$Json$Decode$errorToString(error))
-						]),
 					data: author$project$Data$empty,
 					mdc: author$project$Material$defaultModel,
-					title: 'Error'
+					page: author$project$Main$Error(error)
 				},
 				elm$core$Platform$Cmd$none);
 		}
@@ -5704,6 +5696,18 @@ var elm$core$Task$perform = F2(
 			elm$core$Task$Perform(
 				A2(elm$core$Task$map, toMessage, task)));
 	});
+var elm$virtual_dom$VirtualDom$toHandlerInt = function (handler) {
+	switch (handler.$) {
+		case 'Normal':
+			return 0;
+		case 'MayStopPropagation':
+			return 1;
+		case 'MayPreventDefault':
+			return 2;
+		default:
+			return 3;
+	}
+};
 var elm$core$String$length = _String_length;
 var elm$core$String$slice = _String_slice;
 var elm$core$String$dropLeft = F2(
@@ -6081,82 +6085,24 @@ var author$project$Main$update = F2(
 		var _n0 = _Utils_Tuple2(msg, model);
 		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 	});
-var author$project$Main$GotDataMsg = function (a) {
-	return {$: 'GotDataMsg', a: a};
-};
+var author$project$Page$Data = {$: 'Data'};
+var author$project$Page$Error = {$: 'Error'};
 var author$project$Internal$Options$Class = function (a) {
 	return {$: 'Class', a: a};
 };
 var author$project$Internal$Options$cs = function (c) {
 	return author$project$Internal$Options$Class(c);
 };
-var author$project$Internal$TopAppBar$Implementation$alignEnd = author$project$Internal$Options$cs('mdc-top-app-bar__section--align-end');
-var author$project$Material$TopAppBar$alignEnd = author$project$Internal$TopAppBar$Implementation$alignEnd;
-var author$project$Internal$TopAppBar$Implementation$alignStart = author$project$Internal$Options$cs('mdc-top-app-bar__section--align-start');
-var author$project$Material$TopAppBar$alignStart = author$project$Internal$TopAppBar$Implementation$alignStart;
-var author$project$Internal$Options$Set = function (a) {
-	return {$: 'Set', a: a};
+var author$project$Material$Options$cs = author$project$Internal$Options$cs;
+var author$project$Internal$Options$CSS = function (a) {
+	return {$: 'CSS', a: a};
 };
-var author$project$Internal$Options$option = author$project$Internal$Options$Set;
-var author$project$Internal$TopAppBar$Implementation$fixed = author$project$Internal$Options$option(
-	function (config) {
-		return _Utils_update(
-			config,
-			{fixed: true});
+var author$project$Internal$Options$css = F2(
+	function (key, value) {
+		return author$project$Internal$Options$CSS(
+			_Utils_Tuple2(key, value));
 	});
-var author$project$Material$TopAppBar$fixed = author$project$Internal$TopAppBar$Implementation$fixed;
-var author$project$Internal$Msg$Dispatch = function (a) {
-	return {$: 'Dispatch', a: a};
-};
-var author$project$Internal$Options$Lift = function (a) {
-	return {$: 'Lift', a: a};
-};
-var author$project$Internal$Options$dispatch = function (lift) {
-	return author$project$Internal$Options$Lift(
-		elm$json$Json$Decode$map(
-			function (_n0) {
-				var message = _n0.message;
-				var stopPropagation = _n0.stopPropagation;
-				var preventDefault = _n0.preventDefault;
-				return {
-					message: lift(
-						author$project$Internal$Msg$Dispatch(message)),
-					preventDefault: preventDefault,
-					stopPropagation: stopPropagation
-				};
-			}));
-};
-var author$project$Internal$Component$render = F3(
-	function (get_model, view, ctor) {
-		return F4(
-			function (lift, idx, store, options) {
-				return A3(
-					view,
-					A2(
-						elm$core$Basics$composeL,
-						lift,
-						ctor(idx)),
-					A2(get_model, idx, store),
-					A2(
-						elm$core$List$cons,
-						author$project$Internal$Options$dispatch(lift),
-						options));
-			});
-	});
-var author$project$Internal$Msg$TopAppBarMsg = F2(
-	function (a, b) {
-		return {$: 'TopAppBarMsg', a: a, b: b};
-	});
-var author$project$Internal$Icon$Implementation$node = function (ctor) {
-	return author$project$Internal$Options$option(
-		function (config) {
-			return _Utils_update(
-				config,
-				{node: ctor});
-		});
-};
-var author$project$Internal$Icon$Implementation$button = author$project$Internal$Icon$Implementation$node('button');
-var author$project$Internal$Icon$Implementation$defaultConfig = {node: 'i'};
+var author$project$Material$Options$css = author$project$Internal$Options$css;
 var elm$core$Maybe$map = F2(
 	function (f, maybe) {
 		if (maybe.$ === 'Just') {
@@ -6354,6 +6300,12 @@ var author$project$Internal$Options$addAttributes = F2(
 var author$project$Internal$Dispatch$Config = function (a) {
 	return {$: 'Config', a: a};
 };
+var author$project$Internal$Dispatch$defaultConfig = author$project$Internal$Dispatch$Config(
+	{decoders: elm$core$Dict$empty, lift: elm$core$Maybe$Nothing});
+var author$project$Internal$Options$Summary = F6(
+	function (classes, css, attrs, internal, dispatch, config) {
+		return {attrs: attrs, classes: classes, config: config, css: css, dispatch: dispatch, internal: internal};
+	});
 var elm$core$Dict$get = F2(
 	function (targetKey, dict) {
 		get:
@@ -6790,6 +6742,273 @@ var author$project$Internal$Dispatch$setLift = F2(
 				lift: elm$core$Maybe$Just(lift)
 			});
 	});
+var author$project$Internal$Options$collect1_ = F2(
+	function (options, acc) {
+		switch (options.$) {
+			case 'Class':
+				var x = options.a;
+				return _Utils_update(
+					acc,
+					{
+						classes: A2(elm$core$List$cons, x, acc.classes)
+					});
+			case 'CSS':
+				var x = options.a;
+				return _Utils_update(
+					acc,
+					{
+						css: A2(elm$core$List$cons, x, acc.css)
+					});
+			case 'Attribute':
+				var x = options.a;
+				return _Utils_update(
+					acc,
+					{
+						attrs: A2(elm$core$List$cons, x, acc.attrs)
+					});
+			case 'Internal':
+				var x = options.a;
+				return _Utils_update(
+					acc,
+					{
+						internal: A2(elm$core$List$cons, x, acc.internal)
+					});
+			case 'Listener':
+				var event = options.a;
+				var decoder = options.b;
+				return _Utils_update(
+					acc,
+					{
+						dispatch: A3(author$project$Internal$Dispatch$add, event, decoder, acc.dispatch)
+					});
+			case 'Many':
+				var opts = options.a;
+				return A3(elm$core$List$foldl, author$project$Internal$Options$collect1_, acc, opts);
+			case 'Lift':
+				var lift = options.a;
+				return _Utils_update(
+					acc,
+					{
+						dispatch: A2(author$project$Internal$Dispatch$setLift, lift, acc.dispatch)
+					});
+			case 'Set':
+				return acc;
+			default:
+				return acc;
+		}
+	});
+var author$project$Internal$Options$collect_ = A2(
+	elm$core$List$foldl,
+	author$project$Internal$Options$collect1_,
+	A6(author$project$Internal$Options$Summary, _List_Nil, _List_Nil, _List_Nil, _List_Nil, author$project$Internal$Dispatch$defaultConfig, _Utils_Tuple0));
+var author$project$Internal$Options$styled = F2(
+	function (ctor, props) {
+		return ctor(
+			A2(
+				author$project$Internal$Options$addAttributes,
+				author$project$Internal$Options$collect_(props),
+				_List_Nil));
+	});
+var author$project$Material$Options$styled = author$project$Internal$Options$styled;
+var author$project$Internal$TopAppBar$Implementation$fixedAdjust = author$project$Internal$Options$cs('mdc-top-app-bar--fixed-adjust');
+var author$project$Material$TopAppBar$fixedAdjust = author$project$Internal$TopAppBar$Implementation$fixedAdjust;
+var author$project$Internal$Typography$Implementation$typography = author$project$Internal$Options$cs('mdc-typography');
+var author$project$Material$Typography$typography = author$project$Internal$Typography$Implementation$typography;
+var elm$html$Html$div = _VirtualDom_node('div');
+var author$project$Page$viewContent = F3(
+	function (bar, title, content) {
+		return A3(
+			author$project$Material$Options$styled,
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					A2(author$project$Material$Options$css, 'display', 'flex'),
+					A2(author$project$Material$Options$css, 'flex-flow', 'column'),
+					A2(author$project$Material$Options$css, 'height', '100%'),
+					author$project$Material$Typography$typography
+				]),
+			_List_fromArray(
+				[
+					bar,
+					A3(
+					author$project$Material$Options$styled,
+					elm$html$Html$div,
+					_List_fromArray(
+						[
+							author$project$Material$Options$cs('demo-panel'),
+							A2(author$project$Material$Options$css, 'display', 'flex')
+						]),
+					_List_fromArray(
+						[
+							A2(elm$html$Html$div, _List_Nil, _List_Nil),
+							A3(
+							author$project$Material$Options$styled,
+							elm$html$Html$div,
+							_List_fromArray(
+								[
+									author$project$Material$Options$cs('demo-content'),
+									author$project$Material$TopAppBar$fixedAdjust,
+									A2(author$project$Material$Options$css, 'width', '100%'),
+									A2(author$project$Material$Options$css, 'display', 'flex'),
+									A2(author$project$Material$Options$css, 'justify-content', 'flex-start'),
+									A2(author$project$Material$Options$css, 'flex-direction', 'column'),
+									A2(author$project$Material$Options$css, 'align-items', 'center')
+								]),
+							_List_fromArray(
+								[
+									A3(
+									author$project$Material$Options$styled,
+									elm$html$Html$div,
+									_List_fromArray(
+										[
+											author$project$Material$Options$cs('demo-content-transition'),
+											A2(author$project$Material$Options$css, 'width', '100%'),
+											A2(author$project$Material$Options$css, 'max-width', '1200px')
+										]),
+									_List_fromArray(
+										[content]))
+								]))
+						]))
+				]));
+	});
+var elm$html$Html$a = _VirtualDom_node('a');
+var elm$html$Html$footer = _VirtualDom_node('footer');
+var elm$html$Html$span = _VirtualDom_node('span');
+var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
+var elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
+var author$project$Page$viewFooter = function (mdc) {
+	return A3(
+		author$project$Material$Options$styled,
+		elm$html$Html$div,
+		_List_fromArray(
+			[author$project$Material$Typography$typography]),
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$footer,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$class('footer')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$div,
+						_List_fromArray(
+							[
+								elm$html$Html$Attributes$class('footer__content')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								elm$html$Html$a,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('footer__logo'),
+										elm$html$Html$Attributes$href('/')
+									]),
+								_List_fromArray(
+									[
+										elm$html$Html$text('conduit')
+									])),
+								A2(
+								elm$html$Html$span,
+								_List_fromArray(
+									[
+										elm$html$Html$Attributes$class('attribution')
+									]),
+								_List_fromArray(
+									[
+										elm$html$Html$text('An interactive learning project from '),
+										A2(
+										elm$html$Html$a,
+										_List_fromArray(
+											[
+												elm$html$Html$Attributes$href('https://thinkster.io')
+											]),
+										_List_fromArray(
+											[
+												elm$html$Html$text('Thinkster')
+											])),
+										elm$html$Html$text('. Code & design licensed under MIT.')
+									]))
+							]))
+					]))
+			]));
+};
+var author$project$Internal$TopAppBar$Implementation$alignEnd = author$project$Internal$Options$cs('mdc-top-app-bar__section--align-end');
+var author$project$Material$TopAppBar$alignEnd = author$project$Internal$TopAppBar$Implementation$alignEnd;
+var author$project$Internal$TopAppBar$Implementation$alignStart = author$project$Internal$Options$cs('mdc-top-app-bar__section--align-start');
+var author$project$Material$TopAppBar$alignStart = author$project$Internal$TopAppBar$Implementation$alignStart;
+var author$project$Internal$Options$Set = function (a) {
+	return {$: 'Set', a: a};
+};
+var author$project$Internal$Options$option = author$project$Internal$Options$Set;
+var author$project$Internal$TopAppBar$Implementation$fixed = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{fixed: true});
+	});
+var author$project$Material$TopAppBar$fixed = author$project$Internal$TopAppBar$Implementation$fixed;
+var author$project$Internal$Msg$Dispatch = function (a) {
+	return {$: 'Dispatch', a: a};
+};
+var author$project$Internal$Options$Lift = function (a) {
+	return {$: 'Lift', a: a};
+};
+var author$project$Internal$Options$dispatch = function (lift) {
+	return author$project$Internal$Options$Lift(
+		elm$json$Json$Decode$map(
+			function (_n0) {
+				var message = _n0.message;
+				var stopPropagation = _n0.stopPropagation;
+				var preventDefault = _n0.preventDefault;
+				return {
+					message: lift(
+						author$project$Internal$Msg$Dispatch(message)),
+					preventDefault: preventDefault,
+					stopPropagation: stopPropagation
+				};
+			}));
+};
+var author$project$Internal$Component$render = F3(
+	function (get_model, view, ctor) {
+		return F4(
+			function (lift, idx, store, options) {
+				return A3(
+					view,
+					A2(
+						elm$core$Basics$composeL,
+						lift,
+						ctor(idx)),
+					A2(get_model, idx, store),
+					A2(
+						elm$core$List$cons,
+						author$project$Internal$Options$dispatch(lift),
+						options));
+			});
+	});
+var author$project$Internal$Msg$TopAppBarMsg = F2(
+	function (a, b) {
+		return {$: 'TopAppBarMsg', a: a, b: b};
+	});
+var author$project$Internal$Icon$Implementation$node = function (ctor) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{node: ctor});
+		});
+};
+var author$project$Internal$Icon$Implementation$button = author$project$Internal$Icon$Implementation$node('button');
+var author$project$Internal$Icon$Implementation$defaultConfig = {node: 'i'};
 var author$project$Internal$Options$collect1 = F2(
 	function (opt, acc) {
 		switch (opt.$) {
@@ -6867,12 +7086,6 @@ var author$project$Internal$Options$aria = F2(
 		return author$project$Internal$Options$Attribute(
 			A2(elm$html$Html$Attributes$attribute, 'aria-' + key, val));
 	});
-var author$project$Internal$Dispatch$defaultConfig = author$project$Internal$Dispatch$Config(
-	{decoders: elm$core$Dict$empty, lift: elm$core$Maybe$Nothing});
-var author$project$Internal$Options$Summary = F6(
-	function (classes, css, attrs, internal, dispatch, config) {
-		return {attrs: attrs, classes: classes, config: config, css: css, dispatch: dispatch, internal: internal};
-	});
 var author$project$Internal$Options$collect = A2(
 	elm$core$Basics$composeR,
 	A5(author$project$Internal$Options$Summary, _List_Nil, _List_Nil, _List_Nil, _List_Nil, author$project$Internal$Dispatch$defaultConfig),
@@ -6949,14 +7162,6 @@ var author$project$Internal$Options$nop = author$project$Internal$Options$None;
 var author$project$Internal$Options$when = F2(
 	function (guard, prop) {
 		return guard ? prop : author$project$Internal$Options$nop;
-	});
-var author$project$Internal$Options$CSS = function (a) {
-	return {$: 'CSS', a: a};
-};
-var author$project$Internal$Options$css = F2(
-	function (key, value) {
-		return author$project$Internal$Options$CSS(
-			_Utils_Tuple2(key, value));
 	});
 var author$project$Internal$Ripple$Model$strings = {varFgScale: '--mdc-ripple-fg-scale', varFgSize: '--mdc-ripple-fg-size', varFgTranslateEnd: '--mdc-ripple-fg-translate-end', varFgTranslateStart: '--mdc-ripple-fg-translate-start', varLeft: '--mdc-ripple-left', varTop: '--mdc-ripple-top'};
 var elm$core$Basics$round = _Basics_round;
@@ -7411,7 +7616,6 @@ var author$project$Internal$TopAppBar$Implementation$actionItem = F2(
 			lift,
 			index);
 	});
-var author$project$Material$Options$cs = author$project$Internal$Options$cs;
 var author$project$Material$TopAppBar$navigationIcon = F5(
 	function (lift, index, model, options, name) {
 		return A5(
@@ -7425,73 +7629,6 @@ var author$project$Material$TopAppBar$navigationIcon = F5(
 				options),
 			name);
 	});
-var author$project$Internal$Options$collect1_ = F2(
-	function (options, acc) {
-		switch (options.$) {
-			case 'Class':
-				var x = options.a;
-				return _Utils_update(
-					acc,
-					{
-						classes: A2(elm$core$List$cons, x, acc.classes)
-					});
-			case 'CSS':
-				var x = options.a;
-				return _Utils_update(
-					acc,
-					{
-						css: A2(elm$core$List$cons, x, acc.css)
-					});
-			case 'Attribute':
-				var x = options.a;
-				return _Utils_update(
-					acc,
-					{
-						attrs: A2(elm$core$List$cons, x, acc.attrs)
-					});
-			case 'Internal':
-				var x = options.a;
-				return _Utils_update(
-					acc,
-					{
-						internal: A2(elm$core$List$cons, x, acc.internal)
-					});
-			case 'Listener':
-				var event = options.a;
-				var decoder = options.b;
-				return _Utils_update(
-					acc,
-					{
-						dispatch: A3(author$project$Internal$Dispatch$add, event, decoder, acc.dispatch)
-					});
-			case 'Many':
-				var opts = options.a;
-				return A3(elm$core$List$foldl, author$project$Internal$Options$collect1_, acc, opts);
-			case 'Lift':
-				var lift = options.a;
-				return _Utils_update(
-					acc,
-					{
-						dispatch: A2(author$project$Internal$Dispatch$setLift, lift, acc.dispatch)
-					});
-			case 'Set':
-				return acc;
-			default:
-				return acc;
-		}
-	});
-var author$project$Internal$Options$collect_ = A2(
-	elm$core$List$foldl,
-	author$project$Internal$Options$collect1_,
-	A6(author$project$Internal$Options$Summary, _List_Nil, _List_Nil, _List_Nil, _List_Nil, author$project$Internal$Dispatch$defaultConfig, _Utils_Tuple0));
-var author$project$Internal$Options$styled = F2(
-	function (ctor, props) {
-		return ctor(
-			A2(
-				author$project$Internal$Options$addAttributes,
-				author$project$Internal$Options$collect_(props),
-				_List_Nil));
-	});
 var elm$html$Html$section = _VirtualDom_node('section');
 var author$project$Internal$TopAppBar$Implementation$section = function (options) {
 	return A2(
@@ -7503,7 +7640,6 @@ var author$project$Internal$TopAppBar$Implementation$section = function (options
 			options));
 };
 var author$project$Material$TopAppBar$section = author$project$Internal$TopAppBar$Implementation$section;
-var elm$html$Html$span = _VirtualDom_node('span');
 var author$project$Internal$TopAppBar$Implementation$title = function (options) {
 	return A2(
 		author$project$Internal$Options$styled,
@@ -7528,7 +7664,6 @@ var author$project$Internal$TopAppBar$Implementation$getViewportScrollY = debois
 		_List_fromArray(
 			['ownerDocument', 'defaultView', 'scrollY']),
 		elm$json$Json$Decode$float));
-var elm$html$Html$div = _VirtualDom_node('div');
 var author$project$Internal$TopAppBar$Implementation$row = function (options) {
 	return A2(
 		author$project$Internal$Options$styled,
@@ -7670,13 +7805,13 @@ var author$project$Internal$TopAppBar$Implementation$topAppBar = F4(
 	});
 var author$project$Internal$TopAppBar$Implementation$view = A3(author$project$Internal$Component$render, author$project$Internal$TopAppBar$Implementation$getSet.get, author$project$Internal$TopAppBar$Implementation$topAppBar, author$project$Internal$Msg$TopAppBarMsg);
 var author$project$Material$TopAppBar$view = author$project$Internal$TopAppBar$Implementation$view;
-var author$project$Page$viewHeader = F2(
-	function (model, mdc) {
+var author$project$Page$viewHeader = F3(
+	function (mdcmsg, mdc, page) {
 		return A5(
 			author$project$Material$TopAppBar$view,
-			mdc,
+			mdcmsg,
 			'my-top-app-bar',
-			model.mdc,
+			mdc,
 			_List_fromArray(
 				[author$project$Material$TopAppBar$fixed]),
 			_List_fromArray(
@@ -7687,13 +7822,13 @@ var author$project$Page$viewHeader = F2(
 						[author$project$Material$TopAppBar$alignStart]),
 					_List_fromArray(
 						[
-							A5(author$project$Material$TopAppBar$navigationIcon, mdc, 'my-menu', model.mdc, _List_Nil, 'menu'),
+							A5(author$project$Material$TopAppBar$navigationIcon, mdcmsg, 'my-menu', mdc, _List_Nil, 'menu'),
 							A2(
 							author$project$Material$TopAppBar$title,
 							_List_Nil,
 							_List_fromArray(
 								[
-									elm$html$Html$text(model.title)
+									elm$html$Html$text('Todo Title')
 								]))
 						])),
 					A2(
@@ -7703,31 +7838,198 @@ var author$project$Page$viewHeader = F2(
 					_List_Nil)
 				]));
 	});
-var author$project$Page$view = F2(
-	function (model, msgadapt) {
-		return A2(
-			elm$html$Html$div,
-			_List_Nil,
-			_Utils_ap(
+var author$project$Page$view = F4(
+	function (mdcmsg, mdc, page, _n0) {
+		var title = _n0.title;
+		var content = _n0.content;
+		var header = A3(author$project$Page$viewHeader, mdcmsg, mdc, page);
+		return {
+			body: A2(
+				elm$core$List$cons,
+				A3(
+					author$project$Page$viewContent,
+					header,
+					elm$html$Html$text(title),
+					content),
 				_List_fromArray(
 					[
-						A2(author$project$Page$viewHeader, model, msgadapt)
-					]),
-				_Utils_ap(model.body, _List_Nil)));
-	});
-var author$project$Main$viewPage = F3(
-	function (page, pMsg, model) {
-		return {
-			body: _List_fromArray(
-				[
-					A2(author$project$Page$view, model, author$project$Main$Mdc)
-				]),
-			title: model.title
+						author$project$Page$viewFooter(mdc)
+					])),
+			title: title + ' - Conduit'
 		};
 	});
-var author$project$Page$Data = {$: 'Data'};
+var author$project$Internal$LayoutGrid$Implementation$cell = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-layout-grid__cell'),
+			options));
+};
+var author$project$Material$LayoutGrid$cell = author$project$Internal$LayoutGrid$Implementation$cell;
+var author$project$Internal$LayoutGrid$Implementation$span = F2(
+	function (device, value) {
+		if (device.$ === 'Just') {
+			var device_ = device.a;
+			return author$project$Internal$Options$cs(
+				'mdc-layout-grid__cell--span-' + (elm$core$String$fromInt(value) + ('-' + device_)));
+		} else {
+			return author$project$Internal$Options$cs(
+				'mdc-layout-grid__cell--span-' + elm$core$String$fromInt(value));
+		}
+	});
+var author$project$Internal$LayoutGrid$Implementation$span2 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 2);
+var author$project$Material$LayoutGrid$span2 = author$project$Internal$LayoutGrid$Implementation$span2;
+var author$project$Internal$LayoutGrid$Implementation$span4 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 4);
+var author$project$Material$LayoutGrid$span4 = author$project$Internal$LayoutGrid$Implementation$span4;
+var author$project$Internal$LayoutGrid$Implementation$span4Phone = A2(
+	author$project$Internal$LayoutGrid$Implementation$span,
+	elm$core$Maybe$Just('phone'),
+	4);
+var author$project$Material$LayoutGrid$span4Phone = author$project$Internal$LayoutGrid$Implementation$span4Phone;
+var author$project$Internal$LayoutGrid$Implementation$span6 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 6);
+var author$project$Material$LayoutGrid$span6 = author$project$Internal$LayoutGrid$Implementation$span6;
+var author$project$Internal$LayoutGrid$Implementation$span6Tablet = A2(
+	author$project$Internal$LayoutGrid$Implementation$span,
+	elm$core$Maybe$Just('tablet'),
+	6);
+var author$project$Material$LayoutGrid$span6Tablet = author$project$Internal$LayoutGrid$Implementation$span6Tablet;
+var author$project$Internal$LayoutGrid$Implementation$span8Tablet = A2(
+	author$project$Internal$LayoutGrid$Implementation$span,
+	elm$core$Maybe$Just('tablet'),
+	8);
+var author$project$Material$LayoutGrid$span8Tablet = author$project$Internal$LayoutGrid$Implementation$span8Tablet;
+var author$project$Internal$LayoutGrid$Implementation$inner = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-layout-grid__inner'),
+			options));
+};
+var elm$core$List$singleton = function (value) {
+	return _List_fromArray(
+		[value]);
+};
+var author$project$Internal$LayoutGrid$Implementation$view = function (options) {
+	return A2(
+		elm$core$Basics$composeL,
+		A2(
+			elm$core$Basics$composeL,
+			A2(
+				author$project$Internal$Options$styled,
+				elm$html$Html$div,
+				A2(
+					elm$core$List$cons,
+					author$project$Internal$Options$cs('mdc-layout-grid'),
+					options)),
+			elm$core$List$singleton),
+		author$project$Internal$LayoutGrid$Implementation$inner(_List_Nil));
+};
+var author$project$Material$LayoutGrid$view = author$project$Internal$LayoutGrid$Implementation$view;
+var author$project$Internal$Typography$Implementation$subtitle1 = author$project$Internal$Options$cs('mdc-typography--subtitle1');
+var author$project$Material$Typography$subtitle1 = author$project$Internal$Typography$Implementation$subtitle1;
+var elm$html$Html$h3 = _VirtualDom_node('h3');
+var author$project$Page$Data$viewContent = A2(
+	elm$html$Html$div,
+	_List_Nil,
+	_List_fromArray(
+		[
+			A3(
+			author$project$Material$Options$styled,
+			elm$html$Html$h3,
+			_List_fromArray(
+				[author$project$Material$Typography$subtitle1]),
+			_List_fromArray(
+				[
+					elm$html$Html$text('A title')
+				])),
+			A2(
+			author$project$Material$LayoutGrid$view,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					author$project$Material$LayoutGrid$cell,
+					_List_fromArray(
+						[author$project$Material$LayoutGrid$span6, author$project$Material$LayoutGrid$span8Tablet]),
+					_List_fromArray(
+						[
+							elm$html$Html$text('Hello')
+						])),
+					A2(
+					author$project$Material$LayoutGrid$cell,
+					_List_fromArray(
+						[author$project$Material$LayoutGrid$span4, author$project$Material$LayoutGrid$span6Tablet]),
+					_List_fromArray(
+						[
+							elm$html$Html$text('World')
+						])),
+					A2(
+					author$project$Material$LayoutGrid$cell,
+					_List_fromArray(
+						[author$project$Material$LayoutGrid$span2, author$project$Material$LayoutGrid$span4Phone]),
+					_List_fromArray(
+						[
+							elm$html$Html$text('FooBar')
+						]))
+				]))
+		]));
+var author$project$Page$Data$view = F4(
+	function (model, mdcmsg, mdc, data) {
+		return {content: author$project$Page$Data$viewContent, title: 'Data'};
+	});
+var elm$html$Html$h2 = _VirtualDom_node('h2');
+var author$project$Page$Error$view = F4(
+	function (error, oans, zwoa, gsuffa) {
+		return {
+			content: A2(
+				elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$h2,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text('Error:')
+							])),
+						elm$html$Html$text(
+						elm$json$Json$Decode$errorToString(error))
+					])),
+			title: 'Error'
+		};
+	});
 var author$project$Main$view = function (model) {
-	return A3(author$project$Main$viewPage, author$project$Page$Data, author$project$Main$GotDataMsg, model);
+	var viewPage = F2(
+		function (page, config) {
+			var _n1 = A4(
+				author$project$Page$view,
+				author$project$Main$Mdc,
+				model.mdc,
+				page,
+				A3(config, model.mdc, author$project$Main$Mdc, model.data));
+			var title = _n1.title;
+			var body = _n1.body;
+			return {body: body, title: title};
+		});
+	var _n0 = model.page;
+	if (_n0.$ === 'Data') {
+		var data = _n0.a;
+		return A2(
+			viewPage,
+			author$project$Page$Data,
+			author$project$Page$Data$view(data));
+	} else {
+		var err = _n0.a;
+		return A2(
+			viewPage,
+			author$project$Page$Error,
+			author$project$Page$Error$view(err));
+	}
 };
 var elm$browser$Browser$application = _Browser_application;
 var author$project$Main$main = elm$browser$Browser$application(

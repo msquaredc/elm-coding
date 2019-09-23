@@ -163,7 +163,7 @@ questions model =
 
 empty : String -> Model
 empty str =
-    { database = Data.empty str,
+    { database = Data.empty,
     coder = "",
     questionary = "",
     mdc = Material.defaultModel

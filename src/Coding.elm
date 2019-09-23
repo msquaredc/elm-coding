@@ -16,7 +16,7 @@ type Msg
 
 empty : Model
 empty =
-    Model (Data.empty "")
+    Model (Data.empty)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
