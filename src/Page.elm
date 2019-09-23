@@ -30,7 +30,7 @@ view mdc page { title, content } =
     let 
         header = viewHeader mdc page
     in 
-        { title = title ++ " - Conduit2ü"
+        { title = title ++ " - Conduit2"
         , content = viewContent header (text title) content :: [ viewFooter mdc ]
         }
 

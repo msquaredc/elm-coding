@@ -4,4 +4,8 @@ elm:
 elm-test: 0.19.0
 elm-format: 0.8.0
 script:
+  - git clone git@github.com:aforemny/elm-mdc.git
+  - cd elm-mdc
+  - make
+  - cd ..
   - elm make src/Main.elm --output=/dev/null
