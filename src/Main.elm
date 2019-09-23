@@ -9,7 +9,7 @@ import Json.Decode as Decode exposing (Decoder, Value, decodeString, float, int,
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as E
 import Material
---import Page
+import Page
 import Page.Data
 import Page.Error
 import Research exposing (..)
