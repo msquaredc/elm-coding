@@ -1,10 +1,10 @@
 port module Main exposing (Msg(..), activeUsers)
 
-import Browser exposing (..)
+import Browser
 import Browser.Navigation
 import Data
-import Dict exposing (..)
-import Html exposing (..)
+import Dict
+import Html
 import Json.Decode as Decode exposing (Decoder, Value, decodeString, float, int, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as E
@@ -12,31 +12,20 @@ import Material
 import Page
 import Page.Data
 import Page.Error
-import Research exposing (..)
-import Url exposing (..)
+import Page.Login
+import Research
+import Url
 
 
 type Msg
-    = Searched String
-    | Changed E.Value
-    | GotResearchMsg Research.Msg
-    | GotErrorMsg Page.Error.Msg
-    | GotDataMsg (Page.Data.Msg Msg)
-    | Mdc (Material.Msg Msg)
+    = GotPageMsg Page.Msg
+    | GotDataMsg Data.Msg
     | Noop
 
-
 type alias Model =
-    { mdc : Material.Model Msg
-    , data : Data.Model
-    , page : PageModel
+    { data : Data.Model
+    , page : Page.Model
     }
-
-
-type PageModel
-    = Data Page.Data.Model
-    | Error Decode.Error
-
 
 type alias Flags =
     { research : Research.Flags }
@@ -54,12 +43,12 @@ main =
         }
 
 
-onUrlChange : Url -> Msg
+onUrlChange : Url.Url -> Msg
 onUrlChange url =
     Noop
 
 
-onUrlRequest : UrlRequest -> Msg
+onUrlRequest : Browser.UrlRequest -> Msg
 onUrlRequest a =
     Noop
 
@@ -85,55 +74,70 @@ init flags url key =
                 ( data, rcmd ) =
                     Data.init flag_value
             in
-            ( { mdc = Material.defaultModel, data = data, page = Data {} }, Cmd.none )
+            ( { data = data, 
+                page = Page.defaultModel
+            }, Cmd.none )
 
         Err error ->
-            ( { page = Error error, mdc = Material.defaultModel, data = Data.empty }, Cmd.none )
+            ( { page = Page.defaultModel,
+                data = Data.empty }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case ( msg, model ) of
-        {- (GotResearchMsg rMsg, Research research) ->
-           let
-               ( researchModel, researchCmd ) =
-                   Research.update rMsg research
-           in
-               ( Research researchModel
-               , Cmd.map GotResearchMsg researchCmd
-               )
-        -}
-        ( _, _ ) ->
-            ( model, Cmd.none )
-
+    case msg of
+        GotPageMsg msg_ ->
+            let
+                (page, effect) =
+                    Page.update msg_ model.page
+            in
+                ({model|page = page}, Cmd.map GotPageMsg effect)
+        Noop -> 
+            (model,Cmd.none)
+        GotDataMsg msg_ ->
+            let
+                (data, effect) =
+                    Data.update msg_ model.data
+            in
+                ({model|data = data}, Cmd.map GotDataMsg effect)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Material.subscriptions Mdc model
+    Sub.map GotPageMsg (Page.subscriptions model.page)
+    
 
 
-view : Model -> Document Msg
+view : Model -> Browser.Document Msg
 view model =
-    let
+    let 
+        {title, body}=
+            Page.view model.page model.data
+    in
+        {title = title,
+        body = List.map (Html.map GotPageMsg) body}
+
+    {- let
         viewPage page mapper viewer page_model =
             let
-                { title, content } =
-                    Page.view Mdc model.mdc page (viewer page_model model.mdc Mdc model.data)
+                { title, body } =
+                    Page.view model.mdc page (viewer page_model model.mdc Mdc model.data)
             in
             { title = title
-            , body = List.map (Html.map mapper) content 
+            , body = List.map (Html.map mapper) body
             }
     in
     case model.page of
-        Data data ->
+        Page.Data data ->
             viewPage Page.Data GotDataMsg Page.Data.view data
-        Error err -> 
-            {title = "None",
-            body = text "nothing"}
+
+        Page.Error err ->
+            { title = "None"
+            , body = [Html.text "nothing"]
+            } -}
+
+
+
 --            viewPage Page.Error GotErrorMsg Page.Error.view err
-
-
-
 {- Redirect _ ->
        Page.view viewer Page.Other Blank.view
 

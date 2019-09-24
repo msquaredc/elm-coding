@@ -4347,6 +4347,107 @@ function _Browser_load(url)
 		}
 	}));
 }
+
+
+// CREATE
+
+var _Regex_never = /.^/;
+
+var _Regex_fromStringWith = F2(function(options, string)
+{
+	var flags = 'g';
+	if (options.multiline) { flags += 'm'; }
+	if (options.caseInsensitive) { flags += 'i'; }
+
+	try
+	{
+		return elm$core$Maybe$Just(new RegExp(string, flags));
+	}
+	catch(error)
+	{
+		return elm$core$Maybe$Nothing;
+	}
+});
+
+
+// USE
+
+var _Regex_contains = F2(function(re, string)
+{
+	return string.match(re) !== null;
+});
+
+
+var _Regex_findAtMost = F3(function(n, re, str)
+{
+	var out = [];
+	var number = 0;
+	var string = str;
+	var lastIndex = re.lastIndex;
+	var prevLastIndex = -1;
+	var result;
+	while (number++ < n && (result = re.exec(string)))
+	{
+		if (prevLastIndex == re.lastIndex) break;
+		var i = result.length - 1;
+		var subs = new Array(i);
+		while (i > 0)
+		{
+			var submatch = result[i];
+			subs[--i] = submatch
+				? elm$core$Maybe$Just(submatch)
+				: elm$core$Maybe$Nothing;
+		}
+		out.push(A4(elm$regex$Regex$Match, result[0], result.index, number, _List_fromArray(subs)));
+		prevLastIndex = re.lastIndex;
+	}
+	re.lastIndex = lastIndex;
+	return _List_fromArray(out);
+});
+
+
+var _Regex_replaceAtMost = F4(function(n, re, replacer, string)
+{
+	var count = 0;
+	function jsReplacer(match)
+	{
+		if (count++ >= n)
+		{
+			return match;
+		}
+		var i = arguments.length - 3;
+		var submatches = new Array(i);
+		while (i > 0)
+		{
+			var submatch = arguments[i];
+			submatches[--i] = submatch
+				? elm$core$Maybe$Just(submatch)
+				: elm$core$Maybe$Nothing;
+		}
+		return replacer(A4(elm$regex$Regex$Match, match, arguments[arguments.length - 2], count, _List_fromArray(submatches)));
+	}
+	return string.replace(re, jsReplacer);
+});
+
+var _Regex_splitAtMost = F3(function(n, re, str)
+{
+	var string = str;
+	var out = [];
+	var start = re.lastIndex;
+	var restoreLastIndex = re.lastIndex;
+	while (n--)
+	{
+		var result = re.exec(string);
+		if (!result) break;
+		out.push(string.slice(start, result.index));
+		start = re.lastIndex;
+	}
+	out.push(string.slice(start));
+	re.lastIndex = restoreLastIndex;
+	return _List_fromArray(out);
+});
+
+var _Regex_infinity = Infinity;
 var elm$core$Basics$apR = F2(
 	function (x, f) {
 		return f(x);
@@ -5470,12 +5571,13 @@ var author$project$Data$init = function (flags) {
 		author$project$Data$initDictToDb(flags.users))(flags.seed)(flags.mdc)(flags.current_tab);
 	return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 };
-var author$project$Main$Data = function (a) {
-	return {$: 'Data', a: a};
-};
-var author$project$Main$Error = function (a) {
-	return {$: 'Error', a: a};
-};
+var author$project$Page$Data$defaultModel = {mdc: author$project$Material$defaultModel};
+var author$project$Page$Error$defaultModel = {error: _List_Nil, mdc: author$project$Material$defaultModel};
+var author$project$Page$Login$defaultModel = {field: '', mdc: author$project$Material$defaultModel, user: elm$core$Maybe$Nothing, _var: 0};
+var author$project$Page$defaultPage = {data: author$project$Page$Data$defaultModel, error: author$project$Page$Error$defaultModel, login: author$project$Page$Login$defaultModel};
+var author$project$Page$Url$StartPage = {$: 'StartPage'};
+var author$project$Page$Url$defaultUrl = author$project$Page$Url$StartPage;
+var author$project$Page$defaultModel = {mdc: author$project$Material$defaultModel, page: author$project$Page$defaultPage, url: author$project$Page$Url$defaultUrl};
 var author$project$Main$init = F3(
 	function (flags, url, key) {
 		var result_flags = A2(elm$json$Json$Decode$decodeValue, author$project$Data$decoder, flags);
@@ -5485,21 +5587,12 @@ var author$project$Main$init = F3(
 			var data = _n1.a;
 			var rcmd = _n1.b;
 			return _Utils_Tuple2(
-				{
-					data: data,
-					mdc: author$project$Material$defaultModel,
-					page: author$project$Main$Data(
-						{})
-				},
+				{data: data, page: author$project$Page$defaultModel},
 				elm$core$Platform$Cmd$none);
 		} else {
 			var error = result_flags.a;
 			return _Utils_Tuple2(
-				{
-					data: author$project$Data$empty,
-					mdc: author$project$Material$defaultModel,
-					page: author$project$Main$Error(error)
-				},
+				{data: author$project$Data$empty, page: author$project$Page$defaultModel},
 				elm$core$Platform$Cmd$none);
 		}
 	});
@@ -5510,8 +5603,8 @@ var author$project$Main$onUrlChange = function (url) {
 var author$project$Main$onUrlRequest = function (a) {
 	return author$project$Main$Noop;
 };
-var author$project$Main$Mdc = function (a) {
-	return {$: 'Mdc', a: a};
+var author$project$Main$GotPageMsg = function (a) {
+	return {$: 'GotPageMsg', a: a};
 };
 var elm$core$Basics$composeL = F3(
 	function (g, f, x) {
@@ -6077,16 +6170,2644 @@ var author$project$Material$subscriptions = F2(
 	function (lift, model) {
 		return A2(author$project$Internal$Menu$Implementation$subs, lift, model.mdc);
 	});
-var author$project$Main$subscriptions = function (model) {
-	return A2(author$project$Material$subscriptions, author$project$Main$Mdc, model);
+var author$project$Page$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
 };
-var author$project$Main$update = F2(
+var author$project$Page$subscriptions = function (model) {
+	return A2(author$project$Material$subscriptions, author$project$Page$Mdc, model);
+};
+var author$project$Main$subscriptions = function (model) {
+	return A2(
+		elm$core$Platform$Sub$map,
+		author$project$Main$GotPageMsg,
+		author$project$Page$subscriptions(model.page));
+};
+var author$project$Data$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
+};
+var elm$core$Dict$get = F2(
+	function (targetKey, dict) {
+		get:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return elm$core$Maybe$Nothing;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var _n1 = A2(elm$core$Basics$compare, targetKey, key);
+				switch (_n1.$) {
+					case 'LT':
+						var $temp$targetKey = targetKey,
+							$temp$dict = left;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+					case 'EQ':
+						return elm$core$Maybe$Just(value);
+					default:
+						var $temp$targetKey = targetKey,
+							$temp$dict = right;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+				}
+			}
+		}
+	});
+var Chadtech$elm_relational_database$Db$get = F2(
+	function (_n0, thisId) {
+		var dict = _n0.a;
+		return A2(
+			elm$core$Dict$get,
+			Chadtech$elm_relational_database$Id$toString(thisId),
+			dict);
+	});
+var Chadtech$elm_relational_database$Db$insert = F2(
+	function (_n0, _n1) {
+		var thisId = _n0.a;
+		var item = _n0.b;
+		var dict = _n1.a;
+		return Chadtech$elm_relational_database$Db$Db(
+			A3(
+				elm$core$Dict$insert,
+				Chadtech$elm_relational_database$Id$toString(thisId),
+				item,
+				dict));
+	});
+var author$project$Data$optionalUpdate = F3(
+	function (id, database, updater) {
+		if (id.$ === 'Just') {
+			var id_value = id.a;
+			var _n1 = A2(Chadtech$elm_relational_database$Db$get, database, id_value);
+			if (_n1.$ === 'Just') {
+				var value = _n1.a;
+				var _n2 = updater(value);
+				var newValue = _n2.a;
+				var newCmd = _n2.b;
+				return A2(
+					Chadtech$elm_relational_database$Db$insert,
+					_Utils_Tuple2(id_value, newValue),
+					database);
+			} else {
+				return database;
+			}
+		} else {
+			return database;
+		}
+	});
+var author$project$Entities$Answer$update = F2(
 	function (msg, model) {
-		var _n0 = _Utils_Tuple2(msg, model);
 		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 	});
-var author$project$Page$Data = {$: 'Data'};
-var author$project$Page$Error = {$: 'Error'};
+var author$project$Entities$Coder$update = F2(
+	function (msg, model) {
+		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+	});
+var author$project$Entities$Coding$update = F2(
+	function (msg, model) {
+		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+	});
+var author$project$Entities$Coding$Frame$update = F2(
+	function (msg, model) {
+		var e_msg = msg.a;
+		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+	});
+var author$project$Entities$Coding$Question$update = F2(
+	function (msg, model) {
+		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+	});
+var author$project$Entities$Question$update = F2(
+	function (msg, model) {
+		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+	});
+var author$project$Entities$Questionary$update = F2(
+	function (msg, model) {
+		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+	});
+var author$project$Data$updateEntity = F2(
+	function (umsg, model) {
+		switch (umsg.$) {
+			case 'AnswerMsg':
+				var id = umsg.a;
+				var msg = umsg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							answers: A3(
+								author$project$Data$optionalUpdate,
+								id,
+								model.answers,
+								author$project$Entities$Answer$update(msg))
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'CoderMsg':
+				var id = umsg.a;
+				var msg = umsg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							coders: A3(
+								author$project$Data$optionalUpdate,
+								id,
+								model.coders,
+								author$project$Entities$Coder$update(msg))
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'CodingMsg':
+				var id = umsg.a;
+				var msg = umsg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							codings: A3(
+								author$project$Data$optionalUpdate,
+								id,
+								model.codings,
+								author$project$Entities$Coding$update(msg))
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'CodingFrameMsg':
+				var id = umsg.a;
+				var msg = umsg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							coding_frames: A3(
+								author$project$Data$optionalUpdate,
+								id,
+								model.coding_frames,
+								author$project$Entities$Coding$Frame$update(msg))
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'QuestionaryMsg':
+				var id = umsg.a;
+				var msg = umsg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							questionaries: A3(
+								author$project$Data$optionalUpdate,
+								id,
+								model.questionaries,
+								author$project$Entities$Questionary$update(msg))
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'QuestionMsg':
+				var id = umsg.a;
+				var msg = umsg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							questions: A3(
+								author$project$Data$optionalUpdate,
+								id,
+								model.questions,
+								author$project$Entities$Question$update(msg))
+						}),
+					elm$core$Platform$Cmd$none);
+			default:
+				var id = umsg.a;
+				var msg = umsg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							coding_questions: A3(
+								author$project$Data$optionalUpdate,
+								id,
+								model.coding_questions,
+								author$project$Entities$Coding$Question$update(msg))
+						}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$Ripple$Model$Idle = {$: 'Idle'};
+var author$project$Internal$Ripple$Model$defaultModel = {animationCounter: 0, animationState: author$project$Internal$Ripple$Model$Idle, clientRect: elm$core$Maybe$Nothing, focused: false};
+var author$project$Internal$Button$Model$defaultModel = {ripple: author$project$Internal$Ripple$Model$defaultModel};
+var elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var author$project$Internal$Component$indexed = F3(
+	function (get_model, set_model, model0) {
+		var set_ = F3(
+			function (idx, store, model) {
+				return A2(
+					set_model,
+					A3(
+						elm$core$Dict$insert,
+						idx,
+						model,
+						get_model(store)),
+					store);
+			});
+		var get_ = F2(
+			function (idx, store) {
+				return A2(
+					elm$core$Maybe$withDefault,
+					model0,
+					A2(
+						elm$core$Dict$get,
+						idx,
+						get_model(store)));
+			});
+		return {get: get_, set: set_};
+	});
+var author$project$Internal$Button$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.button;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{button: x});
+		}),
+	author$project$Internal$Button$Model$defaultModel);
+var author$project$Internal$Button$Model$RippleMsg = function (a) {
+	return {$: 'RippleMsg', a: a};
+};
+var elm$core$Basics$always = F2(
+	function (a, _n0) {
+		return a;
+	});
+var elm$core$Process$sleep = _Process_sleep;
+var author$project$Internal$Helpers$delayedCmd = F2(
+	function (time, msg) {
+		return A2(
+			elm$core$Task$perform,
+			elm$core$Basics$always(msg),
+			elm$core$Process$sleep(time));
+	});
+var author$project$Internal$Ripple$Implementation$normalizedEventCoords = F3(
+	function (event, pageOffset, clientRect) {
+		var _n0 = pageOffset;
+		var x = _n0.x;
+		var y = _n0.y;
+		var documentX = x + clientRect.x;
+		var documentY = x + clientRect.y;
+		var _n1 = event.pagePoint;
+		var pageX = _n1.pageX;
+		var pageY = _n1.pageY;
+		return {x: pageX - documentX, y: pageY - documentY};
+	});
+var author$project$Internal$Ripple$Implementation$fgTranslationCoords = F2(
+	function (isUnbounded, _n0) {
+		var frame = _n0.frame;
+		var activationEvent = _n0.activationEvent;
+		var windowPageOffset = _n0.windowPageOffset;
+		var wasActivatedByPointer = _n0.wasActivatedByPointer;
+		var maxDimension = A2(elm$core$Basics$max, frame.width, frame.height);
+		var initialSize = maxDimension * 0.6;
+		var startPoint = function () {
+			var _n1 = A3(author$project$Internal$Ripple$Implementation$normalizedEventCoords, activationEvent, windowPageOffset, frame);
+			var x = _n1.x;
+			var y = _n1.y;
+			return {x: x - (initialSize / 2), y: y - (initialSize / 2)};
+		}();
+		var endPoint = {x: (frame.width - initialSize) / 2, y: (frame.height - initialSize) / 2};
+		return {endPoint: endPoint, startPoint: startPoint};
+	});
+var elm$core$String$fromFloat = _String_fromNumber;
+var author$project$Internal$Ripple$Implementation$animateActivation = F4(
+	function (isUnbounded, frame, windowPageOffset, activationEvent) {
+		var wasActivatedByPointer = true;
+		var _n0 = A2(
+			author$project$Internal$Ripple$Implementation$fgTranslationCoords,
+			isUnbounded,
+			{activationEvent: activationEvent, frame: frame, wasActivatedByPointer: wasActivatedByPointer, windowPageOffset: windowPageOffset});
+		var startPoint = _n0.startPoint;
+		var endPoint = _n0.endPoint;
+		var translateEnd = isUnbounded ? '' : (elm$core$String$fromFloat(endPoint.x) + ('px, ' + (elm$core$String$fromFloat(endPoint.y) + 'px')));
+		var translateStart = isUnbounded ? '' : (elm$core$String$fromFloat(startPoint.x) + ('px, ' + (elm$core$String$fromFloat(startPoint.y) + 'px')));
+		return {translateEnd: translateEnd, translateStart: translateStart};
+	});
+var author$project$Internal$Ripple$Model$numbers = {deactivationTimeoutMs: 225, fgDeactivationMs: 150, initialOriginScale: 0.6, padding: 10, tapDelayMs: 300};
+var elm$core$Basics$pow = _Basics_pow;
+var elm$core$Basics$sqrt = _Basics_sqrt;
+var author$project$Internal$Ripple$Implementation$layoutInternal = F2(
+	function (isUnbounded, frame) {
+		var maxDim = A2(elm$core$Basics$max, frame.width, frame.height);
+		var initialSize = elm$core$Basics$floor(maxDim * author$project$Internal$Ripple$Model$numbers.initialOriginScale);
+		var hypotenuse = elm$core$Basics$sqrt(
+			A2(elm$core$Basics$pow, frame.width, 2) + A2(elm$core$Basics$pow, frame.height, 2));
+		var boundedRadius = hypotenuse + author$project$Internal$Ripple$Model$numbers.padding;
+		var maxRadius = isUnbounded ? maxDim : boundedRadius;
+		var fgScale = maxRadius / initialSize;
+		return {fgScale: fgScale, initialSize: initialSize};
+	});
+var author$project$Internal$Ripple$Model$Activate = F2(
+	function (a, b) {
+		return {$: 'Activate', a: a, b: b};
+	});
+var author$project$Internal$Ripple$Model$Activated = function (a) {
+	return {$: 'Activated', a: a};
+};
+var author$project$Internal$Ripple$Model$ActivationEnded = function (a) {
+	return {$: 'ActivationEnded', a: a};
+};
+var author$project$Internal$Ripple$Model$Deactivated = function (a) {
+	return {$: 'Deactivated', a: a};
+};
+var author$project$Internal$Ripple$Model$DeactivationEnded = function (a) {
+	return {$: 'DeactivationEnded', a: a};
+};
+var author$project$Internal$Ripple$Model$Reactivate = F2(
+	function (a, b) {
+		return {$: 'Reactivate', a: a, b: b};
+	});
+var elm$browser$Browser$Dom$getElement = _Browser_getElement;
+var elm$core$Task$onError = _Scheduler_onError;
+var elm$core$Task$attempt = F2(
+	function (resultToMessage, task) {
+		return elm$core$Task$command(
+			elm$core$Task$Perform(
+				A2(
+					elm$core$Task$onError,
+					A2(
+						elm$core$Basics$composeL,
+						A2(elm$core$Basics$composeL, elm$core$Task$succeed, resultToMessage),
+						elm$core$Result$Err),
+					A2(
+						elm$core$Task$andThen,
+						A2(
+							elm$core$Basics$composeL,
+							A2(elm$core$Basics$composeL, elm$core$Task$succeed, resultToMessage),
+							elm$core$Result$Ok),
+						task))));
+	});
+var author$project$Internal$Ripple$Implementation$update = F2(
+	function (msg, model) {
+		var _n0 = _Utils_Tuple2(msg, model.animationState);
+		_n0$13:
+		while (true) {
+			switch (_n0.a.$) {
+				case 'Focus':
+					var _n1 = _n0.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{focused: true}),
+						elm$core$Platform$Cmd$none);
+				case 'Blur':
+					var _n2 = _n0.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{focused: false}),
+						elm$core$Platform$Cmd$none);
+				case 'SetCssVariables':
+					var _n3 = _n0.a;
+					var isUnbounded = _n3.a;
+					var clientRect = _n3.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								clientRect: elm$core$Maybe$Just(clientRect)
+							}),
+						elm$core$Platform$Cmd$none);
+				case 'Activate0':
+					if (_n0.b.$ === 'Idle') {
+						var _n4 = _n0.a;
+						var domId = _n4.a;
+						var activateData = _n4.b;
+						var _n5 = _n0.b;
+						return _Utils_Tuple2(
+							model,
+							A2(
+								elm$core$Task$attempt,
+								author$project$Internal$Ripple$Model$Activate(activateData),
+								elm$browser$Browser$Dom$getElement(domId)));
+					} else {
+						var _n6 = _n0.a;
+						var domId = _n6.a;
+						var activateData = _n6.b;
+						return _Utils_Tuple2(
+							model,
+							A2(
+								elm$core$Task$attempt,
+								author$project$Internal$Ripple$Model$Reactivate(activateData),
+								elm$browser$Browser$Dom$getElement(domId)));
+					}
+				case 'Reactivate':
+					switch (_n0.b.$) {
+						case 'Activated':
+							var _n7 = _n0.a;
+							var activateData = _n7.a;
+							var element = _n7.b;
+							var activationEvent = _n0.b.a.activationEvent;
+							return _Utils_eq(activateData.event.eventType, activationEvent.eventType) ? _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{animationState: author$project$Internal$Ripple$Model$Idle}),
+								A2(
+									elm$core$Task$perform,
+									function (_n8) {
+										return A2(author$project$Internal$Ripple$Model$Activate, activateData, element);
+									},
+									elm$core$Task$succeed(_Utils_Tuple0))) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+						case 'Deactivated':
+							var _n9 = _n0.a;
+							var activateData = _n9.a;
+							var element = _n9.b;
+							var activationEvent = _n0.b.a.activationEvent;
+							return _Utils_eq(activateData.event.eventType, activationEvent.eventType) ? _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{animationState: author$project$Internal$Ripple$Model$Idle}),
+								A2(
+									elm$core$Task$perform,
+									function (_n10) {
+										return A2(author$project$Internal$Ripple$Model$Activate, activateData, element);
+									},
+									elm$core$Task$succeed(_Utils_Tuple0))) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+						default:
+							var _n11 = _n0.a;
+							var activateData = _n11.a;
+							var element = _n11.b;
+							var _n12 = _n0.b;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{animationState: author$project$Internal$Ripple$Model$Idle}),
+								A2(
+									elm$core$Task$perform,
+									function (_n13) {
+										return A2(author$project$Internal$Ripple$Model$Activate, activateData, element);
+									},
+									elm$core$Task$succeed(_Utils_Tuple0)));
+					}
+				case 'Activate':
+					if (_n0.a.b.$ === 'Err') {
+						var _n14 = _n0.a;
+						var activateData = _n14.a;
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					} else {
+						var _n15 = _n0.a;
+						var activateData = _n15.a;
+						var element = _n15.b.a.element;
+						var viewport = _n15.b.a.viewport;
+						var newAnimationCounter = model.animationCounter + 1;
+						var _n16 = A4(author$project$Internal$Ripple$Implementation$animateActivation, activateData.isUnbounded, element, viewport, activateData.event);
+						var translateStart = _n16.translateStart;
+						var translateEnd = _n16.translateEnd;
+						var _n17 = A2(author$project$Internal$Ripple$Implementation$layoutInternal, activateData.isUnbounded, element);
+						var fgScale = _n17.fgScale;
+						var initialSize = _n17.initialSize;
+						var activatedData = {
+							activationEvent: activateData.event,
+							activationHasEnded: false,
+							deactivated: false,
+							fgScale: fgScale,
+							frame: {height: element.height, left: element.x, top: element.y, width: element.width},
+							initialSize: initialSize,
+							translateEnd: translateEnd,
+							translateStart: translateStart,
+							wasElementMadeActive: activateData.wasElementMadeActive
+						};
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									animationCounter: newAnimationCounter,
+									animationState: author$project$Internal$Ripple$Model$Activated(activatedData)
+								}),
+							A2(
+								elm$core$Task$perform,
+								function (_n18) {
+									return author$project$Internal$Ripple$Model$ActivationEnded(newAnimationCounter);
+								},
+								elm$core$Process$sleep(author$project$Internal$Ripple$Model$numbers.deactivationTimeoutMs)));
+					}
+				case 'ActivationEnded':
+					if (_n0.b.$ === 'Activated') {
+						var animationCount = _n0.a.a;
+						var activatedData = _n0.b.a;
+						if (_Utils_eq(animationCount, model.animationCounter)) {
+							if (activatedData.deactivated) {
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{
+											animationState: author$project$Internal$Ripple$Model$Deactivated(activatedData)
+										}),
+									A2(
+										elm$core$Task$perform,
+										function (_n19) {
+											return author$project$Internal$Ripple$Model$DeactivationEnded(model.animationCounter);
+										},
+										elm$core$Process$sleep(author$project$Internal$Ripple$Model$numbers.tapDelayMs)));
+							} else {
+								var newActivatedData = _Utils_update(
+									activatedData,
+									{activationHasEnded: true});
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{
+											animationState: author$project$Internal$Ripple$Model$Activated(newActivatedData)
+										}),
+									elm$core$Platform$Cmd$none);
+							}
+						} else {
+							return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+						}
+					} else {
+						break _n0$13;
+					}
+				case 'Deactivate':
+					if (_n0.b.$ === 'Activated') {
+						var _n20 = _n0.a;
+						var activatedData = _n0.b.a;
+						if (activatedData.activationHasEnded) {
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										animationState: author$project$Internal$Ripple$Model$Deactivated(activatedData)
+									}),
+								A2(
+									elm$core$Task$perform,
+									function (_n21) {
+										return author$project$Internal$Ripple$Model$DeactivationEnded(model.animationCounter);
+									},
+									elm$core$Process$sleep(author$project$Internal$Ripple$Model$numbers.tapDelayMs)));
+						} else {
+							var newActivatedData = _Utils_update(
+								activatedData,
+								{deactivated: true});
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										animationState: author$project$Internal$Ripple$Model$Activated(newActivatedData)
+									}),
+								elm$core$Platform$Cmd$none);
+						}
+					} else {
+						break _n0$13;
+					}
+				default:
+					if (_n0.b.$ === 'Deactivated') {
+						var animationCount = _n0.a.a;
+						return _Utils_eq(animationCount, model.animationCounter) ? _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{animationState: author$project$Internal$Ripple$Model$Idle}),
+							elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					} else {
+						break _n0$13;
+					}
+			}
+		}
+		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+	});
+var elm$core$Platform$Cmd$map = _Platform_map;
+var author$project$Internal$Button$Implementation$update = F3(
+	function (lift, msg, model) {
+		if (msg.$ === 'RippleMsg') {
+			var msg_ = msg.a;
+			var _n1 = A2(author$project$Internal$Ripple$Implementation$update, msg_, model.ripple);
+			var rippleState = _n1.a;
+			var rippleCmd = _n1.b;
+			return _Utils_Tuple2(
+				elm$core$Maybe$Just(
+					_Utils_update(
+						model,
+						{ripple: rippleState})),
+				A2(
+					elm$core$Platform$Cmd$map,
+					A2(elm$core$Basics$composeL, lift, author$project$Internal$Button$Model$RippleMsg),
+					rippleCmd));
+		} else {
+			var doRipple = msg.a;
+			var msg_ = msg.b;
+			return _Utils_Tuple2(
+				elm$core$Maybe$Nothing,
+				A2(
+					author$project$Internal$Helpers$delayedCmd,
+					doRipple ? 150 : 0,
+					msg_));
+		}
+	});
+var elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return elm$core$Maybe$Nothing;
+		}
+	});
+var author$project$Internal$Component$react = F8(
+	function (get, set, ctor, update, lift, msg, idx, store) {
+		return A2(
+			elm$core$Tuple$mapFirst,
+			elm$core$Maybe$map(
+				A2(set, idx, store)),
+			A3(
+				update,
+				A2(
+					elm$core$Basics$composeL,
+					lift,
+					ctor(idx)),
+				msg,
+				A2(get, idx, store)));
+	});
+var author$project$Internal$Msg$ButtonMsg = F2(
+	function (a, b) {
+		return {$: 'ButtonMsg', a: a, b: b};
+	});
+var author$project$Internal$Button$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$Button$Implementation$getSet.get, author$project$Internal$Button$Implementation$getSet.set, author$project$Internal$Msg$ButtonMsg, author$project$Internal$Button$Implementation$update);
+var author$project$Internal$Checkbox$Model$defaultModel = {animation: elm$core$Maybe$Nothing, isFocused: false, lastKnownState: elm$core$Maybe$Nothing};
+var author$project$Internal$Checkbox$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.checkbox;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{checkbox: x});
+		}),
+	author$project$Internal$Checkbox$Model$defaultModel);
+var author$project$Internal$Checkbox$Model$CheckedIndeterminate = {$: 'CheckedIndeterminate'};
+var author$project$Internal$Checkbox$Model$CheckedUnchecked = {$: 'CheckedUnchecked'};
+var author$project$Internal$Checkbox$Model$IndeterminateChecked = {$: 'IndeterminateChecked'};
+var author$project$Internal$Checkbox$Model$IndeterminateUnchecked = {$: 'IndeterminateUnchecked'};
+var author$project$Internal$Checkbox$Model$UncheckedChecked = {$: 'UncheckedChecked'};
+var author$project$Internal$Checkbox$Model$UncheckedIndeterminate = {$: 'UncheckedIndeterminate'};
+var author$project$Internal$Checkbox$Implementation$animationState = F2(
+	function (oldState, state) {
+		var _n0 = _Utils_Tuple2(oldState, state);
+		_n0$6:
+		while (true) {
+			if (_n0.a.$ === 'Nothing') {
+				if (_n0.b.$ === 'Just') {
+					if (_n0.b.a.$ === 'Checked') {
+						var _n5 = _n0.a;
+						var _n6 = _n0.b.a;
+						return elm$core$Maybe$Just(author$project$Internal$Checkbox$Model$IndeterminateChecked);
+					} else {
+						var _n7 = _n0.a;
+						var _n8 = _n0.b.a;
+						return elm$core$Maybe$Just(author$project$Internal$Checkbox$Model$IndeterminateUnchecked);
+					}
+				} else {
+					break _n0$6;
+				}
+			} else {
+				if (_n0.a.a.$ === 'Unchecked') {
+					if (_n0.b.$ === 'Nothing') {
+						var _n1 = _n0.a.a;
+						var _n2 = _n0.b;
+						return elm$core$Maybe$Just(author$project$Internal$Checkbox$Model$UncheckedIndeterminate);
+					} else {
+						if (_n0.b.a.$ === 'Checked') {
+							var _n9 = _n0.a.a;
+							var _n10 = _n0.b.a;
+							return elm$core$Maybe$Just(author$project$Internal$Checkbox$Model$UncheckedChecked);
+						} else {
+							break _n0$6;
+						}
+					}
+				} else {
+					if (_n0.b.$ === 'Nothing') {
+						var _n3 = _n0.a.a;
+						var _n4 = _n0.b;
+						return elm$core$Maybe$Just(author$project$Internal$Checkbox$Model$CheckedIndeterminate);
+					} else {
+						if (_n0.b.a.$ === 'Unchecked') {
+							var _n11 = _n0.a.a;
+							var _n12 = _n0.b.a;
+							return elm$core$Maybe$Just(author$project$Internal$Checkbox$Model$CheckedUnchecked);
+						} else {
+							break _n0$6;
+						}
+					}
+				}
+			}
+		}
+		return elm$core$Maybe$Nothing;
+	});
+var elm$core$Maybe$andThen = F2(
+	function (callback, maybeValue) {
+		if (maybeValue.$ === 'Just') {
+			var value = maybeValue.a;
+			return callback(value);
+		} else {
+			return elm$core$Maybe$Nothing;
+		}
+	});
+var author$project$Internal$Checkbox$Implementation$update = F3(
+	function (_n0, msg, model) {
+		switch (msg.$) {
+			case 'NoOp':
+				return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+			case 'SetFocus':
+				var focus = msg.a;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{isFocused: focus})),
+					elm$core$Platform$Cmd$none);
+			case 'Init':
+				var lastKnownState = msg.a;
+				var state = msg.b;
+				var animation = A2(
+					elm$core$Maybe$andThen,
+					function (lastKnownState_) {
+						return A2(author$project$Internal$Checkbox$Implementation$animationState, lastKnownState_, state);
+					},
+					lastKnownState);
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{
+								animation: animation,
+								lastKnownState: elm$core$Maybe$Just(state)
+							})),
+					elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{animation: elm$core$Maybe$Nothing})),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$Msg$CheckboxMsg = F2(
+	function (a, b) {
+		return {$: 'CheckboxMsg', a: a, b: b};
+	});
+var author$project$Internal$Checkbox$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$Checkbox$Implementation$getSet.get, author$project$Internal$Checkbox$Implementation$getSet.set, author$project$Internal$Msg$CheckboxMsg, author$project$Internal$Checkbox$Implementation$update);
+var author$project$Internal$Chip$Model$defaultModel = {ripple: author$project$Internal$Ripple$Model$defaultModel};
+var author$project$Internal$Chip$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.chip;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{chip: x});
+		}),
+	author$project$Internal$Chip$Model$defaultModel);
+var author$project$Internal$Chip$Model$RippleMsg = function (a) {
+	return {$: 'RippleMsg', a: a};
+};
+var author$project$Internal$Chip$Implementation$update = F3(
+	function (lift, msg, model) {
+		if (msg.$ === 'RippleMsg') {
+			var msg_ = msg.a;
+			var _n1 = A2(author$project$Internal$Ripple$Implementation$update, msg_, model.ripple);
+			var ripple = _n1.a;
+			var cmd = _n1.b;
+			return _Utils_Tuple2(
+				elm$core$Maybe$Just(
+					_Utils_update(
+						model,
+						{ripple: ripple})),
+				A2(
+					elm$core$Platform$Cmd$map,
+					A2(elm$core$Basics$composeL, lift, author$project$Internal$Chip$Model$RippleMsg),
+					cmd));
+		} else {
+			var msg_ = msg.a;
+			return _Utils_Tuple2(
+				elm$core$Maybe$Nothing,
+				A2(author$project$Internal$Helpers$delayedCmd, 150, msg_));
+		}
+	});
+var author$project$Internal$Msg$ChipMsg = F2(
+	function (a, b) {
+		return {$: 'ChipMsg', a: a, b: b};
+	});
+var author$project$Internal$Chip$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$Chip$Implementation$getSet.get, author$project$Internal$Chip$Implementation$getSet.set, author$project$Internal$Msg$ChipMsg, author$project$Internal$Chip$Implementation$update);
+var author$project$Internal$Dialog$Model$defaultModel = {animating: false, open: false};
+var author$project$Internal$Dialog$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.dialog;
+	},
+	F2(
+		function (x, c) {
+			return _Utils_update(
+				c,
+				{dialog: x});
+		}),
+	author$project$Internal$Dialog$Model$defaultModel);
+var elm$core$Basics$neq = _Utils_notEqual;
+var author$project$Internal$Dialog$Implementation$update = F3(
+	function (_n0, msg, model) {
+		switch (msg.$) {
+			case 'NoOp':
+				return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+			case 'StartAnimation':
+				var isOpen = msg.a;
+				return (!_Utils_eq(isOpen, model.open)) ? _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{animating: true, open: isOpen})),
+					elm$core$Platform$Cmd$none) : _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{animating: false})),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$Msg$DialogMsg = F2(
+	function (a, b) {
+		return {$: 'DialogMsg', a: a, b: b};
+	});
+var author$project$Internal$Dialog$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$Dialog$Implementation$getSet.get, author$project$Internal$Dialog$Implementation$getSet.set, author$project$Internal$Msg$DialogMsg, author$project$Internal$Dialog$Implementation$update);
+var author$project$Internal$Dispatch$forward = function (msgs) {
+	return elm$core$Platform$Cmd$batch(
+		A2(
+			elm$core$List$map,
+			A2(
+				elm$core$Basics$composeL,
+				elm$core$Task$perform(elm$core$Basics$identity),
+				elm$core$Task$succeed),
+			msgs));
+};
+var author$project$Internal$Drawer$Model$defaultModel = {animating: false, closeOnAnimationEnd: false, open: false};
+var author$project$Internal$Drawer$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.drawer;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{drawer: x});
+		}),
+	author$project$Internal$Drawer$Model$defaultModel);
+var elm$core$Basics$not = _Basics_not;
+var author$project$Internal$Drawer$Implementation$update = F3(
+	function (lift, msg, model) {
+		switch (msg.$) {
+			case 'NoOp':
+				return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+			case 'StartAnimation':
+				var isOpen = msg.a;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{animating: true, closeOnAnimationEnd: !isOpen, open: true})),
+					elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{
+								animating: false,
+								closeOnAnimationEnd: false,
+								open: model.closeOnAnimationEnd ? false : model.open
+							})),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$Msg$DrawerMsg = F2(
+	function (a, b) {
+		return {$: 'DrawerMsg', a: a, b: b};
+	});
+var author$project$Internal$Drawer$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$Drawer$Implementation$getSet.get, author$project$Internal$Drawer$Implementation$getSet.set, author$project$Internal$Msg$DrawerMsg, author$project$Internal$Drawer$Implementation$update);
+var elm$core$Tuple$mapSecond = F2(
+	function (func, _n0) {
+		var x = _n0.a;
+		var y = _n0.b;
+		return _Utils_Tuple2(
+			x,
+			func(y));
+	});
+var author$project$Internal$Component$generalise = F4(
+	function (update, lift, msg, model) {
+		return A2(
+			elm$core$Tuple$mapSecond,
+			elm$core$Platform$Cmd$map(lift),
+			A2(
+				elm$core$Tuple$mapFirst,
+				elm$core$Maybe$Just,
+				A2(update, msg, model)));
+	});
+var author$project$Internal$Fab$Model$defaultModel = {ripple: author$project$Internal$Ripple$Model$defaultModel};
+var author$project$Internal$Fab$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.fab;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{fab: x});
+		}),
+	author$project$Internal$Fab$Model$defaultModel);
+var author$project$Internal$Fab$Model$RippleMsg = function (a) {
+	return {$: 'RippleMsg', a: a};
+};
+var author$project$Internal$Fab$Implementation$update = F2(
+	function (msg, model) {
+		if (msg.$ === 'RippleMsg') {
+			var msg_ = msg.a;
+			var _n1 = A2(author$project$Internal$Ripple$Implementation$update, msg_, model.ripple);
+			var rippleState = _n1.a;
+			var rippleCmd = _n1.b;
+			return _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{ripple: rippleState}),
+				A2(elm$core$Platform$Cmd$map, author$project$Internal$Fab$Model$RippleMsg, rippleCmd));
+		} else {
+			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$Msg$FabMsg = F2(
+	function (a, b) {
+		return {$: 'FabMsg', a: a, b: b};
+	});
+var author$project$Internal$Fab$Implementation$react = A4(
+	author$project$Internal$Component$react,
+	author$project$Internal$Fab$Implementation$getSet.get,
+	author$project$Internal$Fab$Implementation$getSet.set,
+	author$project$Internal$Msg$FabMsg,
+	author$project$Internal$Component$generalise(author$project$Internal$Fab$Implementation$update));
+var author$project$Internal$IconButton$Model$defaultModel = {on: false, ripple: author$project$Internal$Ripple$Model$defaultModel};
+var author$project$Internal$IconButton$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.iconButton;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{iconButton: x});
+		}),
+	author$project$Internal$IconButton$Model$defaultModel);
+var author$project$Internal$IconButton$Model$RippleMsg = function (a) {
+	return {$: 'RippleMsg', a: a};
+};
+var author$project$Internal$IconButton$Implementation$update = F2(
+	function (msg, model) {
+		var msg_ = msg.a;
+		var _n1 = A2(author$project$Internal$Ripple$Implementation$update, msg_, model.ripple);
+		var ripple = _n1.a;
+		var effects = _n1.b;
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{ripple: ripple}),
+			A2(elm$core$Platform$Cmd$map, author$project$Internal$IconButton$Model$RippleMsg, effects));
+	});
+var author$project$Internal$Msg$IconButtonMsg = F2(
+	function (a, b) {
+		return {$: 'IconButtonMsg', a: a, b: b};
+	});
+var author$project$Internal$IconButton$Implementation$react = A4(
+	author$project$Internal$Component$react,
+	author$project$Internal$IconButton$Implementation$getSet.get,
+	author$project$Internal$IconButton$Implementation$getSet.set,
+	author$project$Internal$Msg$IconButtonMsg,
+	author$project$Internal$Component$generalise(author$project$Internal$IconButton$Implementation$update));
+var author$project$Internal$List$Model$defaultModel = {focused: elm$core$Maybe$Nothing, ripples: elm$core$Dict$empty};
+var author$project$Internal$List$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.list;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{list: x});
+		}),
+	author$project$Internal$List$Model$defaultModel);
+var author$project$Internal$List$Implementation$send = function (msg) {
+	return A2(
+		elm$core$Task$perform,
+		elm$core$Basics$identity,
+		elm$core$Task$succeed(msg));
+};
+var author$project$Internal$List$Model$NoOp = {$: 'NoOp'};
+var author$project$Internal$List$Model$RippleMsg = F2(
+	function (a, b) {
+		return {$: 'RippleMsg', a: a, b: b};
+	});
+var elm$browser$Browser$Dom$focus = _Browser_call('focus');
+var author$project$Internal$List$Implementation$update = F3(
+	function (lift, msg, model) {
+		switch (msg.$) {
+			case 'RippleMsg':
+				var index = msg.a;
+				var msg_ = msg.b;
+				var _n1 = A2(
+					author$project$Internal$Ripple$Implementation$update,
+					msg_,
+					A2(
+						elm$core$Maybe$withDefault,
+						author$project$Internal$Ripple$Model$defaultModel,
+						A2(elm$core$Dict$get, index, model.ripples)));
+				var ripple = _n1.a;
+				var effects = _n1.b;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{
+								ripples: A3(elm$core$Dict$insert, index, ripple, model.ripples)
+							})),
+					A2(
+						elm$core$Platform$Cmd$map,
+						A2(
+							elm$core$Basics$composeL,
+							lift,
+							author$project$Internal$List$Model$RippleMsg(index)),
+						effects));
+			case 'ResetFocusedItem':
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{focused: elm$core$Maybe$Nothing})),
+					elm$core$Platform$Cmd$none);
+			case 'FocusItem':
+				var id = msg.b;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{focused: elm$core$Maybe$Nothing})),
+					A2(
+						elm$core$Task$attempt,
+						function (_n2) {
+							return lift(author$project$Internal$List$Model$NoOp);
+						},
+						elm$browser$Browser$Dom$focus(id)));
+			case 'SelectItem':
+				var index = msg.a;
+				var m = msg.b;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{focused: elm$core$Maybe$Nothing})),
+					author$project$Internal$List$Implementation$send(
+						m(index)));
+			default:
+				return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$Msg$ListMsg = F2(
+	function (a, b) {
+		return {$: 'ListMsg', a: a, b: b};
+	});
+var author$project$Internal$List$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$List$Implementation$getSet.get, author$project$Internal$List$Implementation$getSet.set, author$project$Internal$Msg$ListMsg, author$project$Internal$List$Implementation$update);
+var author$project$Internal$Menu$Model$defaultModel = {animating: false, geometry: elm$core$Maybe$Nothing, index: elm$core$Maybe$Nothing, keyDownWithinMenu: false, list: author$project$Internal$List$Model$defaultModel, open: false, quickOpen: elm$core$Maybe$Nothing};
+var author$project$Internal$Menu$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.menu;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{menu: x});
+		}),
+	author$project$Internal$Menu$Model$defaultModel);
+var author$project$Internal$Menu$Model$AnimationEnd = {$: 'AnimationEnd'};
+var author$project$Internal$Menu$Model$Close = {$: 'Close'};
+var author$project$Internal$Menu$Model$ListMsg = function (a) {
+	return {$: 'ListMsg', a: a};
+};
+var author$project$Internal$Menu$Model$NoOp = {$: 'NoOp'};
+var author$project$Internal$Menu$Model$Open = {$: 'Open'};
+var author$project$Internal$Menu$Implementation$update = F3(
+	function (lift, msg, model) {
+		update:
+		while (true) {
+			switch (msg.$) {
+				case 'NoOp':
+					return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+				case 'Toggle':
+					var $temp$lift = lift,
+						$temp$msg = model.open ? author$project$Internal$Menu$Model$Close : author$project$Internal$Menu$Model$Open,
+						$temp$model = model;
+					lift = $temp$lift;
+					msg = $temp$msg;
+					model = $temp$model;
+					continue update;
+				case 'Open':
+					return (!model.open) ? _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{animating: true, geometry: elm$core$Maybe$Nothing, open: true})),
+						elm$core$Platform$Cmd$none) : _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+				case 'Close':
+					return model.open ? _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{animating: true, open: false})),
+						A2(elm$core$Maybe$withDefault, false, model.quickOpen) ? A2(
+							author$project$Internal$Helpers$delayedCmd,
+							70,
+							lift(author$project$Internal$Menu$Model$AnimationEnd)) : A2(
+							author$project$Internal$Helpers$delayedCmd,
+							0,
+							lift(author$project$Internal$Menu$Model$AnimationEnd))) : _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+				case 'CloseDelayed':
+					return _Utils_Tuple2(
+						elm$core$Maybe$Nothing,
+						A2(
+							author$project$Internal$Helpers$delayedCmd,
+							50,
+							lift(author$project$Internal$Menu$Model$Close)));
+				case 'Init':
+					var config = msg.a;
+					var geometry = msg.b;
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{
+									geometry: elm$core$Maybe$Just(geometry),
+									quickOpen: elm$core$Maybe$Just(config.quickOpen)
+								})),
+						elm$core$Platform$Cmd$batch(
+							_List_fromArray(
+								[
+									A2(
+									elm$core$Task$attempt,
+									function (_n1) {
+										return lift(author$project$Internal$Menu$Model$NoOp);
+									},
+									elm$browser$Browser$Dom$focus(config.focusedItemId)),
+									config.quickOpen ? A2(
+									author$project$Internal$Helpers$delayedCmd,
+									120,
+									lift(author$project$Internal$Menu$Model$AnimationEnd)) : A2(
+									author$project$Internal$Helpers$delayedCmd,
+									0,
+									lift(author$project$Internal$Menu$Model$AnimationEnd))
+								])));
+				case 'AnimationEnd':
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{animating: false})),
+						elm$core$Platform$Cmd$none);
+				case 'DocumentClick':
+					if (model.open && (!_Utils_eq(model.geometry, elm$core$Maybe$Nothing))) {
+						var $temp$lift = lift,
+							$temp$msg = author$project$Internal$Menu$Model$Close,
+							$temp$model = model;
+						lift = $temp$lift;
+						msg = $temp$msg;
+						model = $temp$model;
+						continue update;
+					} else {
+						return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+					}
+				case 'KeyDown':
+					var shiftKey = msg.a.shiftKey;
+					var altKey = msg.a.altKey;
+					var ctrlKey = msg.a.ctrlKey;
+					var metaKey = msg.a.metaKey;
+					var key = msg.b;
+					var keyCode = msg.c;
+					var isSpace = (key === 'Space') || (keyCode === 32);
+					var isEscape = (key === 'Escape') || (keyCode === 27);
+					var isEnter = (key === 'Enter') || (keyCode === 13);
+					return (isEscape || (isSpace || isEnter)) ? _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{keyDownWithinMenu: true})),
+						elm$core$Platform$Cmd$none) : _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+				case 'KeyUp':
+					var shiftKey = msg.a.shiftKey;
+					var altKey = msg.a.altKey;
+					var ctrlKey = msg.a.ctrlKey;
+					var metaKey = msg.a.metaKey;
+					var key = msg.b;
+					var keyCode = msg.c;
+					var isSpace = (key === 'Space') || (keyCode === 32);
+					var isEscape = (key === 'Escape') || (keyCode === 27);
+					var isEnter = (key === 'Enter') || (keyCode === 13);
+					return A2(
+						elm$core$Tuple$mapFirst,
+						elm$core$Maybe$map(
+							function (newModel) {
+								return _Utils_update(
+									newModel,
+									{keyDownWithinMenu: false});
+							}),
+						((isEscape || (isSpace || isEnter)) && ((!(altKey || (ctrlKey || metaKey))) && model.keyDownWithinMenu)) ? A3(author$project$Internal$Menu$Implementation$update, lift, author$project$Internal$Menu$Model$Close, model) : _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none));
+				default:
+					var msg_ = msg.a;
+					return A2(
+						elm$core$Tuple$mapFirst,
+						function (maybeNewList) {
+							if (maybeNewList.$ === 'Just') {
+								var newList = maybeNewList.a;
+								return elm$core$Maybe$Just(
+									_Utils_update(
+										model,
+										{list: newList}));
+							} else {
+								return elm$core$Maybe$Nothing;
+							}
+						},
+						A3(
+							author$project$Internal$List$Implementation$update,
+							A2(elm$core$Basics$composeL, lift, author$project$Internal$Menu$Model$ListMsg),
+							msg_,
+							model.list));
+			}
+		}
+	});
+var author$project$Internal$Menu$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$Menu$Implementation$getSet.get, author$project$Internal$Menu$Implementation$getSet.set, author$project$Internal$Msg$MenuMsg, author$project$Internal$Menu$Implementation$update);
+var author$project$Internal$Msg$RadioButtonMsg = F2(
+	function (a, b) {
+		return {$: 'RadioButtonMsg', a: a, b: b};
+	});
+var author$project$Internal$RadioButton$Model$defaultModel = {isFocused: false, ripple: author$project$Internal$Ripple$Model$defaultModel};
+var author$project$Internal$RadioButton$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.radio;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{radio: x});
+		}),
+	author$project$Internal$RadioButton$Model$defaultModel);
+var author$project$Internal$RadioButton$Model$RippleMsg = function (a) {
+	return {$: 'RippleMsg', a: a};
+};
+var author$project$Internal$RadioButton$Implementation$update = F3(
+	function (lift, msg, model) {
+		switch (msg.$) {
+			case 'RippleMsg':
+				var msg_ = msg.a;
+				var _n1 = A2(author$project$Internal$Ripple$Implementation$update, msg_, model.ripple);
+				var ripple = _n1.a;
+				var effects = _n1.b;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{ripple: ripple})),
+					A2(
+						elm$core$Platform$Cmd$map,
+						A2(elm$core$Basics$composeL, lift, author$project$Internal$RadioButton$Model$RippleMsg),
+						effects));
+			case 'NoOp':
+				return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+			default:
+				var focus = msg.a;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{isFocused: focus})),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$RadioButton$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$RadioButton$Implementation$getSet.get, author$project$Internal$RadioButton$Implementation$getSet.set, author$project$Internal$Msg$RadioButtonMsg, author$project$Internal$RadioButton$Implementation$update);
+var author$project$Internal$Msg$RippleMsg = F2(
+	function (a, b) {
+		return {$: 'RippleMsg', a: a, b: b};
+	});
+var author$project$Internal$Ripple$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.ripple;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{ripple: x});
+		}),
+	author$project$Internal$Ripple$Model$defaultModel);
+var author$project$Internal$Ripple$Implementation$react = A4(
+	author$project$Internal$Component$react,
+	author$project$Internal$Ripple$Implementation$getSet.get,
+	author$project$Internal$Ripple$Implementation$getSet.set,
+	author$project$Internal$Msg$RippleMsg,
+	author$project$Internal$Component$generalise(author$project$Internal$Ripple$Implementation$update));
+var author$project$Internal$Msg$SelectMsg = F2(
+	function (a, b) {
+		return {$: 'SelectMsg', a: a, b: b};
+	});
+var author$project$Internal$Select$Model$defaultModel = {focused: false, isDirty: false, ripple: author$project$Internal$Ripple$Model$defaultModel};
+var author$project$Internal$Select$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.select;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{select: x});
+		}),
+	author$project$Internal$Select$Model$defaultModel);
+var author$project$Internal$Select$Model$RippleMsg = function (a) {
+	return {$: 'RippleMsg', a: a};
+};
+var author$project$Internal$Select$Implementation$update = F3(
+	function (lift, msg, model) {
+		switch (msg.$) {
+			case 'Change':
+				var changedValue = msg.a;
+				var dirty = changedValue !== '';
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{isDirty: dirty})),
+					elm$core$Platform$Cmd$none);
+			case 'Blur':
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{focused: false})),
+					elm$core$Platform$Cmd$none);
+			case 'Focus':
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{focused: true})),
+					elm$core$Platform$Cmd$none);
+			default:
+				var msg_ = msg.a;
+				var _n1 = A2(author$project$Internal$Ripple$Implementation$update, msg_, model.ripple);
+				var ripple = _n1.a;
+				var effects = _n1.b;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{ripple: ripple})),
+					A2(
+						elm$core$Platform$Cmd$map,
+						A2(elm$core$Basics$composeL, lift, author$project$Internal$Select$Model$RippleMsg),
+						effects));
+		}
+	});
+var author$project$Internal$Select$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$Select$Implementation$getSet.get, author$project$Internal$Select$Implementation$getSet.set, author$project$Internal$Msg$SelectMsg, author$project$Internal$Select$Implementation$update);
+var author$project$Internal$Msg$SliderMsg = F2(
+	function (a, b) {
+		return {$: 'SliderMsg', a: a, b: b};
+	});
+var author$project$Internal$Slider$Model$defaultModel = {active: false, activeValue: elm$core$Maybe$Nothing, focus: false, geometry: elm$core$Maybe$Nothing, inTransit: false, preventFocus: false};
+var author$project$Internal$Slider$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.slider;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{slider: x});
+		}),
+	author$project$Internal$Slider$Model$defaultModel);
+var author$project$Internal$Slider$Implementation$valueFromPageX = F2(
+	function (geometry, pageX) {
+		var xPos = pageX - geometry.rect.left;
+		var isRtl = false;
+		var pctComplete = isRtl ? (1 - (xPos / geometry.rect.width)) : (xPos / geometry.rect.width);
+		return geometry.min + (pctComplete * (geometry.max - geometry.min));
+	});
+var author$project$Internal$Slider$Model$ActualUp = {$: 'ActualUp'};
+var author$project$Internal$Slider$Model$Init = function (a) {
+	return {$: 'Init', a: a};
+};
+var author$project$Internal$Slider$Model$defaultGeometry = {
+	discrete: false,
+	max: 100,
+	min: 0,
+	rect: {left: 0, width: 0},
+	step: elm$core$Maybe$Nothing
+};
+var author$project$Internal$Slider$Implementation$update = F3(
+	function (lift, msg, model) {
+		update:
+		while (true) {
+			switch (msg.$) {
+				case 'NoOp':
+					return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+				case 'Focus':
+					return (!model.preventFocus) ? _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{focus: true})),
+						elm$core$Platform$Cmd$none) : _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+				case 'Blur':
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{focus: false, preventFocus: false})),
+						elm$core$Platform$Cmd$none);
+				case 'TransitionEnd':
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{inTransit: false})),
+						elm$core$Platform$Cmd$none);
+				case 'InteractionStart':
+					var pageX = msg.b.pageX;
+					var geometry = A2(elm$core$Maybe$withDefault, author$project$Internal$Slider$Model$defaultGeometry, model.geometry);
+					var activeValue = A2(author$project$Internal$Slider$Implementation$valueFromPageX, geometry, pageX);
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{
+									active: true,
+									activeValue: elm$core$Maybe$Just(activeValue),
+									inTransit: true,
+									preventFocus: true
+								})),
+						elm$core$Platform$Cmd$none);
+				case 'ThumbContainerPointer':
+					var pageX = msg.b.pageX;
+					var geometry = A2(elm$core$Maybe$withDefault, author$project$Internal$Slider$Model$defaultGeometry, model.geometry);
+					var activeValue = A2(author$project$Internal$Slider$Implementation$valueFromPageX, geometry, pageX);
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{
+									active: true,
+									activeValue: elm$core$Maybe$Just(activeValue),
+									inTransit: false,
+									preventFocus: true
+								})),
+						elm$core$Platform$Cmd$none);
+				case 'Drag':
+					var pageX = msg.a.pageX;
+					if (model.active) {
+						var geometry = A2(elm$core$Maybe$withDefault, author$project$Internal$Slider$Model$defaultGeometry, model.geometry);
+						var activeValue = A2(author$project$Internal$Slider$Implementation$valueFromPageX, geometry, pageX);
+						return _Utils_Tuple2(
+							elm$core$Maybe$Just(
+								_Utils_update(
+									model,
+									{
+										activeValue: elm$core$Maybe$Just(activeValue),
+										inTransit: false
+									})),
+							elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+					}
+				case 'Init':
+					var geometry = msg.a;
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{
+									geometry: elm$core$Maybe$Just(geometry)
+								})),
+						elm$core$Platform$Cmd$none);
+				case 'Resize':
+					var geometry = msg.a;
+					var $temp$lift = lift,
+						$temp$msg = author$project$Internal$Slider$Model$Init(geometry),
+						$temp$model = model;
+					lift = $temp$lift;
+					msg = $temp$msg;
+					model = $temp$model;
+					continue update;
+				case 'KeyDown':
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{focus: true})),
+						elm$core$Platform$Cmd$none);
+				case 'Up':
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(model),
+						A2(
+							elm$core$Task$perform,
+							lift,
+							elm$core$Task$succeed(author$project$Internal$Slider$Model$ActualUp)));
+				default:
+					return _Utils_Tuple2(
+						elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{active: false, activeValue: elm$core$Maybe$Nothing})),
+						elm$core$Platform$Cmd$none);
+			}
+		}
+	});
+var author$project$Internal$Slider$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$Slider$Implementation$getSet.get, author$project$Internal$Slider$Implementation$getSet.set, author$project$Internal$Msg$SliderMsg, author$project$Internal$Slider$Implementation$update);
+var author$project$Internal$Msg$SnackbarMsg = F2(
+	function (a, b) {
+		return {$: 'SnackbarMsg', a: a, b: b};
+	});
+var author$project$Internal$Snackbar$Model$Inert = {$: 'Inert'};
+var elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var author$project$Internal$Snackbar$Model$defaultModel = {open: false, queue: _List_Nil, seq: -1, state: author$project$Internal$Snackbar$Model$Inert};
+var author$project$Internal$Snackbar$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.snackbar;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{snackbar: x});
+		}),
+	author$project$Internal$Snackbar$Model$defaultModel);
+var author$project$Internal$Helpers$cmd = function (msg) {
+	return A2(
+		elm$core$Task$perform,
+		elm$core$Basics$identity,
+		elm$core$Task$succeed(msg));
+};
+var author$project$Internal$Snackbar$Model$Move = F2(
+	function (a, b) {
+		return {$: 'Move', a: a, b: b};
+	});
+var author$project$Internal$Snackbar$Implementation$next = function (model) {
+	return elm$core$Platform$Cmd$map(
+		author$project$Internal$Snackbar$Model$Move(model.seq));
+};
+var author$project$Internal$Snackbar$Model$Active = function (a) {
+	return {$: 'Active', a: a};
+};
+var author$project$Internal$Snackbar$Model$Timeout = {$: 'Timeout'};
+var author$project$Internal$Snackbar$Implementation$tryDequeue = function (model) {
+	var _n0 = _Utils_Tuple2(model.state, model.queue);
+	if ((_n0.a.$ === 'Inert') && _n0.b.b) {
+		var _n1 = _n0.a;
+		var _n2 = _n0.b;
+		var c = _n2.a;
+		var cs = _n2.b;
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{
+					open: false,
+					queue: cs,
+					seq: model.seq + 1,
+					state: author$project$Internal$Snackbar$Model$Active(c)
+				}),
+			A2(
+				elm$core$Platform$Cmd$map,
+				author$project$Internal$Snackbar$Model$Move(model.seq + 1),
+				A2(author$project$Internal$Helpers$delayedCmd, c.timeout, author$project$Internal$Snackbar$Model$Timeout)));
+	} else {
+		return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+	}
+};
+var author$project$Internal$Snackbar$Model$Fading = function (a) {
+	return {$: 'Fading', a: a};
+};
+var author$project$Internal$Snackbar$Implementation$move = F2(
+	function (transition, model) {
+		var _n0 = _Utils_Tuple2(model.state, transition);
+		if (_n0.b.$ === 'Clicked') {
+			if (_n0.a.$ === 'Active') {
+				var contents = _n0.a.a;
+				var _n3 = _n0.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							state: author$project$Internal$Snackbar$Model$Fading(contents)
+						}),
+					A2(
+						author$project$Internal$Snackbar$Implementation$next,
+						model,
+						A2(author$project$Internal$Helpers$delayedCmd, contents.fade, author$project$Internal$Snackbar$Model$Timeout)));
+			} else {
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			}
+		} else {
+			switch (_n0.a.$) {
+				case 'Inert':
+					var _n1 = _n0.a;
+					var _n2 = _n0.b;
+					return author$project$Internal$Snackbar$Implementation$tryDequeue(model);
+				case 'Active':
+					var contents = _n0.a.a;
+					var _n4 = _n0.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								state: author$project$Internal$Snackbar$Model$Fading(contents)
+							}),
+						A2(
+							author$project$Internal$Snackbar$Implementation$next,
+							model,
+							A2(author$project$Internal$Helpers$delayedCmd, contents.fade, author$project$Internal$Snackbar$Model$Timeout)));
+				default:
+					var contents = _n0.a.a;
+					var _n5 = _n0.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{state: author$project$Internal$Snackbar$Model$Inert}),
+						A2(
+							author$project$Internal$Snackbar$Implementation$next,
+							model,
+							author$project$Internal$Helpers$cmd(author$project$Internal$Snackbar$Model$Timeout)));
+			}
+		}
+	});
+var author$project$Internal$Snackbar$Model$Clicked = {$: 'Clicked'};
+var author$project$Internal$Snackbar$Implementation$update = F3(
+	function (fwd, msg, model) {
+		switch (msg.$) {
+			case 'Move':
+				var seq = msg.a;
+				var transition = msg.b;
+				return _Utils_eq(seq, model.seq) ? A2(
+					elm$core$Tuple$mapSecond,
+					elm$core$Platform$Cmd$map(fwd),
+					A2(author$project$Internal$Snackbar$Implementation$move, transition, model)) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			case 'Dismiss':
+				var dismissOnAction = msg.a;
+				var actionOnDismiss = msg.b;
+				var fwdEffect = function () {
+					if (actionOnDismiss.$ === 'Just') {
+						var msg_ = actionOnDismiss.a;
+						return author$project$Internal$Helpers$cmd(msg_);
+					} else {
+						return elm$core$Platform$Cmd$none;
+					}
+				}();
+				return A2(
+					elm$core$Tuple$mapSecond,
+					function (cmd) {
+						return elm$core$Platform$Cmd$batch(
+							_List_fromArray(
+								[cmd, fwdEffect]));
+					},
+					dismissOnAction ? A3(
+						author$project$Internal$Snackbar$Implementation$update,
+						fwd,
+						A2(author$project$Internal$Snackbar$Model$Move, model.seq, author$project$Internal$Snackbar$Model$Clicked),
+						model) : _Utils_Tuple2(model, elm$core$Platform$Cmd$none));
+			default:
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{open: true}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$Snackbar$Implementation$react = A4(
+	author$project$Internal$Component$react,
+	author$project$Internal$Snackbar$Implementation$getSet.get,
+	author$project$Internal$Snackbar$Implementation$getSet.set,
+	author$project$Internal$Msg$SnackbarMsg,
+	F3(
+		function (fwd, msg, model) {
+			return A2(
+				elm$core$Tuple$mapFirst,
+				elm$core$Maybe$Just,
+				A3(author$project$Internal$Snackbar$Implementation$update, fwd, msg, model));
+		}));
+var author$project$Internal$Msg$SwitchMsg = F2(
+	function (a, b) {
+		return {$: 'SwitchMsg', a: a, b: b};
+	});
+var author$project$Internal$Switch$Model$defaultModel = {isFocused: false, ripple: author$project$Internal$Ripple$Model$defaultModel};
+var author$project$Internal$Switch$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $._switch;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{_switch: x});
+		}),
+	author$project$Internal$Switch$Model$defaultModel);
+var author$project$Internal$Switch$Model$RippleMsg = function (a) {
+	return {$: 'RippleMsg', a: a};
+};
+var author$project$Internal$Switch$Implementation$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'RippleMsg':
+				var msg_ = msg.a;
+				var _n1 = A2(author$project$Internal$Ripple$Implementation$update, msg_, model.ripple);
+				var rippleState = _n1.a;
+				var rippleCmd = _n1.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{ripple: rippleState}),
+					A2(elm$core$Platform$Cmd$map, author$project$Internal$Switch$Model$RippleMsg, rippleCmd));
+			case 'SetFocus':
+				var focus = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{isFocused: focus}),
+					elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$Switch$Implementation$react = A4(
+	author$project$Internal$Component$react,
+	author$project$Internal$Switch$Implementation$getSet.get,
+	author$project$Internal$Switch$Implementation$getSet.set,
+	author$project$Internal$Msg$SwitchMsg,
+	author$project$Internal$Component$generalise(author$project$Internal$Switch$Implementation$update));
+var author$project$Internal$Msg$TabBarMsg = F2(
+	function (a, b) {
+		return {$: 'TabBarMsg', a: a, b: b};
+	});
+var author$project$Internal$TabBar$Model$defaultModel = {activeTab: 0, geometry: elm$core$Maybe$Nothing, ripples: elm$core$Dict$empty, translateOffset: 0};
+var author$project$Internal$TabBar$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.tabbar;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{tabbar: x});
+		}),
+	author$project$Internal$TabBar$Model$defaultModel);
+var elm$core$Basics$min = F2(
+	function (x, y) {
+		return (_Utils_cmp(x, y) < 0) ? x : y;
+	});
+var elm$core$List$drop = F2(
+	function (n, list) {
+		drop:
+		while (true) {
+			if (n <= 0) {
+				return list;
+			} else {
+				if (!list.b) {
+					return list;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs;
+					n = $temp$n;
+					list = $temp$list;
+					continue drop;
+				}
+			}
+		}
+	});
+var elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return elm$core$Maybe$Just(x);
+	} else {
+		return elm$core$Maybe$Nothing;
+	}
+};
+var author$project$Internal$TabBar$Implementation$calculateScrollIncrement = F5(
+	function (geometry, index, nextIndex, scrollPosition, barWidth) {
+		var maybe_next_tab = elm$core$List$head(
+			A2(elm$core$List$drop, nextIndex, geometry.tabs));
+		var extraScrollAmount = 20;
+		if (maybe_next_tab.$ === 'Just') {
+			var next_tab = maybe_next_tab.a;
+			var relativeContentRight = next_tab.contentRight - scrollPosition;
+			var relativeContentLeft = (next_tab.contentLeft - scrollPosition) - barWidth;
+			var rightIncrement = relativeContentLeft + extraScrollAmount;
+			var leftIncrement = relativeContentRight - extraScrollAmount;
+			return (_Utils_cmp(nextIndex, index) < 0) ? A2(elm$core$Basics$min, leftIncrement, 0) : A2(elm$core$Basics$max, rightIncrement, 0);
+		} else {
+			return 0;
+		}
+	});
+var author$project$Internal$TabBar$Implementation$findAdjacentTabIndexClosestToEdge = F4(
+	function (index, tab_, scrollPosition, barWidth) {
+		var rootRight = tab_.offsetLeft + tab_.offsetWidth;
+		var rootLeft = tab_.offsetLeft;
+		var relativeRootRight = (rootRight - scrollPosition) - barWidth;
+		var relativeRootLeft = rootLeft - scrollPosition;
+		var relativeRootDelta = relativeRootLeft + relativeRootRight;
+		var rightEdgeIsCloser = (relativeRootRight > 0) || (relativeRootDelta > 0);
+		var leftEdgeIsCloser = (relativeRootLeft < 0) || (relativeRootDelta < 0);
+		return leftEdgeIsCloser ? (index - 1) : (rightEdgeIsCloser ? (index + 1) : (-1));
+	});
+var author$project$Internal$TabBar$Model$NoOp = {$: 'NoOp'};
+var author$project$Internal$TabBar$Model$RippleMsg = F2(
+	function (a, b) {
+		return {$: 'RippleMsg', a: a, b: b};
+	});
+var author$project$Internal$TabBar$Model$defaultGeometry = {
+	scrollArea: {offsetWidth: 0},
+	tabBar: {offsetWidth: 0},
+	tabs: _List_Nil
+};
+var elm$browser$Browser$Dom$setViewportOf = _Browser_setViewportOf;
+var author$project$Internal$TabBar$Implementation$update = F3(
+	function (lift, msg, model) {
+		switch (msg.$) {
+			case 'RippleMsg':
+				var index = msg.a;
+				var msg_ = msg.b;
+				var _n1 = A2(
+					author$project$Internal$Ripple$Implementation$update,
+					msg_,
+					A2(
+						elm$core$Maybe$withDefault,
+						author$project$Internal$Ripple$Model$defaultModel,
+						A2(elm$core$Dict$get, index, model.ripples)));
+				var ripple = _n1.a;
+				var effects = _n1.b;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{
+								ripples: A3(elm$core$Dict$insert, index, ripple, model.ripples)
+							})),
+					A2(
+						elm$core$Platform$Cmd$map,
+						A2(
+							elm$core$Basics$composeL,
+							lift,
+							author$project$Internal$TabBar$Model$RippleMsg(index)),
+						effects));
+			case 'Dispatch':
+				var msgs = msg.a;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Nothing,
+					author$project$Internal$Dispatch$forward(msgs));
+			case 'NoOp':
+				return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Platform$Cmd$none);
+			case 'Init':
+				var geometry = msg.a;
+				return _Utils_Tuple2(
+					function () {
+						var tabBarWidth = geometry.tabBar.offsetWidth;
+						var scrollAreaWidth = geometry.scrollArea.offsetWidth;
+						var isOverflowing = _Utils_cmp(tabBarWidth, scrollAreaWidth) > 0;
+						var translateOffset = (!isOverflowing) ? 0 : model.translateOffset;
+						return elm$core$Maybe$Just(
+							_Utils_update(
+								model,
+								{
+									geometry: elm$core$Maybe$Just(geometry),
+									translateOffset: translateOffset
+								}));
+					}(),
+					elm$core$Platform$Cmd$none);
+			default:
+				var domId = msg.a;
+				var tab_index = msg.b;
+				var scrollPosition = msg.c;
+				var geometry = A2(elm$core$Maybe$withDefault, author$project$Internal$TabBar$Model$defaultGeometry, model.geometry);
+				var tabAtIndex = function (i) {
+					return A2(
+						elm$core$Maybe$withDefault,
+						{contentLeft: 0, contentRight: 0, offsetLeft: 0, offsetWidth: 0},
+						elm$core$List$head(
+							A2(elm$core$List$drop, i, geometry.tabs)));
+				};
+				var tab_ = tabAtIndex(tab_index);
+				var barWidth = geometry.tabBar.offsetWidth;
+				var next_tab_index = A4(author$project$Internal$TabBar$Implementation$findAdjacentTabIndexClosestToEdge, tab_index, tab_, scrollPosition, barWidth);
+				var scrollIncrement = A5(author$project$Internal$TabBar$Implementation$calculateScrollIncrement, geometry, tab_index, next_tab_index, scrollPosition, barWidth);
+				var newScrollPosition = (!tab_index) ? 0 : (_Utils_eq(
+					tab_index,
+					elm$core$List$length(geometry.tabs) - 1) ? geometry.scrollArea.offsetWidth : (scrollPosition + scrollIncrement));
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{activeTab: tab_index})),
+					A2(
+						elm$core$Task$perform,
+						lift,
+						A2(
+							elm$core$Task$onError,
+							function (_n3) {
+								return elm$core$Task$succeed(author$project$Internal$TabBar$Model$NoOp);
+							},
+							A2(
+								elm$core$Task$map,
+								function (_n2) {
+									return author$project$Internal$TabBar$Model$NoOp;
+								},
+								A3(elm$browser$Browser$Dom$setViewportOf, domId + '__scroll-area', newScrollPosition, 0)))));
+		}
+	});
+var author$project$Internal$TabBar$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$TabBar$Implementation$getSet.get, author$project$Internal$TabBar$Implementation$getSet.set, author$project$Internal$Msg$TabBarMsg, author$project$Internal$TabBar$Implementation$update);
+var author$project$Internal$Msg$TextFieldMsg = F2(
+	function (a, b) {
+		return {$: 'TextFieldMsg', a: a, b: b};
+	});
+var author$project$Internal$TextField$Model$defaultModel = {focused: false, geometry: elm$core$Maybe$Nothing, isDirty: false, value: elm$core$Maybe$Nothing};
+var author$project$Internal$TextField$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.textfield;
+	},
+	F2(
+		function (x, c) {
+			return _Utils_update(
+				c,
+				{textfield: x});
+		}),
+	author$project$Internal$TextField$Model$defaultModel);
+var author$project$Internal$TextField$Implementation$update = F3(
+	function (lift, msg, model) {
+		switch (msg.$) {
+			case 'Input':
+				var str = msg.a;
+				var dirty = str !== '';
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{
+								isDirty: dirty,
+								value: elm$core$Maybe$Just(str)
+							})),
+					elm$core$Platform$Cmd$none);
+			case 'Blur':
+				var geometry = function () {
+					var _n1 = model.value;
+					if (_n1.$ === 'Nothing') {
+						return elm$core$Maybe$Nothing;
+					} else {
+						return model.geometry;
+					}
+				}();
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{focused: false, geometry: geometry})),
+					elm$core$Platform$Cmd$none);
+			case 'Focus':
+				var geometry = msg.a;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(
+						_Utils_update(
+							model,
+							{
+								focused: true,
+								geometry: elm$core$Maybe$Just(geometry)
+							})),
+					elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					elm$core$Maybe$Just(model),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$TextField$Implementation$react = A4(author$project$Internal$Component$react, author$project$Internal$TextField$Implementation$getSet.get, author$project$Internal$TextField$Implementation$getSet.set, author$project$Internal$Msg$TextFieldMsg, author$project$Internal$TextField$Implementation$update);
+var author$project$Internal$Msg$ToolbarMsg = F2(
+	function (a, b) {
+		return {$: 'ToolbarMsg', a: a, b: b};
+	});
+var author$project$Internal$Toolbar$Model$defaultModel = {calculations: elm$core$Maybe$Nothing, config: elm$core$Maybe$Nothing, geometry: elm$core$Maybe$Nothing, scrollTop: 0};
+var author$project$Internal$Toolbar$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.toolbar;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{toolbar: x});
+		}),
+	author$project$Internal$Toolbar$Model$defaultModel);
+var author$project$Internal$Toolbar$Model$defaultCalculations = {flexibleExpansionHeight: 0, flexibleExpansionRatio: 0, maxTranslateYDistance: 0, maxTranslateYRatio: 0, scrollThreshold: 0, scrollThresholdRatio: 0, toolbarHeight: 0, toolbarRatio: 0, toolbarRowHeight: 0};
+var author$project$Internal$Toolbar$Implementation$initKeyRatio = F2(
+	function (config, geometry) {
+		var toolbarRowHeight = geometry.getRowHeight;
+		var toolbarRatio = (!toolbarRowHeight) ? 0 : (geometry.getOffsetHeight / toolbarRowHeight);
+		var firstRowMaxRatio = (!toolbarRowHeight) ? 0 : (geometry.getFirstRowElementOffsetHeight / toolbarRowHeight);
+		var flexibleExpansionRatio_ = firstRowMaxRatio - 1;
+		var maxTranslateYRatio = config.fixedLastrow ? (toolbarRatio - firstRowMaxRatio) : 0;
+		var scrollThresholdRatio = config.fixedLastrow ? (toolbarRatio - 1) : (firstRowMaxRatio - 1);
+		return _Utils_update(
+			author$project$Internal$Toolbar$Model$defaultCalculations,
+			{flexibleExpansionRatio: flexibleExpansionRatio_, maxTranslateYRatio: maxTranslateYRatio, scrollThresholdRatio: scrollThresholdRatio, toolbarRatio: toolbarRatio});
+	});
+var author$project$Internal$Toolbar$Implementation$setKeyHeights = F2(
+	function (geometry, calculations) {
+		var toolbarRowHeight = geometry.getRowHeight;
+		var toolbarHeight = calculations.toolbarRatio * toolbarRowHeight;
+		var scrollThreshold = calculations.scrollThresholdRatio * toolbarRowHeight;
+		var maxTranslateYDistance = calculations.maxTranslateYRatio * toolbarRowHeight;
+		var flexibleExpansionHeight = calculations.flexibleExpansionRatio * toolbarRowHeight;
+		return _Utils_update(
+			calculations,
+			{flexibleExpansionHeight: flexibleExpansionHeight, maxTranslateYDistance: maxTranslateYDistance, scrollThreshold: scrollThreshold, toolbarHeight: toolbarHeight, toolbarRowHeight: toolbarRowHeight});
+	});
+var author$project$Internal$Toolbar$Implementation$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'Init':
+				var config = msg.a;
+				var geometry = msg.b;
+				var calculations = A2(
+					author$project$Internal$Toolbar$Implementation$setKeyHeights,
+					geometry,
+					A2(author$project$Internal$Toolbar$Implementation$initKeyRatio, config, geometry));
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							calculations: elm$core$Maybe$Just(calculations),
+							config: elm$core$Maybe$Just(config),
+							geometry: elm$core$Maybe$Just(geometry)
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'Resize':
+				var config = msg.a;
+				var geometry = msg.b;
+				var calculations = A2(
+					elm$core$Maybe$map,
+					author$project$Internal$Toolbar$Implementation$setKeyHeights(geometry),
+					model.calculations);
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							calculations: calculations,
+							config: elm$core$Maybe$Just(config),
+							geometry: elm$core$Maybe$Just(geometry)
+						}),
+					elm$core$Platform$Cmd$none);
+			default:
+				var config = msg.a;
+				var scrollTop = msg.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							config: elm$core$Maybe$Just(config),
+							scrollTop: scrollTop
+						}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$Toolbar$Implementation$react = A4(
+	author$project$Internal$Component$react,
+	author$project$Internal$Toolbar$Implementation$getSet.get,
+	author$project$Internal$Toolbar$Implementation$getSet.set,
+	author$project$Internal$Msg$ToolbarMsg,
+	author$project$Internal$Component$generalise(author$project$Internal$Toolbar$Implementation$update));
+var author$project$Internal$Msg$TopAppBarMsg = F2(
+	function (a, b) {
+		return {$: 'TopAppBarMsg', a: a, b: b};
+	});
+var author$project$Internal$TopAppBar$Model$defaultModel = {currentAppBarOffsetTop: 0, isDockedShowing: true, lastScrollPosition: elm$core$Maybe$Nothing, ripples: elm$core$Dict$empty, styleTop: elm$core$Maybe$Nothing, topAppBarHeight: elm$core$Maybe$Nothing, wasDocked: true};
+var author$project$Internal$TopAppBar$Implementation$getSet = A3(
+	author$project$Internal$Component$indexed,
+	function ($) {
+		return $.topAppBar;
+	},
+	F2(
+		function (x, y) {
+			return _Utils_update(
+				y,
+				{topAppBar: x});
+		}),
+	author$project$Internal$TopAppBar$Model$defaultModel);
+var author$project$Internal$TopAppBar$Implementation$checkForUpdate = function (model) {
+	return A2(
+		elm$core$Maybe$map,
+		function (topAppBarHeight) {
+			var offscreenBoundaryTop = -topAppBarHeight;
+			var hasAnyPixelsOnscreen = _Utils_cmp(model.currentAppBarOffsetTop, offscreenBoundaryTop) > 0;
+			var hasAnyPixelsOffscreen = model.currentAppBarOffsetTop < 0;
+			var partiallyShowing = hasAnyPixelsOffscreen && hasAnyPixelsOnscreen;
+			return partiallyShowing ? _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{wasDocked: false}),
+				true) : ((!model.wasDocked) ? _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{wasDocked: true}),
+				true) : ((!_Utils_eq(model.isDockedShowing, hasAnyPixelsOnscreen)) ? _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{isDockedShowing: hasAnyPixelsOnscreen}),
+				true) : _Utils_Tuple2(model, false)));
+		},
+		model.topAppBarHeight);
+};
+var elm$core$Basics$abs = function (n) {
+	return (n < 0) ? (-n) : n;
+};
+var author$project$Internal$TopAppBar$Implementation$moveTopAppBar = function (model) {
+	return A2(
+		elm$core$Maybe$andThen,
+		function (_n0) {
+			var updatedModel = _n0.a;
+			var partiallyShowing = _n0.b;
+			return partiallyShowing ? A2(
+				elm$core$Maybe$map,
+				function (topAppBarHeight) {
+					var styleTop = function () {
+						var maxTopAppBarHeight = 128;
+						return (_Utils_cmp(
+							elm$core$Basics$abs(updatedModel.currentAppBarOffsetTop),
+							topAppBarHeight) > 0) ? (-maxTopAppBarHeight) : updatedModel.currentAppBarOffsetTop;
+					}();
+					return _Utils_update(
+						updatedModel,
+						{
+							styleTop: elm$core$Maybe$Just(styleTop)
+						});
+				},
+				updatedModel.topAppBarHeight) : elm$core$Maybe$Just(updatedModel);
+		},
+		author$project$Internal$TopAppBar$Implementation$checkForUpdate(model));
+};
+var elm$core$Maybe$map2 = F3(
+	function (func, ma, mb) {
+		if (ma.$ === 'Nothing') {
+			return elm$core$Maybe$Nothing;
+		} else {
+			var a = ma.a;
+			if (mb.$ === 'Nothing') {
+				return elm$core$Maybe$Nothing;
+			} else {
+				var b = mb.a;
+				return elm$core$Maybe$Just(
+					A2(func, a, b));
+			}
+		}
+	});
+var author$project$Internal$TopAppBar$Implementation$topAppBarScrollHandler = F2(
+	function (scrollPosition, model) {
+		return A2(
+			elm$core$Maybe$withDefault,
+			model,
+			A2(
+				elm$core$Maybe$andThen,
+				author$project$Internal$TopAppBar$Implementation$moveTopAppBar,
+				A2(
+					elm$core$Maybe$map,
+					function (_n0) {
+						var topAppBarHeight = _n0.a;
+						var lastScrollPosition = _n0.b;
+						var isCurrentlyBeingResized = false;
+						var currentScrollPosition = A2(elm$core$Basics$max, scrollPosition, 0);
+						var diff = currentScrollPosition - lastScrollPosition;
+						var currentAppBarOffsetTop = model.currentAppBarOffsetTop - diff;
+						var updatedAppBarOffsetTop = (!isCurrentlyBeingResized) ? ((currentAppBarOffsetTop > 0) ? 0 : ((_Utils_cmp(
+							elm$core$Basics$abs(currentAppBarOffsetTop),
+							topAppBarHeight) > 0) ? (-topAppBarHeight) : currentAppBarOffsetTop)) : model.currentAppBarOffsetTop;
+						var updatedModel = _Utils_update(
+							model,
+							{
+								currentAppBarOffsetTop: updatedAppBarOffsetTop,
+								lastScrollPosition: elm$core$Maybe$Just(currentScrollPosition)
+							});
+						return A2(
+							elm$core$Maybe$withDefault,
+							updatedModel,
+							author$project$Internal$TopAppBar$Implementation$moveTopAppBar(updatedModel));
+					},
+					A3(
+						elm$core$Maybe$map2,
+						F2(
+							function (topAppBarHeight, lastScrollPosition) {
+								return _Utils_Tuple2(topAppBarHeight, lastScrollPosition);
+							}),
+						model.topAppBarHeight,
+						model.lastScrollPosition))));
+	});
+var author$project$Internal$TopAppBar$Model$RippleMsg = F2(
+	function (a, b) {
+		return {$: 'RippleMsg', a: a, b: b};
+	});
+var author$project$Internal$TopAppBar$Implementation$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'RippleMsg':
+				var index = msg.a;
+				var msg_ = msg.b;
+				var _n1 = A2(
+					author$project$Internal$Ripple$Implementation$update,
+					msg_,
+					A2(
+						elm$core$Maybe$withDefault,
+						author$project$Internal$Ripple$Model$defaultModel,
+						A2(elm$core$Dict$get, index, model.ripples)));
+				var ripple = _n1.a;
+				var effects = _n1.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							ripples: A3(elm$core$Dict$insert, index, ripple, model.ripples)
+						}),
+					A2(
+						elm$core$Platform$Cmd$map,
+						author$project$Internal$TopAppBar$Model$RippleMsg(index),
+						effects));
+			case 'Init':
+				var scrollPosition = msg.a.scrollPosition;
+				var topAppBarHeight = msg.a.topAppBarHeight;
+				return _Utils_Tuple2(
+					A2(
+						author$project$Internal$TopAppBar$Implementation$topAppBarScrollHandler,
+						scrollPosition,
+						_Utils_update(
+							model,
+							{
+								lastScrollPosition: elm$core$Maybe$Just(scrollPosition),
+								topAppBarHeight: elm$core$Maybe$Just(topAppBarHeight)
+							})),
+					elm$core$Platform$Cmd$none);
+			case 'Scroll':
+				var scrollPosition = msg.a.scrollPosition;
+				return _Utils_Tuple2(
+					A2(author$project$Internal$TopAppBar$Implementation$topAppBarScrollHandler, scrollPosition, model),
+					elm$core$Platform$Cmd$none);
+			default:
+				var scrollPosition = msg.a.scrollPosition;
+				var topAppBarHeight = msg.a.topAppBarHeight;
+				var currentHeight = topAppBarHeight;
+				var currentAppBarOffsetTop = model.currentAppBarOffsetTop - (topAppBarHeight - currentHeight);
+				var updatedModel = (!_Utils_eq(
+					elm$core$Maybe$Just(topAppBarHeight),
+					model.topAppBarHeight)) ? _Utils_update(
+					model,
+					{
+						currentAppBarOffsetTop: currentAppBarOffsetTop,
+						topAppBarHeight: elm$core$Maybe$Just(currentHeight),
+						wasDocked: false
+					}) : model;
+				return _Utils_Tuple2(
+					A2(author$project$Internal$TopAppBar$Implementation$topAppBarScrollHandler, scrollPosition, updatedModel),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Internal$TopAppBar$Implementation$react = A4(
+	author$project$Internal$Component$react,
+	author$project$Internal$TopAppBar$Implementation$getSet.get,
+	author$project$Internal$TopAppBar$Implementation$getSet.set,
+	author$project$Internal$Msg$TopAppBarMsg,
+	author$project$Internal$Component$generalise(author$project$Internal$TopAppBar$Implementation$update));
+var author$project$Material$update_ = F3(
+	function (lift, msg, store) {
+		switch (msg.$) {
+			case 'Dispatch':
+				var msgs = msg.a;
+				return _Utils_Tuple2(
+					elm$core$Maybe$Nothing,
+					author$project$Internal$Dispatch$forward(msgs));
+			case 'ButtonMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Button$Implementation$react, lift, msg_, idx, store);
+			case 'CheckboxMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Checkbox$Implementation$react, lift, msg_, idx, store);
+			case 'ChipMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Chip$Implementation$react, lift, msg_, idx, store);
+			case 'DialogMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Dialog$Implementation$react, lift, msg_, idx, store);
+			case 'DrawerMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Drawer$Implementation$react, lift, msg_, idx, store);
+			case 'FabMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Fab$Implementation$react, lift, msg_, idx, store);
+			case 'IconButtonMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$IconButton$Implementation$react, lift, msg_, idx, store);
+			case 'ListMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$List$Implementation$react, lift, msg_, idx, store);
+			case 'MenuMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Menu$Implementation$react, lift, msg_, idx, store);
+			case 'RadioButtonMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$RadioButton$Implementation$react, lift, msg_, idx, store);
+			case 'RippleMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Ripple$Implementation$react, lift, msg_, idx, store);
+			case 'SelectMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Select$Implementation$react, lift, msg_, idx, store);
+			case 'SliderMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Slider$Implementation$react, lift, msg_, idx, store);
+			case 'SnackbarMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Snackbar$Implementation$react, lift, msg_, idx, store);
+			case 'SwitchMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Switch$Implementation$react, lift, msg_, idx, store);
+			case 'TabBarMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$TabBar$Implementation$react, lift, msg_, idx, store);
+			case 'TextFieldMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$TextField$Implementation$react, lift, msg_, idx, store);
+			case 'ToolbarMsg':
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$Toolbar$Implementation$react, lift, msg_, idx, store);
+			default:
+				var idx = msg.a;
+				var msg_ = msg.b;
+				return A4(author$project$Internal$TopAppBar$Implementation$react, lift, msg_, idx, store);
+		}
+	});
+var author$project$Material$update = F3(
+	function (lift, msg, container) {
+		return A2(
+			elm$core$Tuple$mapFirst,
+			elm$core$Maybe$withDefault(container),
+			A2(
+				elm$core$Tuple$mapFirst,
+				elm$core$Maybe$map(
+					function (mdc) {
+						return _Utils_update(
+							container,
+							{mdc: mdc});
+					}),
+				A3(
+					author$project$Material$update_,
+					lift,
+					msg,
+					function ($) {
+						return $.mdc;
+					}(container))));
+	});
+var author$project$Data$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'Entity':
+				var emsg = msg.a;
+				return A2(author$project$Data$updateEntity, emsg, model);
+			case 'Mdc':
+				var msg_ = msg.a;
+				return A3(author$project$Material$update, author$project$Data$Mdc, msg_, model);
+			default:
+				var tab = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{current_tab: tab}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Main$GotDataMsg = function (a) {
+	return {$: 'GotDataMsg', a: a};
+};
+var author$project$Page$GotDataMsg = function (a) {
+	return {$: 'GotDataMsg', a: a};
+};
+var author$project$Page$GotErrorMsg = function (a) {
+	return {$: 'GotErrorMsg', a: a};
+};
+var author$project$Page$GotLoginMsg = function (a) {
+	return {$: 'GotLoginMsg', a: a};
+};
+var author$project$Page$PageMsg = function (a) {
+	return {$: 'PageMsg', a: a};
+};
+var author$project$Page$Data$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
+};
+var author$project$Page$Data$update = F3(
+	function (lift, msg, model) {
+		if (msg.$ === 'Mdc') {
+			var msg_ = msg.a;
+			return A3(
+				author$project$Material$update,
+				A2(elm$core$Basics$composeL, lift, author$project$Page$Data$Mdc),
+				msg_,
+				model);
+		} else {
+			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Page$Error$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
+};
+var author$project$Page$Error$update = F3(
+	function (lift, msg, model) {
+		var msg_ = msg.a;
+		return A3(
+			author$project$Material$update,
+			A2(elm$core$Basics$composeL, lift, author$project$Page$Error$Mdc),
+			msg_,
+			model);
+	});
+var author$project$Page$Login$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
+};
+var author$project$Page$Login$update = F3(
+	function (lift, msg, model) {
+		switch (msg.$) {
+			case 'Mdc':
+				var msg_ = msg.a;
+				return A3(
+					author$project$Material$update,
+					A2(elm$core$Basics$composeL, lift, author$project$Page$Login$Mdc),
+					msg_,
+					model);
+			case 'UpdateTextField':
+				var txt = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{field: txt}),
+					elm$core$Platform$Cmd$none);
+			case 'Increment':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{_var: model._var + 1}),
+					elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{_var: model._var - 1}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Page$updatePage = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'GotLoginMsg':
+				var msg_ = msg.a;
+				var _n1 = A3(
+					author$project$Page$Login$update,
+					A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotLoginMsg),
+					msg_,
+					model.login);
+				var login = _n1.a;
+				var effects = _n1.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{login: login}),
+					effects);
+			case 'GotErrorMsg':
+				var msg_ = msg.a;
+				var _n2 = A3(
+					author$project$Page$Error$update,
+					A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotErrorMsg),
+					msg_,
+					model.error);
+				var error = _n2.a;
+				var effects = _n2.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{error: error}),
+					effects);
+			default:
+				var msg_ = msg.a;
+				var _n3 = A3(
+					author$project$Page$Data$update,
+					A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotDataMsg),
+					msg_,
+					model.data);
+				var data = _n3.a;
+				var effects = _n3.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{data: data}),
+					effects);
+		}
+	});
+var author$project$Page$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'Mdc':
+				var msg_ = msg.a;
+				return A3(author$project$Material$update, author$project$Page$Mdc, msg_, model);
+			case 'PageMsg':
+				var m = msg.a;
+				var _n1 = A2(author$project$Page$updatePage, m, model.page);
+				var page = _n1.a;
+				var effects = _n1.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{page: page}),
+					effects);
+			default:
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Main$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'GotPageMsg':
+				var msg_ = msg.a;
+				var _n1 = A2(author$project$Page$update, msg_, model.page);
+				var page = _n1.a;
+				var effect = _n1.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{page: page}),
+					A2(elm$core$Platform$Cmd$map, author$project$Main$GotPageMsg, effect));
+			case 'Noop':
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			default:
+				var msg_ = msg.a;
+				var _n2 = A2(author$project$Data$update, msg_, model.data);
+				var data = _n2.a;
+				var effect = _n2.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{data: data}),
+					A2(elm$core$Platform$Cmd$map, author$project$Main$GotDataMsg, effect));
+		}
+	});
 var author$project$Internal$Options$Class = function (a) {
 	return {$: 'Class', a: a};
 };
@@ -6103,25 +8824,6 @@ var author$project$Internal$Options$css = F2(
 			_Utils_Tuple2(key, value));
 	});
 var author$project$Material$Options$css = author$project$Internal$Options$css;
-var elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return elm$core$Maybe$Nothing;
-		}
-	});
-var elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
 var elm$core$Result$toMaybe = function (result) {
 	if (result.$ === 'Ok') {
 		var v = result.a;
@@ -6242,7 +8944,6 @@ var author$project$Internal$Dispatch$toAttributes = function (_n0) {
 			elm$core$Dict$toList(config.decoders));
 	}
 };
-var elm$core$Basics$neq = _Utils_notEqual;
 var elm$virtual_dom$VirtualDom$attribute = F2(
 	function (key, value) {
 		return A2(
@@ -6305,37 +9006,6 @@ var author$project$Internal$Dispatch$defaultConfig = author$project$Internal$Dis
 var author$project$Internal$Options$Summary = F6(
 	function (classes, css, attrs, internal, dispatch, config) {
 		return {attrs: attrs, classes: classes, config: config, css: css, dispatch: dispatch, internal: internal};
-	});
-var elm$core$Dict$get = F2(
-	function (targetKey, dict) {
-		get:
-		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return elm$core$Maybe$Nothing;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var _n1 = A2(elm$core$Basics$compare, targetKey, key);
-				switch (_n1.$) {
-					case 'LT':
-						var $temp$targetKey = targetKey,
-							$temp$dict = left;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-					case 'EQ':
-						return elm$core$Maybe$Just(value);
-					default:
-						var $temp$targetKey = targetKey,
-							$temp$dict = right;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-				}
-			}
-		}
 	});
 var elm$core$Dict$getMin = function (dict) {
 	getMin:
@@ -6815,7 +9485,95 @@ var author$project$Material$TopAppBar$fixedAdjust = author$project$Internal$TopA
 var author$project$Internal$Typography$Implementation$typography = author$project$Internal$Options$cs('mdc-typography');
 var author$project$Material$Typography$typography = author$project$Internal$Typography$Implementation$typography;
 var elm$html$Html$div = _VirtualDom_node('div');
-var author$project$Page$viewContent = F3(
+var author$project$Internal$LayoutGrid$Implementation$cell = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-layout-grid__cell'),
+			options));
+};
+var author$project$Material$LayoutGrid$cell = author$project$Internal$LayoutGrid$Implementation$cell;
+var author$project$Internal$LayoutGrid$Implementation$span = F2(
+	function (device, value) {
+		if (device.$ === 'Just') {
+			var device_ = device.a;
+			return author$project$Internal$Options$cs(
+				'mdc-layout-grid__cell--span-' + (elm$core$String$fromInt(value) + ('-' + device_)));
+		} else {
+			return author$project$Internal$Options$cs(
+				'mdc-layout-grid__cell--span-' + elm$core$String$fromInt(value));
+		}
+	});
+var author$project$Internal$LayoutGrid$Implementation$span2 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 2);
+var author$project$Material$LayoutGrid$span2 = author$project$Internal$LayoutGrid$Implementation$span2;
+var author$project$Internal$LayoutGrid$Implementation$span4Phone = A2(
+	author$project$Internal$LayoutGrid$Implementation$span,
+	elm$core$Maybe$Just('phone'),
+	4);
+var author$project$Material$LayoutGrid$span4Phone = author$project$Internal$LayoutGrid$Implementation$span4Phone;
+var author$project$Internal$LayoutGrid$Implementation$span6Tablet = A2(
+	author$project$Internal$LayoutGrid$Implementation$span,
+	elm$core$Maybe$Just('tablet'),
+	6);
+var author$project$Material$LayoutGrid$span6Tablet = author$project$Internal$LayoutGrid$Implementation$span6Tablet;
+var author$project$Internal$LayoutGrid$Implementation$span8 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 8);
+var author$project$Material$LayoutGrid$span8 = author$project$Internal$LayoutGrid$Implementation$span8;
+var author$project$Internal$LayoutGrid$Implementation$inner = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-layout-grid__inner'),
+			options));
+};
+var elm$core$List$singleton = function (value) {
+	return _List_fromArray(
+		[value]);
+};
+var author$project$Internal$LayoutGrid$Implementation$view = function (options) {
+	return A2(
+		elm$core$Basics$composeL,
+		A2(
+			elm$core$Basics$composeL,
+			A2(
+				author$project$Internal$Options$styled,
+				elm$html$Html$div,
+				A2(
+					elm$core$List$cons,
+					author$project$Internal$Options$cs('mdc-layout-grid'),
+					options)),
+			elm$core$List$singleton),
+		author$project$Internal$LayoutGrid$Implementation$inner(_List_Nil));
+};
+var author$project$Material$LayoutGrid$view = author$project$Internal$LayoutGrid$Implementation$view;
+var author$project$Page$viewLayout = F3(
+	function (left, middle, right) {
+		return A2(
+			author$project$Material$LayoutGrid$view,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					author$project$Material$LayoutGrid$cell,
+					_List_fromArray(
+						[author$project$Material$LayoutGrid$span2, author$project$Material$LayoutGrid$span4Phone]),
+					A2(elm$core$Maybe$withDefault, _List_Nil, left)),
+					A2(
+					author$project$Material$LayoutGrid$cell,
+					_List_fromArray(
+						[author$project$Material$LayoutGrid$span8, author$project$Material$LayoutGrid$span6Tablet]),
+					middle),
+					A2(
+					author$project$Material$LayoutGrid$cell,
+					_List_fromArray(
+						[author$project$Material$LayoutGrid$span2, author$project$Material$LayoutGrid$span4Phone]),
+					A2(elm$core$Maybe$withDefault, _List_Nil, right))
+				]));
+	});
+var author$project$Page$viewBody = F3(
 	function (bar, title, content) {
 		return A3(
 			author$project$Material$Options$styled,
@@ -6866,7 +9624,9 @@ var author$project$Page$viewContent = F3(
 											A2(author$project$Material$Options$css, 'max-width', '1200px')
 										]),
 									_List_fromArray(
-										[content]))
+										[
+											A3(author$project$Page$viewLayout, elm$core$Maybe$Nothing, content, elm$core$Maybe$Nothing)
+										]))
 								]))
 						]))
 				]));
@@ -6936,7 +9696,7 @@ var author$project$Page$viewFooter = function (mdc) {
 											[
 												elm$html$Html$text('Thinkster')
 											])),
-										elm$html$Html$text('. Code & design licensed under MIT.')
+										elm$html$Html$text('. Code & design licensed under MI.')
 									]))
 							]))
 					]))
@@ -6994,10 +9754,6 @@ var author$project$Internal$Component$render = F3(
 						author$project$Internal$Options$dispatch(lift),
 						options));
 			});
-	});
-var author$project$Internal$Msg$TopAppBarMsg = F2(
-	function (a, b) {
-		return {$: 'TopAppBarMsg', a: a, b: b};
 	});
 var author$project$Internal$Icon$Implementation$node = function (ctor) {
 	return author$project$Internal$Options$option(
@@ -7165,7 +9921,6 @@ var author$project$Internal$Options$when = F2(
 	});
 var author$project$Internal$Ripple$Model$strings = {varFgScale: '--mdc-ripple-fg-scale', varFgSize: '--mdc-ripple-fg-size', varFgTranslateEnd: '--mdc-ripple-fg-translate-end', varFgTranslateStart: '--mdc-ripple-fg-translate-start', varLeft: '--mdc-ripple-left', varTop: '--mdc-ripple-top'};
 var elm$core$Basics$round = _Basics_round;
-var elm$core$String$fromFloat = _String_fromNumber;
 var author$project$Internal$Ripple$Implementation$cssVariables = F2(
 	function (isUnbounded, _n0) {
 		var fgScale = _n0.fgScale;
@@ -7215,19 +9970,6 @@ var author$project$Internal$Ripple$Model$Event = F2(
 	function (eventType, pagePoint) {
 		return {eventType: eventType, pagePoint: pagePoint};
 	});
-var elm$core$Basics$always = F2(
-	function (a, _n0) {
-		return a;
-	});
-var elm$core$List$head = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return elm$core$Maybe$Just(x);
-	} else {
-		return elm$core$Maybe$Nothing;
-	}
-};
 var elm$json$Json$Decode$at = F2(
 	function (fields, decoder) {
 		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
@@ -7352,20 +10094,6 @@ var debois$elm_dom$DOM$target = function (decoder) {
 var elm$json$Json$Decode$map4 = _Json_map4;
 var author$project$Internal$Ripple$Implementation$decodeClientRect = debois$elm_dom$DOM$target(
 	A5(elm$json$Json$Decode$map4, author$project$Internal$Ripple$Model$ClientRect, debois$elm_dom$DOM$offsetTop, debois$elm_dom$DOM$offsetLeft, debois$elm_dom$DOM$offsetWidth, debois$elm_dom$DOM$offsetHeight));
-var author$project$Internal$Ripple$Model$numbers = {deactivationTimeoutMs: 225, fgDeactivationMs: 150, initialOriginScale: 0.6, padding: 10, tapDelayMs: 300};
-var elm$core$Basics$pow = _Basics_pow;
-var elm$core$Basics$sqrt = _Basics_sqrt;
-var author$project$Internal$Ripple$Implementation$layoutInternal = F2(
-	function (isUnbounded, frame) {
-		var maxDim = A2(elm$core$Basics$max, frame.width, frame.height);
-		var initialSize = elm$core$Basics$floor(maxDim * author$project$Internal$Ripple$Model$numbers.initialOriginScale);
-		var hypotenuse = elm$core$Basics$sqrt(
-			A2(elm$core$Basics$pow, frame.width, 2) + A2(elm$core$Basics$pow, frame.height, 2));
-		var boundedRadius = hypotenuse + author$project$Internal$Ripple$Model$numbers.padding;
-		var maxRadius = isUnbounded ? maxDim : boundedRadius;
-		var fgScale = maxRadius / initialSize;
-		return {fgScale: fgScale, initialSize: initialSize};
-	});
 var author$project$Internal$Ripple$Model$Blur = {$: 'Blur'};
 var author$project$Internal$Ripple$Model$Deactivate = {$: 'Deactivate'};
 var author$project$Internal$Ripple$Model$Focus = {$: 'Focus'};
@@ -7376,7 +10104,6 @@ var author$project$Internal$Ripple$Model$SetCssVariables = F2(
 var author$project$Internal$Ripple$Model$activationEventTypes = _List_fromArray(
 	['touchstart', 'pointerdown', 'mousedown']);
 var author$project$Internal$Ripple$Model$cssClasses = {bgFocused: 'mdc-ripple-upgraded--background-focused', fgActivation: 'mdc-ripple-upgraded--foreground-activation', fgDeactivation: 'mdc-ripple-upgraded--foreground-deactivation', root: 'mdc-ripple-upgraded', unbounded: 'mdc-ripple-upgraded--unbounded'};
-var elm$core$Basics$not = _Basics_not;
 var author$project$Internal$Ripple$Implementation$view = F5(
 	function (isUnbounded, domId, lift, model, options) {
 		var noStyle = elm$html$Html$text('');
@@ -7533,12 +10260,6 @@ var author$project$Internal$Ripple$Implementation$view = F5(
 				return {interactionHandler: interactionHandler, properties: properties, style: noStyle};
 		}
 	});
-var author$project$Internal$Ripple$Model$Idle = {$: 'Idle'};
-var author$project$Internal$Ripple$Model$defaultModel = {animationCounter: 0, animationState: author$project$Internal$Ripple$Model$Idle, clientRect: elm$core$Maybe$Nothing, focused: false};
-var author$project$Internal$TopAppBar$Model$RippleMsg = F2(
-	function (a, b) {
-		return {$: 'RippleMsg', a: a, b: b};
-	});
 var author$project$Internal$TopAppBar$Implementation$actionItemView = F5(
 	function (domId, lift, model, options, name) {
 		var ripple = A5(
@@ -7568,44 +10289,6 @@ var author$project$Internal$TopAppBar$Implementation$actionItemView = F5(
 						A2(elm$core$List$cons, ripple.properties, options)))),
 			name);
 	});
-var author$project$Internal$Component$indexed = F3(
-	function (get_model, set_model, model0) {
-		var set_ = F3(
-			function (idx, store, model) {
-				return A2(
-					set_model,
-					A3(
-						elm$core$Dict$insert,
-						idx,
-						model,
-						get_model(store)),
-					store);
-			});
-		var get_ = F2(
-			function (idx, store) {
-				return A2(
-					elm$core$Maybe$withDefault,
-					model0,
-					A2(
-						elm$core$Dict$get,
-						idx,
-						get_model(store)));
-			});
-		return {get: get_, set: set_};
-	});
-var author$project$Internal$TopAppBar$Model$defaultModel = {currentAppBarOffsetTop: 0, isDockedShowing: true, lastScrollPosition: elm$core$Maybe$Nothing, ripples: elm$core$Dict$empty, styleTop: elm$core$Maybe$Nothing, topAppBarHeight: elm$core$Maybe$Nothing, wasDocked: true};
-var author$project$Internal$TopAppBar$Implementation$getSet = A3(
-	author$project$Internal$Component$indexed,
-	function ($) {
-		return $.topAppBar;
-	},
-	F2(
-		function (x, y) {
-			return _Utils_update(
-				y,
-				{topAppBar: x});
-		}),
-	author$project$Internal$TopAppBar$Model$defaultModel);
 var author$project$Internal$TopAppBar$Implementation$actionItem = F2(
 	function (lift, index) {
 		return A5(
@@ -7805,13 +10488,13 @@ var author$project$Internal$TopAppBar$Implementation$topAppBar = F4(
 	});
 var author$project$Internal$TopAppBar$Implementation$view = A3(author$project$Internal$Component$render, author$project$Internal$TopAppBar$Implementation$getSet.get, author$project$Internal$TopAppBar$Implementation$topAppBar, author$project$Internal$Msg$TopAppBarMsg);
 var author$project$Material$TopAppBar$view = author$project$Internal$TopAppBar$Implementation$view;
-var author$project$Page$viewHeader = F3(
-	function (mdcmsg, mdc, page) {
+var author$project$Page$viewHeader = F2(
+	function (model, title) {
 		return A5(
 			author$project$Material$TopAppBar$view,
-			mdcmsg,
+			author$project$Page$Mdc,
 			'my-top-app-bar',
-			mdc,
+			model.mdc,
 			_List_fromArray(
 				[author$project$Material$TopAppBar$fixed]),
 			_List_fromArray(
@@ -7822,13 +10505,13 @@ var author$project$Page$viewHeader = F3(
 						[author$project$Material$TopAppBar$alignStart]),
 					_List_fromArray(
 						[
-							A5(author$project$Material$TopAppBar$navigationIcon, mdcmsg, 'my-menu', mdc, _List_Nil, 'menu'),
+							A5(author$project$Material$TopAppBar$navigationIcon, author$project$Page$Mdc, 'my-menu', model.mdc, _List_Nil, 'menu'),
 							A2(
 							author$project$Material$TopAppBar$title,
 							_List_Nil,
 							_List_fromArray(
 								[
-									elm$html$Html$text('Todo Title')
+									elm$html$Html$text(title)
 								]))
 						])),
 					A2(
@@ -7838,198 +10521,3458 @@ var author$project$Page$viewHeader = F3(
 					_List_Nil)
 				]));
 	});
-var author$project$Page$view = F4(
-	function (mdcmsg, mdc, page, _n0) {
+var author$project$Page$viewUI = F2(
+	function (model, _n0) {
 		var title = _n0.title;
-		var content = _n0.content;
-		var header = A3(author$project$Page$viewHeader, mdcmsg, mdc, page);
+		var body = _n0.body;
+		var header = A2(author$project$Page$viewHeader, model, title);
 		return {
 			body: A2(
 				elm$core$List$cons,
 				A3(
-					author$project$Page$viewContent,
+					author$project$Page$viewBody,
 					header,
 					elm$html$Html$text(title),
-					content),
+					body),
 				_List_fromArray(
 					[
-						author$project$Page$viewFooter(mdc)
+						author$project$Page$viewFooter(model.mdc)
 					])),
-			title: title + ' - Conduit'
+			title: title + ' - Conduit2'
 		};
 	});
-var author$project$Internal$LayoutGrid$Implementation$cell = function (options) {
+var author$project$Db$Extra$TooFew = F3(
+	function (a, b, c) {
+		return {$: 'TooFew', a: a, b: b, c: c};
+	});
+var Chadtech$elm_relational_database$Db$toList = function (_n0) {
+	var dict = _n0.a;
 	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$div,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-layout-grid__cell'),
-			options));
+		elm$core$List$map,
+		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
+		elm$core$Dict$toList(dict));
 };
-var author$project$Material$LayoutGrid$cell = author$project$Internal$LayoutGrid$Implementation$cell;
-var author$project$Internal$LayoutGrid$Implementation$span = F2(
-	function (device, value) {
-		if (device.$ === 'Just') {
-			var device_ = device.a;
-			return author$project$Internal$Options$cs(
-				'mdc-layout-grid__cell--span-' + (elm$core$String$fromInt(value) + ('-' + device_)));
+var author$project$Db$Extra$size = function (db) {
+	return elm$core$List$length(
+		Chadtech$elm_relational_database$Db$toList(db));
+};
+var elm$core$Basics$ge = _Utils_ge;
+var author$project$Db$Extra$assertSizeGeq = F3(
+	function (target_size, error, db) {
+		return (_Utils_cmp(
+			author$project$Db$Extra$size(db),
+			target_size) > -1) ? elm$core$Result$Ok(db) : elm$core$Result$Err(
+			A3(
+				author$project$Db$Extra$TooFew,
+				author$project$Db$Extra$size(db),
+				target_size,
+				error));
+	});
+var author$project$Db$Extra$TooMuch = F3(
+	function (a, b, c) {
+		return {$: 'TooMuch', a: a, b: b, c: c};
+	});
+var author$project$Db$Extra$assertSizeLeq = F3(
+	function (target_size, error, db) {
+		return (_Utils_cmp(
+			author$project$Db$Extra$size(db),
+			target_size) < 1) ? elm$core$Result$Ok(db) : elm$core$Result$Err(
+			A3(
+				author$project$Db$Extra$TooMuch,
+				author$project$Db$Extra$size(db),
+				target_size,
+				error));
+	});
+var elm$core$Dict$filter = F2(
+	function (isGood, dict) {
+		return A3(
+			elm$core$Dict$foldl,
+			F3(
+				function (k, v, d) {
+					return A2(isGood, k, v) ? A3(elm$core$Dict$insert, k, v, d) : d;
+				}),
+			elm$core$Dict$empty,
+			dict);
+	});
+var Chadtech$elm_relational_database$Db$filter = F2(
+	function (rowFilterFunction, _n0) {
+		var dict = _n0.a;
+		var uncurried = F2(
+			function (key, value) {
+				return rowFilterFunction(
+					_Utils_Tuple2(
+						Chadtech$elm_relational_database$Id$fromString(key),
+						value));
+			});
+		return Chadtech$elm_relational_database$Db$Db(
+			A2(elm$core$Dict$filter, uncurried, dict));
+	});
+var author$project$Db$Extra$NotFound = {$: 'NotFound'};
+var elm$core$List$isEmpty = function (xs) {
+	if (!xs.b) {
+		return true;
+	} else {
+		return false;
+	}
+};
+var author$project$Db$Extra$selectBy = F3(
+	function (db, accessor, evaluator) {
+		var result = A2(
+			Chadtech$elm_relational_database$Db$filter,
+			function (_n1) {
+				var id = _n1.a;
+				var value = _n1.b;
+				return evaluator(
+					accessor(value));
+			},
+			db);
+		var _n0 = elm$core$List$isEmpty(
+			Chadtech$elm_relational_database$Db$toList(result));
+		if (_n0) {
+			return elm$core$Result$Err(author$project$Db$Extra$NotFound);
 		} else {
-			return author$project$Internal$Options$cs(
-				'mdc-layout-grid__cell--span-' + elm$core$String$fromInt(value));
+			return elm$core$Result$Ok(result);
 		}
 	});
-var author$project$Internal$LayoutGrid$Implementation$span2 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 2);
-var author$project$Material$LayoutGrid$span2 = author$project$Internal$LayoutGrid$Implementation$span2;
-var author$project$Internal$LayoutGrid$Implementation$span4 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 4);
-var author$project$Material$LayoutGrid$span4 = author$project$Internal$LayoutGrid$Implementation$span4;
-var author$project$Internal$LayoutGrid$Implementation$span4Phone = A2(
-	author$project$Internal$LayoutGrid$Implementation$span,
-	elm$core$Maybe$Just('phone'),
-	4);
-var author$project$Material$LayoutGrid$span4Phone = author$project$Internal$LayoutGrid$Implementation$span4Phone;
-var author$project$Internal$LayoutGrid$Implementation$span6 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 6);
-var author$project$Material$LayoutGrid$span6 = author$project$Internal$LayoutGrid$Implementation$span6;
-var author$project$Internal$LayoutGrid$Implementation$span6Tablet = A2(
-	author$project$Internal$LayoutGrid$Implementation$span,
-	elm$core$Maybe$Just('tablet'),
-	6);
-var author$project$Material$LayoutGrid$span6Tablet = author$project$Internal$LayoutGrid$Implementation$span6Tablet;
-var author$project$Internal$LayoutGrid$Implementation$span8Tablet = A2(
-	author$project$Internal$LayoutGrid$Implementation$span,
-	elm$core$Maybe$Just('tablet'),
-	8);
-var author$project$Material$LayoutGrid$span8Tablet = author$project$Internal$LayoutGrid$Implementation$span8Tablet;
-var author$project$Internal$LayoutGrid$Implementation$inner = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$div,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-layout-grid__inner'),
-			options));
-};
-var elm$core$List$singleton = function (value) {
-	return _List_fromArray(
-		[value]);
-};
-var author$project$Internal$LayoutGrid$Implementation$view = function (options) {
-	return A2(
-		elm$core$Basics$composeL,
-		A2(
-			elm$core$Basics$composeL,
-			A2(
-				author$project$Internal$Options$styled,
-				elm$html$Html$div,
-				A2(
-					elm$core$List$cons,
-					author$project$Internal$Options$cs('mdc-layout-grid'),
-					options)),
-			elm$core$List$singleton),
-		author$project$Internal$LayoutGrid$Implementation$inner(_List_Nil));
-};
-var author$project$Material$LayoutGrid$view = author$project$Internal$LayoutGrid$Implementation$view;
-var author$project$Internal$Typography$Implementation$subtitle1 = author$project$Internal$Options$cs('mdc-typography--subtitle1');
-var author$project$Material$Typography$subtitle1 = author$project$Internal$Typography$Implementation$subtitle1;
-var elm$html$Html$h3 = _VirtualDom_node('h3');
-var author$project$Page$Data$viewContent = A2(
-	elm$html$Html$div,
-	_List_Nil,
-	_List_fromArray(
-		[
-			A3(
-			author$project$Material$Options$styled,
-			elm$html$Html$h3,
-			_List_fromArray(
-				[author$project$Material$Typography$subtitle1]),
-			_List_fromArray(
-				[
-					elm$html$Html$text('A title')
-				])),
-			A2(
-			author$project$Material$LayoutGrid$view,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(
-					author$project$Material$LayoutGrid$cell,
-					_List_fromArray(
-						[author$project$Material$LayoutGrid$span6, author$project$Material$LayoutGrid$span8Tablet]),
-					_List_fromArray(
-						[
-							elm$html$Html$text('Hello')
-						])),
-					A2(
-					author$project$Material$LayoutGrid$cell,
-					_List_fromArray(
-						[author$project$Material$LayoutGrid$span4, author$project$Material$LayoutGrid$span6Tablet]),
-					_List_fromArray(
-						[
-							elm$html$Html$text('World')
-						])),
-					A2(
-					author$project$Material$LayoutGrid$cell,
-					_List_fromArray(
-						[author$project$Material$LayoutGrid$span2, author$project$Material$LayoutGrid$span4Phone]),
-					_List_fromArray(
-						[
-							elm$html$Html$text('FooBar')
-						]))
-				]))
-		]));
-var author$project$Page$Data$view = F4(
-	function (model, mdcmsg, mdc, data) {
-		return {content: author$project$Page$Data$viewContent, title: 'Data'};
+var elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
 	});
-var elm$html$Html$h2 = _VirtualDom_node('h2');
-var author$project$Page$Error$view = F4(
-	function (error, oans, zwoa, gsuffa) {
-		return {
-			content: A2(
-				elm$html$Html$div,
+var author$project$Db$Extra$selectFrom = F3(
+	function (db, accessor, id_db) {
+		var id_list = A2(
+			elm$core$List$map,
+			function (_n1) {
+				var id = _n1.a;
+				return id;
+			},
+			Chadtech$elm_relational_database$Db$toList(id_db));
+		return A2(
+			Chadtech$elm_relational_database$Db$filter,
+			function (_n0) {
+				var id = _n0.a;
+				var value = _n0.b;
+				return A2(
+					elm$core$List$member,
+					accessor(value),
+					id_list);
+			},
+			db);
+	});
+var elm$core$Result$andThen = F2(
+	function (callback, result) {
+		if (result.$ === 'Ok') {
+			var value = result.a;
+			return callback(value);
+		} else {
+			var msg = result.a;
+			return elm$core$Result$Err(msg);
+		}
+	});
+var elm$core$Result$map = F2(
+	function (func, ra) {
+		if (ra.$ === 'Ok') {
+			var a = ra.a;
+			return elm$core$Result$Ok(
+				func(a));
+		} else {
+			var e = ra.a;
+			return elm$core$Result$Err(e);
+		}
+	});
+var author$project$Data$selectFramesFromCoderName = F2(
+	function (model, name) {
+		return A2(
+			elm$core$Result$map,
+			A2(
+				author$project$Db$Extra$selectFrom,
+				model.coding_frames,
+				function (c) {
+					return c.coding;
+				}),
+			A2(
+				elm$core$Result$map,
+				A2(
+					author$project$Db$Extra$selectFrom,
+					model.codings,
+					function (c) {
+						return c.coder;
+					}),
+				A2(
+					elm$core$Result$andThen,
+					A2(author$project$Db$Extra$assertSizeGeq, 1, name),
+					A2(
+						elm$core$Result$andThen,
+						A2(author$project$Db$Extra$assertSizeLeq, 1, name),
+						A3(
+							author$project$Db$Extra$selectBy,
+							model.coders,
+							function (c) {
+								return c.name;
+							},
+							function (c) {
+								return _Utils_eq(c, name);
+							})))));
+	});
+var author$project$Data$selectFramesFromQuestionaryName = F2(
+	function (model, name) {
+		return A2(
+			elm$core$Result$map,
+			A2(
+				author$project$Db$Extra$selectFrom,
+				model.coding_frames,
+				function (c) {
+					return c.answer;
+				}),
+			A2(
+				elm$core$Result$map,
+				A2(
+					author$project$Db$Extra$selectFrom,
+					model.answers,
+					function (c) {
+						return c.question;
+					}),
+				A2(
+					elm$core$Result$map,
+					A2(
+						author$project$Db$Extra$selectFrom,
+						model.questions,
+						function (c) {
+							return c.questionary;
+						}),
+					A2(
+						elm$core$Result$andThen,
+						A2(author$project$Db$Extra$assertSizeGeq, 1, name),
+						A2(
+							elm$core$Result$andThen,
+							A2(author$project$Db$Extra$assertSizeLeq, 1, name),
+							A3(
+								author$project$Db$Extra$selectBy,
+								model.questionaries,
+								function (c) {
+									return c.name;
+								},
+								function (c) {
+									return _Utils_eq(c, name);
+								}))))));
+	});
+var elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2(elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var author$project$Db$Extra$intersection = F2(
+	function (a, b) {
+		var list_b = Chadtech$elm_relational_database$Db$toList(b);
+		var list_a = Chadtech$elm_relational_database$Db$toList(a);
+		return Chadtech$elm_relational_database$Db$fromList(
+			A2(
+				elm$core$List$filter,
+				function (c) {
+					return A2(elm$core$List$member, c, list_b);
+				},
+				list_a));
+	});
+var elm$core$Result$map2 = F3(
+	function (func, ra, rb) {
+		if (ra.$ === 'Err') {
+			var x = ra.a;
+			return elm$core$Result$Err(x);
+		} else {
+			var a = ra.a;
+			if (rb.$ === 'Err') {
+				var x = rb.a;
+				return elm$core$Result$Err(x);
+			} else {
+				var b = rb.a;
+				return elm$core$Result$Ok(
+					A2(func, a, b));
+			}
+		}
+	});
+var author$project$Data$selectCodingFrames = F3(
+	function (model, coder, questionary) {
+		var questionary_frames = A2(author$project$Data$selectFramesFromQuestionaryName, model, questionary);
+		var coder_frames = A2(author$project$Data$selectFramesFromCoderName, model, coder);
+		return A3(elm$core$Result$map2, author$project$Db$Extra$intersection, coder_frames, questionary_frames);
+	});
+var author$project$Data$unwrap = function (res) {
+	if (res.$ === 'Ok') {
+		var value = res.a;
+		return Chadtech$elm_relational_database$Db$toList(value);
+	} else {
+		return _List_Nil;
+	}
+};
+var author$project$Data$AnswerMsg = F2(
+	function (a, b) {
+		return {$: 'AnswerMsg', a: a, b: b};
+	});
+var author$project$Data$Entity = function (a) {
+	return {$: 'Entity', a: a};
+};
+var elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
+	});
+var Chadtech$elm_relational_database$Db$filterMissing = function (items) {
+	var onlyPresent = function (_n0) {
+		var id = _n0.a;
+		var maybeItem = _n0.b;
+		return A2(
+			elm$core$Maybe$map,
+			elm$core$Tuple$pair(id),
+			maybeItem);
+	};
+	return A2(
+		elm$core$List$filterMap,
+		elm$core$Basics$identity,
+		A2(elm$core$List$map, onlyPresent, items));
+};
+var Chadtech$elm_relational_database$Db$getWithId = F2(
+	function (db, thisId) {
+		return _Utils_Tuple2(
+			thisId,
+			A2(Chadtech$elm_relational_database$Db$get, db, thisId));
+	});
+var Chadtech$elm_relational_database$Db$getMany = function (db) {
+	return elm$core$List$map(
+		Chadtech$elm_relational_database$Db$getWithId(db));
+};
+var author$project$Data$selectAllAnswers = F2(
+	function (model, questionary) {
+		return A2(
+			elm$core$Result$map,
+			A2(
+				author$project$Db$Extra$selectFrom,
+				model.answers,
+				function (c) {
+					return c.question;
+				}),
+			A2(
+				elm$core$Result$map,
+				A2(
+					author$project$Db$Extra$selectFrom,
+					model.questions,
+					function (c) {
+						return c.questionary;
+					}),
+				A3(
+					author$project$Db$Extra$selectBy,
+					model.questionaries,
+					function (c) {
+						return c.name;
+					},
+					function (c) {
+						return _Utils_eq(c, questionary);
+					})));
+	});
+var author$project$Db$Extra$difference = F2(
+	function (lhs, rhs) {
+		var list_rhs = Chadtech$elm_relational_database$Db$toList(rhs);
+		var list_lhs = Chadtech$elm_relational_database$Db$toList(lhs);
+		return Chadtech$elm_relational_database$Db$fromList(
+			A2(
+				elm$core$List$filter,
+				function (c) {
+					return !A2(elm$core$List$member, c, list_rhs);
+				},
+				list_lhs));
+	});
+var author$project$Data$selectMissingAnswers = F3(
+	function (model, coder, questionary) {
+		var frame_answers = A2(
+			elm$core$Result$map,
+			Chadtech$elm_relational_database$Db$fromList,
+			A2(
+				elm$core$Result$map,
+				Chadtech$elm_relational_database$Db$filterMissing,
+				A2(
+					elm$core$Result$map,
+					Chadtech$elm_relational_database$Db$getMany(model.answers),
+					A2(
+						elm$core$Result$map,
+						elm$core$List$map(
+							function (_n0) {
+								var id = _n0.a;
+								var value = _n0.b;
+								return value.answer;
+							}),
+						A2(
+							elm$core$Result$map,
+							Chadtech$elm_relational_database$Db$toList,
+							A3(author$project$Data$selectCodingFrames, model, coder, questionary))))));
+		var result_answers = A3(
+			elm$core$Result$map2,
+			author$project$Db$Extra$difference,
+			A2(author$project$Data$selectAllAnswers, model, questionary),
+			frame_answers);
+		return result_answers;
+	});
+var elm$html$Html$td = _VirtualDom_node('td');
+var author$project$Internal$DataTable$Implementation$td = F2(
+	function (options, nodes) {
+		var summary = A2(
+			author$project$Internal$Options$collect,
+			{},
+			options);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$td,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-data-table__cell')
+				]),
+			_List_Nil,
+			nodes);
+	});
+var author$project$Material$DataTable$td = author$project$Internal$DataTable$Implementation$td;
+var elm$html$Html$tr = _VirtualDom_node('tr');
+var author$project$Internal$DataTable$Implementation$tr = F2(
+	function (options, nodes) {
+		var summary = A2(
+			author$project$Internal$Options$collect,
+			{},
+			options);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$tr,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-data-table__row')
+				]),
+			_List_Nil,
+			nodes);
+	});
+var author$project$Material$DataTable$tr = author$project$Internal$DataTable$Implementation$tr;
+var author$project$Entities$Answer$toTableRow = function (_n0) {
+	var id = _n0.a;
+	var model = _n0.b;
+	return A2(
+		author$project$Material$DataTable$tr,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(id))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(model.question))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(model.user))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(model.value)
+					]))
+			]));
+};
+var elm$html$Html$table = _VirtualDom_node('table');
+var author$project$Internal$DataTable$Implementation$table = F2(
+	function (options, nodes) {
+		var summary = A2(
+			author$project$Internal$Options$collect,
+			{},
+			options);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$table,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-data-table__table')
+				]),
+			_List_Nil,
+			nodes);
+	});
+var author$project$Material$DataTable$table = author$project$Internal$DataTable$Implementation$table;
+var elm$html$Html$tbody = _VirtualDom_node('tbody');
+var author$project$Internal$DataTable$Implementation$tbody = F2(
+	function (options, nodes) {
+		return A3(author$project$Internal$Options$styled, elm$html$Html$tbody, options, nodes);
+	});
+var author$project$Material$DataTable$tbody = author$project$Internal$DataTable$Implementation$tbody;
+var author$project$Internal$Options$role = function (value) {
+	return author$project$Internal$Options$Attribute(
+		A2(elm$html$Html$Attributes$attribute, 'role', value));
+};
+var elm$html$Html$th = _VirtualDom_node('th');
+var author$project$Internal$DataTable$Implementation$th = F2(
+	function (options, nodes) {
+		var summary = A2(
+			author$project$Internal$Options$collect,
+			{},
+			options);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$th,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-data-table__header-cell'),
+					author$project$Internal$Options$role('columnheader')
+				]),
+			_List_Nil,
+			nodes);
+	});
+var author$project$Material$DataTable$th = author$project$Internal$DataTable$Implementation$th;
+var elm$html$Html$thead = _VirtualDom_node('thead');
+var author$project$Internal$DataTable$Implementation$thead = F2(
+	function (options, nodes) {
+		return A3(author$project$Internal$Options$styled, elm$html$Html$thead, options, nodes);
+	});
+var author$project$Material$DataTable$thead = author$project$Internal$DataTable$Implementation$thead;
+var author$project$Internal$DataTable$Implementation$trh = F2(
+	function (options, nodes) {
+		var summary = A2(
+			author$project$Internal$Options$collect,
+			{},
+			options);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$tr,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-data-table__header-row')
+				]),
+			_List_Nil,
+			nodes);
+	});
+var author$project$Material$DataTable$trh = author$project$Internal$DataTable$Implementation$trh;
+var author$project$Internal$DataTable$Implementation$view = F2(
+	function (options, nodes) {
+		var summary = A2(
+			author$project$Internal$Options$collect,
+			{},
+			options);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-data-table')
+				]),
+			_List_Nil,
+			nodes);
+	});
+var author$project$Material$DataTable$view = author$project$Internal$DataTable$Implementation$view;
+var elm$html$Html$h3 = _VirtualDom_node('h3');
+var author$project$Entities$Answer$viewTable = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Answers')
+					])),
+				A2(
+				author$project$Material$DataTable$view,
 				_List_Nil,
 				_List_fromArray(
 					[
 						A2(
-						elm$html$Html$h2,
+						author$project$Material$DataTable$table,
 						_List_Nil,
 						_List_fromArray(
 							[
-								elm$html$Html$text('Error:')
-							])),
+								A2(
+								author$project$Material$DataTable$thead,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										author$project$Material$DataTable$trh,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('ID')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Question')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('User')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Value')
+													]))
+											]))
+									])),
+								A2(
+								author$project$Material$DataTable$tbody,
+								_List_Nil,
+								A2(
+									elm$core$List$map,
+									author$project$Entities$Answer$toTableRow,
+									Chadtech$elm_relational_database$Db$toList(model)))
+							]))
+					]))
+			]));
+};
+var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
+var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
+var author$project$Data$viewAnswers = F3(
+	function (model, coder, questionary) {
+		var _n0 = A3(author$project$Data$selectMissingAnswers, model, coder, questionary);
+		if (_n0.$ === 'Ok') {
+			var value = _n0.a;
+			return A2(
+				elm$html$Html$map,
+				A2(
+					elm$core$Basics$composeL,
+					author$project$Data$Entity,
+					author$project$Data$AnswerMsg(elm$core$Maybe$Nothing)),
+				author$project$Entities$Answer$viewTable(value));
+		} else {
+			var error = _n0.a;
+			return elm$html$Html$text('An error occured.');
+		}
+	});
+var author$project$Data$CodingQuestionMsg = F2(
+	function (a, b) {
+		return {$: 'CodingQuestionMsg', a: a, b: b};
+	});
+var author$project$Db$Extra$Absent = F2(
+	function (a, b) {
+		return {$: 'Absent', a: a, b: b};
+	});
+var author$project$Db$Extra$get = F3(
+	function (b, accessor, _n0) {
+		var ida = _n0.a;
+		var valuea = _n0.b;
+		var idb = accessor(valuea);
+		var _n1 = A2(Chadtech$elm_relational_database$Db$get, b, idb);
+		if (_n1.$ === 'Just') {
+			var valueb = _n1.a;
+			return elm$core$Result$Ok(
+				_Utils_Tuple2(idb, valueb));
+		} else {
+			return elm$core$Result$Err(
+				A2(
+					author$project$Db$Extra$Absent,
+					Chadtech$elm_relational_database$Id$toString(ida),
+					Chadtech$elm_relational_database$Id$toString(idb)));
+		}
+	});
+var author$project$Data$selectCodingQuestions = F2(
+	function (model, frame) {
+		return A2(
+			elm$core$Result$map,
+			A2(
+				author$project$Db$Extra$selectFrom,
+				model.coding_questions,
+				function (c) {
+					return c.coding_questionary;
+				}),
+			A2(
+				elm$core$Result$map,
+				A2(
+					author$project$Db$Extra$selectFrom,
+					model.coding_questionaries,
+					function (c) {
+						return c.question;
+					}),
+				A2(
+					elm$core$Result$map,
+					function (c) {
+						return A2(Chadtech$elm_relational_database$Db$insert, c, Chadtech$elm_relational_database$Db$empty);
+					},
+					A2(
+						elm$core$Result$andThen,
+						A2(
+							author$project$Db$Extra$get,
+							model.questions,
+							function (c) {
+								return c.question;
+							}),
+						A3(
+							author$project$Db$Extra$get,
+							model.answers,
+							function (c) {
+								return c.answer;
+							},
+							frame)))));
+	});
+var author$project$Entities$Coding$Question$toTableRow = function (_n0) {
+	var id = _n0.a;
+	var model = _n0.b;
+	return A2(
+		author$project$Material$DataTable$tr,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
 						elm$html$Html$text(
-						elm$json$Json$Decode$errorToString(error))
+						Chadtech$elm_relational_database$Id$toString(id))
 					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(model.coding_questionary))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(model.text)
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('TODO')
+					]))
+			]));
+};
+var author$project$Entities$Coding$Question$viewTable = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Coding Question')
+					])),
+				A2(
+				author$project$Material$DataTable$view,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						author$project$Material$DataTable$table,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								author$project$Material$DataTable$thead,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										author$project$Material$DataTable$trh,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('ID')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Questionary')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Text')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Input Type')
+													]))
+											]))
+									])),
+								A2(
+								author$project$Material$DataTable$tbody,
+								_List_Nil,
+								A2(
+									elm$core$List$map,
+									author$project$Entities$Coding$Question$toTableRow,
+									Chadtech$elm_relational_database$Db$toList(model)))
+							]))
+					]))
+			]));
+};
+var author$project$Data$viewCodingQuestions = F2(
+	function (model, frame) {
+		var _n0 = A2(author$project$Data$selectCodingQuestions, model, frame);
+		if (_n0.$ === 'Ok') {
+			var value = _n0.a;
+			return A2(
+				elm$html$Html$map,
+				A2(
+					elm$core$Basics$composeL,
+					author$project$Data$Entity,
+					author$project$Data$CodingQuestionMsg(elm$core$Maybe$Nothing)),
+				author$project$Entities$Coding$Question$viewTable(value));
+		} else {
+			return elm$html$Html$text('An error occured.');
+		}
+	});
+var author$project$Data$CodingFrameMsg = F2(
+	function (a, b) {
+		return {$: 'CodingFrameMsg', a: a, b: b};
+	});
+var author$project$Entities$Coding$Frame$toTableRow = function (_n0) {
+	var id = _n0.a;
+	var model = _n0.b;
+	return A2(
+		author$project$Material$DataTable$tr,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(id))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(model.answer))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(model.coding))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						elm$core$String$fromInt(model.created))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						elm$core$String$fromInt(model.modified))
+					]))
+			]));
+};
+var author$project$Entities$Coding$Frame$viewTable = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Coding Frame')
+					])),
+				A2(
+				author$project$Material$DataTable$view,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						author$project$Material$DataTable$table,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								author$project$Material$DataTable$thead,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										author$project$Material$DataTable$trh,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('ID')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Answer')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Coding')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Created')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Modified')
+													]))
+											]))
+									])),
+								A2(
+								author$project$Material$DataTable$tbody,
+								_List_Nil,
+								A2(
+									elm$core$List$map,
+									author$project$Entities$Coding$Frame$toTableRow,
+									Chadtech$elm_relational_database$Db$toList(model)))
+							]))
+					]))
+			]));
+};
+var author$project$Data$viewContent3 = F3(
+	function (model, coder, questionary) {
+		var _n0 = A3(author$project$Data$selectCodingFrames, model, coder, questionary);
+		if (_n0.$ === 'Ok') {
+			var value = _n0.a;
+			return A2(
+				elm$html$Html$map,
+				A2(
+					elm$core$Basics$composeL,
+					author$project$Data$Entity,
+					author$project$Data$CodingFrameMsg(elm$core$Maybe$Nothing)),
+				author$project$Entities$Coding$Frame$viewTable(value));
+		} else {
+			var error = _n0.a;
+			return elm$html$Html$text('An error occured.');
+		}
+	});
+var author$project$Data$Click = function (a) {
+	return {$: 'Click', a: a};
+};
+var author$project$Internal$Options$onClick = function (msg) {
+	return A2(
+		author$project$Internal$Options$on,
+		'click',
+		elm$json$Json$Decode$succeed(msg));
+};
+var author$project$Material$Options$onClick = author$project$Internal$Options$onClick;
+var author$project$Internal$TabBar$Implementation$activeTab = function (value) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{activeTab: value});
+		});
+};
+var author$project$Material$TabBar$activeTab = author$project$Internal$TabBar$Implementation$activeTab;
+var author$project$Internal$TabBar$Implementation$tab = F2(
+	function (options, childs) {
+		return {childs: childs, options: options};
+	});
+var author$project$Material$TabBar$tab = author$project$Internal$TabBar$Implementation$tab;
+var debois$elm_dom$DOM$childNode = function (idx) {
+	return elm$json$Json$Decode$at(
+		_List_fromArray(
+			[
+				'childNodes',
+				elm$core$String$fromInt(idx)
+			]));
+};
+var debois$elm_dom$DOM$scrollLeft = A2(elm$json$Json$Decode$field, 'scrollLeft', elm$json$Json$Decode$float);
+var author$project$Internal$TabBar$Implementation$decodeScrollLeft = debois$elm_dom$DOM$target(
+	A2(
+		debois$elm_dom$DOM$childNode,
+		0,
+		A2(
+			debois$elm_dom$DOM$childNode,
+			0,
+			A2(
+				elm$json$Json$Decode$map,
+				function (scrollLeft) {
+					return scrollLeft;
+				},
+				debois$elm_dom$DOM$scrollLeft))));
+var author$project$Internal$TabBar$Implementation$defaultConfig = {activeTab: 0, fadingIconIndicator: false, icon: elm$core$Maybe$Nothing, indicator: true, indicatorIcon: elm$core$Maybe$Nothing, smallIndicator: false};
+var author$project$Internal$TabBar$Model$Geometry = F3(
+	function (tabs, scrollArea, tabBar) {
+		return {scrollArea: scrollArea, tabBar: tabBar, tabs: tabs};
+	});
+var elm$json$Json$Decode$maybe = function (decoder) {
+	return elm$json$Json$Decode$oneOf(
+		_List_fromArray(
+			[
+				A2(elm$json$Json$Decode$map, elm$core$Maybe$Just, decoder),
+				elm$json$Json$Decode$succeed(elm$core$Maybe$Nothing)
+			]));
+};
+var debois$elm_dom$DOM$childNodes = function (decoder) {
+	var loop = F2(
+		function (idx, xs) {
+			return A2(
+				elm$json$Json$Decode$andThen,
+				A2(
+					elm$core$Basics$composeR,
+					elm$core$Maybe$map(
+						function (x) {
+							return A2(
+								loop,
+								idx + 1,
+								A2(elm$core$List$cons, x, xs));
+						}),
+					elm$core$Maybe$withDefault(
+						elm$json$Json$Decode$succeed(xs))),
+				elm$json$Json$Decode$maybe(
+					A2(
+						elm$json$Json$Decode$field,
+						elm$core$String$fromInt(idx),
+						decoder)));
+		});
+	return A2(
+		elm$json$Json$Decode$map,
+		elm$core$List$reverse,
+		A2(
+			elm$json$Json$Decode$field,
+			'childNodes',
+			A2(loop, 0, _List_Nil)));
+};
+var debois$elm_dom$DOM$parentElement = function (decoder) {
+	return A2(elm$json$Json$Decode$field, 'parentElement', decoder);
+};
+var elm$core$String$toLower = _String_toLower;
+var author$project$Internal$TabBar$Implementation$decodeGeometry = A4(
+	elm$json$Json$Decode$map3,
+	author$project$Internal$TabBar$Model$Geometry,
+	A2(
+		elm$json$Json$Decode$map,
+		elm$core$List$filterMap(elm$core$Basics$identity),
+		debois$elm_dom$DOM$childNodes(
+			A2(
+				elm$json$Json$Decode$andThen,
+				function (tagName) {
+					var _n0 = elm$core$String$toLower(tagName);
+					if (_n0 === 'button') {
+						var content = debois$elm_dom$DOM$childNode(0);
+						return A2(
+							elm$json$Json$Decode$map,
+							elm$core$Maybe$Just,
+							A3(
+								elm$json$Json$Decode$map2,
+								F2(
+									function (offsetLeft, offsetWidth) {
+										return {contentLeft: offsetLeft + 24, contentRight: ((offsetLeft + offsetWidth) - 24) - 24, offsetLeft: offsetLeft, offsetWidth: offsetWidth};
+									}),
+								debois$elm_dom$DOM$offsetLeft,
+								debois$elm_dom$DOM$offsetWidth));
+					} else {
+						return elm$json$Json$Decode$succeed(elm$core$Maybe$Nothing);
+					}
+				},
+				A2(
+					elm$json$Json$Decode$at,
+					_List_fromArray(
+						['tagName']),
+					elm$json$Json$Decode$string)))),
+	debois$elm_dom$DOM$parentElement(
+		A2(
+			elm$json$Json$Decode$map,
+			function (offsetWidth) {
+				return {offsetWidth: offsetWidth};
+			},
+			debois$elm_dom$DOM$offsetWidth)),
+	debois$elm_dom$DOM$parentElement(
+		debois$elm_dom$DOM$parentElement(
+			debois$elm_dom$DOM$parentElement(
+				A2(
+					elm$json$Json$Decode$map,
+					function (offsetWidth) {
+						return {offsetWidth: offsetWidth};
+					},
+					debois$elm_dom$DOM$offsetWidth)))));
+var author$project$Internal$TabBar$Implementation$decodeGeometryOnScrollContent = debois$elm_dom$DOM$target(author$project$Internal$TabBar$Implementation$decodeGeometry);
+var author$project$Internal$TabBar$Model$Init = function (a) {
+	return {$: 'Init', a: a};
+};
+var author$project$Internal$TabBar$Implementation$scroller = F5(
+	function (domId, lift, model, options, nodes) {
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$TabBar$Implementation$defaultConfig, options);
+		var config = summary.config;
+		return A3(
+			author$project$Internal$Options$styled,
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-tab-scroller')
+				]),
+			_List_fromArray(
+				[
+					A3(
+					author$project$Internal$Options$styled,
+					elm$html$Html$div,
+					_List_fromArray(
+						[
+							author$project$Internal$Options$id(domId + '__scroll-area'),
+							author$project$Internal$Options$cs('mdc-tab-scroller__scroll-area'),
+							author$project$Internal$Options$cs('mdc-tab-scroller__scroll-area--scroll'),
+							A2(author$project$Internal$Options$css, 'margin-bottom', 'calc(-1 * var(--elm-mdc-horizontal-scrollbar-height))')
+						]),
+					_List_fromArray(
+						[
+							A5(
+							author$project$Internal$Options$apply,
+							summary,
+							elm$html$Html$div,
+							_List_fromArray(
+								[
+									author$project$Internal$Options$cs('mdc-tab-scroller__scroll-content'),
+									A2(
+									author$project$Internal$Options$when,
+									_Utils_eq(model.geometry, elm$core$Maybe$Nothing),
+									author$project$Internal$GlobalEvents$onTick(
+										A2(
+											elm$json$Json$Decode$map,
+											A2(elm$core$Basics$composeL, lift, author$project$Internal$TabBar$Model$Init),
+											author$project$Internal$TabBar$Implementation$decodeGeometryOnScrollContent))),
+									author$project$Internal$GlobalEvents$onResize(
+									A2(
+										elm$json$Json$Decode$map,
+										A2(elm$core$Basics$composeL, lift, author$project$Internal$TabBar$Model$Init),
+										author$project$Internal$TabBar$Implementation$decodeGeometryOnScrollContent))
+								]),
+							_List_Nil,
+							nodes)
+						]))
+				]));
+	});
+var elm$html$Html$Attributes$tabindex = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'tabIndex',
+		elm$core$String$fromInt(n));
+};
+var author$project$Internal$Options$tabindex = function (value) {
+	return author$project$Internal$Options$Attribute(
+		elm$html$Html$Attributes$tabindex(value));
+};
+var elm$html$Html$button = _VirtualDom_node('button');
+var author$project$Internal$TabBar$Implementation$tabView = F6(
+	function (domId, lift, model, options, index, tab_) {
+		var tab_summary = A2(author$project$Internal$Options$collect, author$project$Internal$TabBar$Implementation$defaultConfig, tab_.options);
+		var tab_config = tab_summary.config;
+		var tabDomId = domId + ('--' + elm$core$String$fromInt(index));
+		var ripple = A5(
+			author$project$Internal$Ripple$Implementation$view,
+			false,
+			tabDomId,
+			A2(
+				elm$core$Basics$composeL,
+				lift,
+				author$project$Internal$TabBar$Model$RippleMsg(index)),
+			A2(
+				elm$core$Maybe$withDefault,
+				author$project$Internal$Ripple$Model$defaultModel,
+				A2(elm$core$Dict$get, index, model.ripples)),
+			_List_Nil);
+		var icon_span = function () {
+			var _n2 = tab_config.icon;
+			if (_n2.$ === 'Just') {
+				var name = _n2.a;
+				return A3(
+					author$project$Internal$Options$styled,
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							author$project$Internal$Options$cs('mdc-tab__icon'),
+							author$project$Internal$Options$cs('material-icons'),
+							A2(author$project$Internal$Options$aria, 'hidden', 'true')
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(name)
+						]));
+			} else {
+				return elm$html$Html$text('');
+			}
+		}();
+		var icon_name = function () {
+			var _n1 = tab_config.indicatorIcon;
+			if (_n1.$ === 'Just') {
+				var name = _n1.a;
+				return name;
+			} else {
+				return '';
+			}
+		}();
+		var icon_indicator = function () {
+			var _n0 = tab_config.indicatorIcon;
+			if (_n0.$ === 'Just') {
+				return true;
+			} else {
+				return false;
+			}
+		}();
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$TabBar$Implementation$defaultConfig, options);
+		var config = summary.config;
+		var selected = _Utils_eq(model.activeTab, index) || (tab_config.fadingIconIndicator && _Utils_eq(config.activeTab, index));
+		var stateChanged = !_Utils_eq(config.activeTab, model.activeTab);
+		var to_be_selected = (stateChanged && _Utils_eq(config.activeTab, index)) && (!tab_config.fadingIconIndicator);
+		var indicatorTransform = function () {
+			if (to_be_selected) {
+				var geometry = A2(elm$core$Maybe$withDefault, author$project$Internal$TabBar$Model$defaultGeometry, model.geometry);
+				var previousTab = elm$core$List$head(
+					A2(elm$core$List$drop, model.activeTab, geometry.tabs));
+				var previousTabWidth = A2(
+					elm$core$Maybe$withDefault,
+					0,
+					A2(
+						elm$core$Maybe$map,
+						function ($) {
+							return $.offsetWidth;
+						},
+						previousTab));
+				var fromX = A2(
+					elm$core$Maybe$withDefault,
+					0,
+					A2(
+						elm$core$Maybe$map,
+						function ($) {
+							return $.offsetLeft;
+						},
+						previousTab));
+				var currentTab = elm$core$List$head(
+					A2(elm$core$List$drop, config.activeTab, geometry.tabs));
+				var currentTabWidth = A2(
+					elm$core$Maybe$withDefault,
+					0,
+					A2(
+						elm$core$Maybe$map,
+						function ($) {
+							return $.offsetWidth;
+						},
+						currentTab));
+				var widthDelta = previousTabWidth / currentTabWidth;
+				var currentX = A2(
+					elm$core$Maybe$withDefault,
+					0,
+					A2(
+						elm$core$Maybe$map,
+						function ($) {
+							return $.offsetLeft;
+						},
+						currentTab));
+				var xPosition = fromX - currentX;
+				return A2(
+					elm$core$String$join,
+					' ',
+					_List_fromArray(
+						[
+							'translateX(' + (elm$core$String$fromFloat(xPosition) + 'px)'),
+							'scale(' + (elm$core$String$fromFloat(widthDelta) + ',1)')
+						]));
+			} else {
+				return '';
+			}
+		}();
+		var indicator_span = A3(
+			author$project$Internal$Options$styled,
+			elm$html$Html$span,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-tab-indicator'),
+					A2(
+					author$project$Internal$Options$when,
+					selected,
+					author$project$Internal$Options$cs('mdc-tab-indicator--active')),
+					A2(
+					author$project$Internal$Options$when,
+					to_be_selected,
+					author$project$Internal$Options$cs('mdc-tab-indicator--no-transition')),
+					A2(
+					author$project$Internal$Options$when,
+					tab_config.fadingIconIndicator,
+					author$project$Internal$Options$cs('mdc-tab-indicator--fade'))
+				]),
+			_List_fromArray(
+				[
+					A3(
+					author$project$Internal$Options$styled,
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							author$project$Internal$Options$cs('mdc-tab-indicator__content'),
+							A2(
+							author$project$Internal$Options$when,
+							!icon_indicator,
+							author$project$Internal$Options$cs('mdc-tab-indicator__content--underline')),
+							A2(
+							author$project$Internal$Options$when,
+							icon_indicator,
+							author$project$Internal$Options$cs('mdc-tab-indicator__content--icon')),
+							A2(
+							author$project$Internal$Options$when,
+							icon_indicator,
+							author$project$Internal$Options$cs('material-icons')),
+							A2(
+							author$project$Internal$Options$when,
+							to_be_selected,
+							A2(author$project$Internal$Options$css, 'transform', indicatorTransform))
+						]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(icon_name)
+						]))
+				]));
+		return A5(
+			author$project$Internal$Options$apply,
+			tab_summary,
+			elm$html$Html$button,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-tab'),
+					A2(
+					author$project$Internal$Options$when,
+					selected,
+					author$project$Internal$Options$cs('mdc-tab--active')),
+					author$project$Internal$Options$role('tab'),
+					A2(
+					author$project$Internal$Options$aria,
+					'selected',
+					selected ? 'true' : 'false'),
+					author$project$Internal$Options$tabindex(
+					selected ? 0 : (-1)),
+					ripple.interactionHandler
+				]),
+			_List_Nil,
+			_List_fromArray(
+				[
+					A3(
+					author$project$Internal$Options$styled,
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							author$project$Internal$Options$cs('mdc-tab__content')
+						]),
+					_List_fromArray(
+						[
+							icon_span,
+							A3(
+							author$project$Internal$Options$styled,
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									author$project$Internal$Options$cs('mdc-tab__text-label')
+								]),
+							tab_.childs),
+							tab_config.smallIndicator ? indicator_span : elm$html$Html$text('')
+						])),
+					tab_config.smallIndicator ? elm$html$Html$text('') : indicator_span,
+					A3(
+					author$project$Internal$Options$styled,
+					elm$html$Html$span,
+					_List_fromArray(
+						[
+							author$project$Internal$Options$cs('mdc-tab__ripple'),
+							ripple.properties
+						]),
+					_List_Nil)
+				]));
+	});
+var author$project$Internal$TabBar$Model$SetActiveTab = F3(
+	function (a, b, c) {
+		return {$: 'SetActiveTab', a: a, b: b, c: c};
+	});
+var elm$html$Html$nav = _VirtualDom_node('nav');
+var author$project$Internal$TabBar$Implementation$tabbar = F5(
+	function (domId, lift, model, options, nodes) {
+		var tab_nodes = A2(
+			elm$core$List$indexedMap,
+			A4(author$project$Internal$TabBar$Implementation$tabView, domId, lift, model, options),
+			nodes);
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$TabBar$Implementation$defaultConfig, options);
+		var config = summary.config;
+		var stateChanged = !_Utils_eq(config.activeTab, model.activeTab);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$nav,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-tab-bar'),
+					author$project$Internal$Options$role('tablist'),
+					A2(
+					author$project$Internal$Options$when,
+					stateChanged,
+					author$project$Internal$GlobalEvents$onTick(
+						A2(
+							elm$json$Json$Decode$map,
+							A2(
+								elm$core$Basics$composeL,
+								lift,
+								A2(author$project$Internal$TabBar$Model$SetActiveTab, domId, config.activeTab)),
+							author$project$Internal$TabBar$Implementation$decodeScrollLeft)))
+				]),
+			_List_Nil,
+			_List_fromArray(
+				[
+					A5(author$project$Internal$TabBar$Implementation$scroller, domId, lift, model, options, tab_nodes)
+				]));
+	});
+var author$project$Internal$TabBar$Implementation$view = F2(
+	function (lift, domId) {
+		return A5(
+			author$project$Internal$Component$render,
+			author$project$Internal$TabBar$Implementation$getSet.get,
+			author$project$Internal$TabBar$Implementation$tabbar(domId),
+			author$project$Internal$Msg$TabBarMsg,
+			lift,
+			domId);
+	});
+var author$project$Material$TabBar$view = author$project$Internal$TabBar$Implementation$view;
+var author$project$Data$viewTabBar = function (model) {
+	return A5(
+		author$project$Material$TabBar$view,
+		author$project$Data$Mdc,
+		'my-tab-bar',
+		model.mdc,
+		_List_fromArray(
+			[
+				author$project$Material$TabBar$activeTab(model.current_tab)
+			]),
+		_List_fromArray(
+			[
+				A2(
+				author$project$Material$TabBar$tab,
+				_List_fromArray(
+					[
+						author$project$Material$Options$onClick(
+						author$project$Data$Click(0))
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Answer')
+					])),
+				A2(
+				author$project$Material$TabBar$tab,
+				_List_fromArray(
+					[
+						author$project$Material$Options$onClick(
+						author$project$Data$Click(1))
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Coder')
+					])),
+				A2(
+				author$project$Material$TabBar$tab,
+				_List_fromArray(
+					[
+						author$project$Material$Options$onClick(
+						author$project$Data$Click(2))
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Coding')
+					])),
+				A2(
+				author$project$Material$TabBar$tab,
+				_List_fromArray(
+					[
+						author$project$Material$Options$onClick(
+						author$project$Data$Click(3))
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Coding Frame')
+					])),
+				A2(
+				author$project$Material$TabBar$tab,
+				_List_fromArray(
+					[
+						author$project$Material$Options$onClick(
+						author$project$Data$Click(4))
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Question')
+					])),
+				A2(
+				author$project$Material$TabBar$tab,
+				_List_fromArray(
+					[
+						author$project$Material$Options$onClick(
+						author$project$Data$Click(5))
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text('Questionary')
+					]))
+			]));
+};
+var author$project$Data$CoderMsg = F2(
+	function (a, b) {
+		return {$: 'CoderMsg', a: a, b: b};
+	});
+var author$project$Data$CodingMsg = F2(
+	function (a, b) {
+		return {$: 'CodingMsg', a: a, b: b};
+	});
+var author$project$Data$QuestionMsg = F2(
+	function (a, b) {
+		return {$: 'QuestionMsg', a: a, b: b};
+	});
+var author$project$Data$QuestionaryMsg = F2(
+	function (a, b) {
+		return {$: 'QuestionaryMsg', a: a, b: b};
+	});
+var author$project$Entities$Coder$toTableRow = function (_n0) {
+	var id = _n0.a;
+	var model = _n0.b;
+	return A2(
+		author$project$Material$DataTable$tr,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(id))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(model.name)
+					]))
+			]));
+};
+var author$project$Entities$Coder$viewTable = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Coder')
+					])),
+				A2(
+				author$project$Material$DataTable$view,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						author$project$Material$DataTable$table,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								author$project$Material$DataTable$thead,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										author$project$Material$DataTable$trh,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('ID')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Name')
+													]))
+											]))
+									])),
+								A2(
+								author$project$Material$DataTable$tbody,
+								_List_Nil,
+								A2(
+									elm$core$List$map,
+									author$project$Entities$Coder$toTableRow,
+									Chadtech$elm_relational_database$Db$toList(model)))
+							]))
+					]))
+			]));
+};
+var author$project$Entities$Coding$toTableRow = function (_n0) {
+	var id = _n0.a;
+	var model = _n0.b;
+	return A2(
+		author$project$Material$DataTable$tr,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(id))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(model.coder))
+					]))
+			]));
+};
+var author$project$Entities$Coding$viewTable = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Coding')
+					])),
+				A2(
+				author$project$Material$DataTable$view,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						author$project$Material$DataTable$table,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								author$project$Material$DataTable$thead,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										author$project$Material$DataTable$trh,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('ID')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Coder')
+													]))
+											]))
+									])),
+								A2(
+								author$project$Material$DataTable$tbody,
+								_List_Nil,
+								A2(
+									elm$core$List$map,
+									author$project$Entities$Coding$toTableRow,
+									Chadtech$elm_relational_database$Db$toList(model)))
+							]))
+					]))
+			]));
+};
+var author$project$Entities$Question$toTableRow = function (_n0) {
+	var id = _n0.a;
+	var model = _n0.b;
+	return A2(
+		author$project$Material$DataTable$tr,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(id))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(model.questionary))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(model.text)
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('TODO')
+					]))
+			]));
+};
+var author$project$Entities$Question$viewTable = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Answers')
+					])),
+				A2(
+				author$project$Material$DataTable$view,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						author$project$Material$DataTable$table,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								author$project$Material$DataTable$thead,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										author$project$Material$DataTable$trh,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('ID')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Questionary')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Text')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Input Type')
+													]))
+											]))
+									])),
+								A2(
+								author$project$Material$DataTable$tbody,
+								_List_Nil,
+								A2(
+									elm$core$List$map,
+									author$project$Entities$Question$toTableRow,
+									Chadtech$elm_relational_database$Db$toList(model)))
+							]))
+					]))
+			]));
+};
+var author$project$Entities$Questionary$toTableRow = function (_n0) {
+	var id = _n0.a;
+	var model = _n0.b;
+	return A2(
+		author$project$Material$DataTable$tr,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(
+						Chadtech$elm_relational_database$Id$toString(id))
+					])),
+				A2(
+				author$project$Material$DataTable$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text(model.name)
+					]))
+			]));
+};
+var author$project$Entities$Questionary$viewTable = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						elm$html$Html$text('Answers')
+					])),
+				A2(
+				author$project$Material$DataTable$view,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						author$project$Material$DataTable$table,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								author$project$Material$DataTable$thead,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										author$project$Material$DataTable$trh,
+										_List_Nil,
+										_List_fromArray(
+											[
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('ID')
+													])),
+												A2(
+												author$project$Material$DataTable$th,
+												_List_Nil,
+												_List_fromArray(
+													[
+														elm$html$Html$text('Name')
+													]))
+											]))
+									])),
+								A2(
+								author$project$Material$DataTable$tbody,
+								_List_Nil,
+								A2(
+									elm$core$List$map,
+									author$project$Entities$Questionary$toTableRow,
+									Chadtech$elm_relational_database$Db$toList(model)))
+							]))
+					]))
+			]));
+};
+var author$project$Data$viewTabContent = function (model) {
+	var _n0 = model.current_tab;
+	switch (_n0) {
+		case 0:
+			return A2(
+				elm$html$Html$map,
+				A2(
+					elm$core$Basics$composeL,
+					author$project$Data$Entity,
+					author$project$Data$AnswerMsg(elm$core$Maybe$Nothing)),
+				author$project$Entities$Answer$viewTable(model.answers));
+		case 1:
+			return A2(
+				elm$html$Html$map,
+				A2(
+					elm$core$Basics$composeL,
+					author$project$Data$Entity,
+					author$project$Data$CoderMsg(elm$core$Maybe$Nothing)),
+				author$project$Entities$Coder$viewTable(model.coders));
+		case 2:
+			return A2(
+				elm$html$Html$map,
+				A2(
+					elm$core$Basics$composeL,
+					author$project$Data$Entity,
+					author$project$Data$CodingMsg(elm$core$Maybe$Nothing)),
+				author$project$Entities$Coding$viewTable(model.codings));
+		case 3:
+			return A2(
+				elm$html$Html$map,
+				A2(
+					elm$core$Basics$composeL,
+					author$project$Data$Entity,
+					author$project$Data$CodingFrameMsg(elm$core$Maybe$Nothing)),
+				author$project$Entities$Coding$Frame$viewTable(model.coding_frames));
+		case 4:
+			return A2(
+				elm$html$Html$map,
+				A2(
+					elm$core$Basics$composeL,
+					author$project$Data$Entity,
+					author$project$Data$QuestionMsg(elm$core$Maybe$Nothing)),
+				author$project$Entities$Question$viewTable(model.questions));
+		case 5:
+			return A2(
+				elm$html$Html$map,
+				A2(
+					elm$core$Basics$composeL,
+					author$project$Data$Entity,
+					author$project$Data$QuestionaryMsg(elm$core$Maybe$Nothing)),
+				author$project$Entities$Questionary$viewTable(model.questionaries));
+		default:
+			return elm$html$Html$text('Tab not Found!');
+	}
+};
+var author$project$Data$view = function (model) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				elm$html$Html$text('Name: ' + model.name),
+				A3(author$project$Data$viewAnswers, model, 'Jerome Bergmann', 'First Questionary'),
+				A3(author$project$Data$viewContent3, model, 'Jerome Bergmann', 'First Questionary'),
+				elm$html$Html$text('Before'),
+				A2(
+				elm$html$Html$div,
+				_List_Nil,
+				A2(
+					elm$core$List$map,
+					author$project$Data$viewCodingQuestions(model),
+					author$project$Data$unwrap(
+						A3(author$project$Data$selectCodingFrames, model, 'Jerome Bergmann', 'First Questionary')))),
+				elm$html$Html$text('After'),
+				author$project$Data$viewTabBar(model),
+				author$project$Data$viewTabContent(model)
+			]));
+};
+var author$project$Page$Data$GotDBMsg = function (a) {
+	return {$: 'GotDBMsg', a: a};
+};
+var author$project$Page$Data$view = F3(
+	function (lift, model, data) {
+		return {
+			body: _List_fromArray(
+				[
+					A2(
+					elm$html$Html$map,
+					A2(elm$core$Basics$composeL, lift, author$project$Page$Data$GotDBMsg),
+					author$project$Data$view(data))
+				]),
+			title: 'Data'
+		};
+	});
+var author$project$Page$Error$viewError = function (error) {
+	var err = error.a;
+	return elm$html$Html$text(
+		elm$json$Json$Decode$errorToString(err));
+};
+var elm$html$Html$h2 = _VirtualDom_node('h2');
+var author$project$Page$Error$view = F3(
+	function (lift, model, _n0) {
+		return {
+			body: A2(
+				elm$core$List$cons,
+				A2(
+					elm$html$Html$h2,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('Error:')
+						])),
+				A2(elm$core$List$map, author$project$Page$Error$viewError, model.error)),
 			title: 'Error'
 		};
 	});
-var author$project$Main$view = function (model) {
-	var viewPage = F2(
-		function (page, config) {
-			var _n1 = A4(
-				author$project$Page$view,
-				author$project$Main$Mdc,
-				model.mdc,
-				page,
-				A3(config, model.mdc, author$project$Main$Mdc, model.data));
-			var title = _n1.title;
-			var body = _n1.body;
-			return {body: body, title: title};
+var elm$html$Html$Events$targetValue = A2(
+	elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	elm$json$Json$Decode$string);
+var author$project$Internal$Options$onInput = function (f) {
+	return A2(
+		author$project$Internal$Options$on,
+		'input',
+		A2(elm$json$Json$Decode$map, f, elm$html$Html$Events$targetValue));
+};
+var author$project$Material$Options$onInput = author$project$Internal$Options$onInput;
+var author$project$Internal$TextField$Implementation$label = A2(
+	elm$core$Basics$composeL,
+	author$project$Internal$Options$option,
+	F2(
+		function (str, config) {
+			return _Utils_update(
+				config,
+				{
+					labelText: elm$core$Maybe$Just(str)
+				});
+		}));
+var author$project$Material$TextField$label = author$project$Internal$TextField$Implementation$label;
+var author$project$Internal$TextField$Implementation$outlined = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{outlined: true});
+	});
+var author$project$Material$TextField$outlined = author$project$Internal$TextField$Implementation$outlined;
+var author$project$Internal$Options$internalId = function (id_) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{id_: id_});
 		});
-	var _n0 = model.page;
-	if (_n0.$ === 'Data') {
-		var data = _n0.a;
+};
+var author$project$Internal$Dispatch$clear = function (_n0) {
+	var config = _n0.a;
+	return author$project$Internal$Dispatch$Config(
+		_Utils_update(
+			config,
+			{decoders: elm$core$Dict$empty}));
+};
+var author$project$Internal$Options$applyNativeControl = F3(
+	function (summary, ctor, options) {
+		return ctor(
+			A2(
+				author$project$Internal$Options$addAttributes,
+				A2(
+					author$project$Internal$Options$recollect,
+					{
+						attrs: _List_Nil,
+						classes: _List_Nil,
+						config: _Utils_Tuple0,
+						css: _List_Nil,
+						dispatch: author$project$Internal$Dispatch$clear(summary.dispatch),
+						internal: _List_Nil
+					},
+					_Utils_ap(summary.config.nativeControl, options)),
+				_List_Nil));
+	});
+var elm$virtual_dom$VirtualDom$mapAttribute = _VirtualDom_mapAttribute;
+var elm$html$Html$Attributes$map = elm$virtual_dom$VirtualDom$mapAttribute;
+var author$project$Internal$Options$attribute = A2(
+	elm$core$Basics$composeL,
+	author$project$Internal$Options$Attribute,
+	elm$html$Html$Attributes$map(elm$core$Basics$never));
+var elm$html$Html$Attributes$for = elm$html$Html$Attributes$stringProperty('htmlFor');
+var author$project$Internal$Options$for = A2(elm$core$Basics$composeL, author$project$Internal$Options$Attribute, elm$html$Html$Attributes$for);
+var author$project$Internal$Options$onBlur = function (msg) {
+	return A2(
+		author$project$Internal$Options$on,
+		'blur',
+		elm$json$Json$Decode$succeed(msg));
+};
+var author$project$Internal$TextField$Model$Geometry = F3(
+	function (width, height, labelWidth) {
+		return {height: height, labelWidth: labelWidth, width: width};
+	});
+var author$project$Internal$TextField$Implementation$decodeGeometry = debois$elm_dom$DOM$target(
+	debois$elm_dom$DOM$parentElement(
+		A4(
+			elm$json$Json$Decode$map3,
+			author$project$Internal$TextField$Model$Geometry,
+			A2(debois$elm_dom$DOM$childNode, 2, debois$elm_dom$DOM$offsetWidth),
+			A2(debois$elm_dom$DOM$childNode, 2, debois$elm_dom$DOM$offsetHeight),
+			A2(debois$elm_dom$DOM$childNode, 1, debois$elm_dom$DOM$offsetWidth))));
+var author$project$Internal$TextField$Implementation$defaultConfig = {
+	cols: elm$core$Maybe$Nothing,
+	defaultValue: elm$core$Maybe$Nothing,
+	disabled: false,
+	fullWidth: false,
+	id_: '',
+	invalid: false,
+	labelFloat: false,
+	labelText: elm$core$Maybe$Nothing,
+	leadingIcon: elm$core$Maybe$Nothing,
+	nativeControl: _List_Nil,
+	onLeadingIconClick: elm$core$Maybe$Nothing,
+	onTrailingIconClick: elm$core$Maybe$Nothing,
+	outlined: false,
+	pattern: elm$core$Maybe$Nothing,
+	placeholder: elm$core$Maybe$Nothing,
+	required: false,
+	rows: elm$core$Maybe$Nothing,
+	textarea: false,
+	trailingIcon: elm$core$Maybe$Nothing,
+	type_: elm$core$Maybe$Just('text'),
+	value: elm$core$Maybe$Nothing
+};
+var elm$html$Html$i = _VirtualDom_node('i');
+var author$project$Internal$TextField$Implementation$iconView = F3(
+	function (lift, icon, handler) {
+		if (icon.$ === 'Just') {
+			var name = icon.a;
+			return A3(
+				author$project$Internal$Options$styled,
+				elm$html$Html$i,
+				_List_fromArray(
+					[
+						author$project$Internal$Options$cs('material-icons mdc-text-field__icon'),
+						A2(
+						author$project$Internal$Options$when,
+						!_Utils_eq(handler, elm$core$Maybe$Nothing),
+						author$project$Internal$Options$tabindex(0)),
+						A2(
+						author$project$Internal$Options$when,
+						!_Utils_eq(handler, elm$core$Maybe$Nothing),
+						author$project$Internal$Options$role('button')),
+						A2(
+						elm$core$Maybe$withDefault,
+						author$project$Internal$Options$nop,
+						A2(elm$core$Maybe$map, author$project$Internal$Options$onClick, handler))
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(name)
+					]));
+		} else {
+			return elm$html$Html$text('');
+		}
+	});
+var author$project$Internal$TextField$Model$Blur = {$: 'Blur'};
+var author$project$Internal$TextField$Model$Focus = function (a) {
+	return {$: 'Focus', a: a};
+};
+var author$project$Internal$TextField$Model$Input = function (a) {
+	return {$: 'Input', a: a};
+};
+var author$project$Internal$TextField$Model$defaultGeometry = {height: 0, labelWidth: 0, width: 0};
+var elm$html$Html$input = _VirtualDom_node('input');
+var elm$html$Html$label = _VirtualDom_node('label');
+var elm$html$Html$textarea = _VirtualDom_node('textarea');
+var elm$html$Html$Attributes$cols = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'cols',
+		elm$core$String$fromInt(n));
+};
+var elm$json$Json$Encode$bool = _Json_wrap;
+var elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
 		return A2(
-			viewPage,
-			author$project$Page$Data,
-			author$project$Page$Data$view(data));
+			_VirtualDom_property,
+			key,
+			elm$json$Json$Encode$bool(bool));
+	});
+var elm$html$Html$Attributes$disabled = elm$html$Html$Attributes$boolProperty('disabled');
+var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
+var elm$virtual_dom$VirtualDom$property = F2(
+	function (key, value) {
+		return A2(
+			_VirtualDom_property,
+			_VirtualDom_noInnerHtmlOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlUri(value));
+	});
+var elm$html$Html$Attributes$property = elm$virtual_dom$VirtualDom$property;
+var elm$html$Html$Attributes$rows = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'rows',
+		elm$core$String$fromInt(n));
+};
+var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
+var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
+var elm$regex$Regex$Match = F4(
+	function (match, index, number, submatches) {
+		return {index: index, match: match, number: number, submatches: submatches};
+	});
+var elm$regex$Regex$contains = _Regex_contains;
+var elm$regex$Regex$fromStringWith = _Regex_fromStringWith;
+var elm$regex$Regex$fromString = function (string) {
+	return A2(
+		elm$regex$Regex$fromStringWith,
+		{caseInsensitive: false, multiline: false},
+		string);
+};
+var author$project$Internal$TextField$Implementation$textField = F5(
+	function (domId, lift, model, options, list) {
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$TextField$Implementation$defaultConfig, options);
+		var config = summary.config;
+		var focused = model.focused && (!config.disabled);
+		var isDirty = model.isDirty || A2(
+			elm$core$Maybe$withDefault,
+			false,
+			A2(
+				elm$core$Maybe$map,
+				elm$core$Basics$neq(''),
+				config.value));
+		var htmlLabel = A3(
+			author$project$Internal$Options$styled,
+			elm$html$Html$label,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-floating-label'),
+					A2(
+					author$project$Internal$Options$when,
+					focused || isDirty,
+					author$project$Internal$Options$cs('mdc-floating-label--float-above')),
+					author$project$Internal$Options$for(config.id_)
+				]),
+			function () {
+				var _n1 = config.labelText;
+				if (_n1.$ === 'Just') {
+					var str = _n1.a;
+					return _List_fromArray(
+						[
+							elm$html$Html$text(str)
+						]);
+				} else {
+					return _List_Nil;
+				}
+			}());
+		var isInvalid = config.invalid || function () {
+			var _n0 = config.pattern;
+			if (_n0.$ === 'Just') {
+				var pattern_ = _n0.a;
+				return A2(
+					elm$core$Maybe$withDefault,
+					false,
+					A3(
+						elm$core$Maybe$map2,
+						function (regex) {
+							return A2(
+								elm$core$Basics$composeL,
+								elm$core$Basics$not,
+								elm$regex$Regex$contains(regex));
+						},
+						elm$regex$Regex$fromString('^' + (pattern_ + '$')),
+						model.value));
+			} else {
+				return false;
+			}
+		}();
+		var leadingIcon_ = A3(author$project$Internal$TextField$Implementation$iconView, lift, config.leadingIcon, config.onLeadingIconClick);
+		var trailingIcon_ = A3(author$project$Internal$TextField$Implementation$iconView, lift, config.trailingIcon, config.onTrailingIconClick);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-text-field'),
+					A2(
+					author$project$Internal$Options$when,
+					focused,
+					author$project$Internal$Options$cs('mdc-text-field--focused')),
+					A2(
+					author$project$Internal$Options$when,
+					config.disabled,
+					author$project$Internal$Options$cs('mdc-text-field--disabled')),
+					A2(
+					author$project$Internal$Options$when,
+					config.fullWidth,
+					author$project$Internal$Options$cs('mdc-text-field--fullwidth')),
+					A2(
+					author$project$Internal$Options$when,
+					isInvalid,
+					author$project$Internal$Options$cs('mdc-text-field--invalid')),
+					A2(
+					author$project$Internal$Options$when,
+					config.textarea,
+					author$project$Internal$Options$cs('mdc-text-field--textarea')),
+					A2(
+					author$project$Internal$Options$when,
+					config.outlined && (!config.textarea),
+					author$project$Internal$Options$cs('mdc-text-field--outlined')),
+					A2(
+					author$project$Internal$Options$when,
+					!_Utils_eq(config.leadingIcon, elm$core$Maybe$Nothing),
+					author$project$Internal$Options$cs('mdc-text-field--with-leading-icon')),
+					A2(
+					author$project$Internal$Options$when,
+					!_Utils_eq(config.trailingIcon, elm$core$Maybe$Nothing),
+					author$project$Internal$Options$cs('mdc-text-field--with-trailing-icon'))
+				]),
+			_List_Nil,
+			_Utils_ap(
+				list,
+				_List_fromArray(
+					[
+						leadingIcon_,
+						A4(
+						author$project$Internal$Options$applyNativeControl,
+						summary,
+						config.textarea ? elm$html$Html$textarea : elm$html$Html$input,
+						_List_fromArray(
+							[
+								author$project$Internal$Options$cs('mdc-text-field__input'),
+								author$project$Internal$Options$id(config.id_),
+								(config.outlined && (!config.textarea)) ? A2(
+								author$project$Internal$Options$on,
+								'focus',
+								A2(
+									elm$json$Json$Decode$map,
+									A2(elm$core$Basics$composeL, lift, author$project$Internal$TextField$Model$Focus),
+									author$project$Internal$TextField$Implementation$decodeGeometry)) : A2(
+								author$project$Internal$Options$on,
+								'focus',
+								elm$json$Json$Decode$succeed(
+									lift(
+										author$project$Internal$TextField$Model$Focus(author$project$Internal$TextField$Model$defaultGeometry)))),
+								author$project$Internal$Options$onBlur(
+								lift(author$project$Internal$TextField$Model$Blur)),
+								author$project$Internal$Options$onInput(
+								A2(elm$core$Basics$composeL, lift, author$project$Internal$TextField$Model$Input)),
+								A3(
+								elm$core$Basics$composeL,
+								A2(
+									elm$core$Basics$composeL,
+									author$project$Internal$Options$many,
+									elm$core$List$map(author$project$Internal$Options$attribute)),
+								elm$core$List$filterMap(elm$core$Basics$identity),
+								_List_fromArray(
+									[
+										((!config.textarea) ? elm$core$Maybe$Just : elm$core$Basics$always(elm$core$Maybe$Nothing))(
+										elm$html$Html$Attributes$type_(
+											A2(elm$core$Maybe$withDefault, 'text', config.type_))),
+										(config.disabled ? elm$core$Maybe$Just : elm$core$Basics$always(elm$core$Maybe$Nothing))(
+										elm$html$Html$Attributes$disabled(true)),
+										(config.required ? elm$core$Maybe$Just : elm$core$Basics$always(elm$core$Maybe$Nothing))(
+										A2(
+											elm$html$Html$Attributes$property,
+											'required',
+											elm$json$Json$Encode$bool(true))),
+										((!_Utils_eq(config.pattern, elm$core$Maybe$Nothing)) ? elm$core$Maybe$Just : elm$core$Basics$always(elm$core$Maybe$Nothing))(
+										A2(
+											elm$html$Html$Attributes$property,
+											'pattern',
+											elm$json$Json$Encode$string(
+												A2(elm$core$Maybe$withDefault, '', config.pattern)))),
+										((!_Utils_eq(config.value, elm$core$Maybe$Nothing)) ? elm$core$Maybe$Just : elm$core$Basics$always(elm$core$Maybe$Nothing))(
+										elm$html$Html$Attributes$value(
+											A2(elm$core$Maybe$withDefault, '', config.value)))
+									])),
+								A2(
+								author$project$Internal$Options$when,
+								!_Utils_eq(config.placeholder, elm$core$Maybe$Nothing),
+								author$project$Internal$Options$attribute(
+									elm$html$Html$Attributes$placeholder(
+										A2(elm$core$Maybe$withDefault, '', config.placeholder)))),
+								A2(
+								author$project$Internal$Options$when,
+								config.textarea && (!_Utils_eq(config.rows, elm$core$Maybe$Nothing)),
+								author$project$Internal$Options$attribute(
+									elm$html$Html$Attributes$rows(
+										A2(elm$core$Maybe$withDefault, 0, config.rows)))),
+								A2(
+								author$project$Internal$Options$when,
+								config.textarea && (!_Utils_eq(config.cols, elm$core$Maybe$Nothing)),
+								author$project$Internal$Options$attribute(
+									elm$html$Html$Attributes$cols(
+										A2(elm$core$Maybe$withDefault, 0, config.cols))))
+							]),
+						_List_Nil),
+						((!config.fullWidth) && ((!config.outlined) && (!config.textarea))) ? htmlLabel : elm$html$Html$text(''),
+						trailingIcon_,
+						((!config.outlined) && (!config.textarea)) ? A3(
+						author$project$Internal$Options$styled,
+						elm$html$Html$div,
+						_List_fromArray(
+							[
+								author$project$Internal$Options$cs('mdc-line-ripple'),
+								A2(
+								author$project$Internal$Options$when,
+								model.focused,
+								author$project$Internal$Options$cs('mdc-line-ripple--active'))
+							]),
+						_List_Nil) : elm$html$Html$text(''),
+						(config.outlined || config.textarea) ? A3(
+						author$project$Internal$Options$styled,
+						elm$html$Html$div,
+						_List_fromArray(
+							[
+								author$project$Internal$Options$cs('mdc-notched-outline'),
+								A2(
+								author$project$Internal$Options$when,
+								focused || isDirty,
+								author$project$Internal$Options$cs('mdc-notched-outline--notched'))
+							]),
+						_List_fromArray(
+							[
+								A3(
+								author$project$Internal$Options$styled,
+								elm$html$Html$div,
+								_List_fromArray(
+									[
+										author$project$Internal$Options$cs('mdc-notched-outline__leading')
+									]),
+								_List_Nil),
+								A3(
+								author$project$Internal$Options$styled,
+								elm$html$Html$div,
+								_List_fromArray(
+									[
+										author$project$Internal$Options$cs('mdc-notched-outline__notch')
+									]),
+								_List_fromArray(
+									[htmlLabel])),
+								A3(
+								author$project$Internal$Options$styled,
+								elm$html$Html$div,
+								_List_fromArray(
+									[
+										author$project$Internal$Options$cs('mdc-notched-outline__trailing')
+									]),
+								_List_Nil)
+							])) : elm$html$Html$text('')
+					])));
+	});
+var author$project$Internal$TextField$Implementation$view = F4(
+	function (lift, domId, store, options) {
+		return A7(
+			author$project$Internal$Component$render,
+			author$project$Internal$TextField$Implementation$getSet.get,
+			author$project$Internal$TextField$Implementation$textField(domId),
+			author$project$Internal$Msg$TextFieldMsg,
+			lift,
+			domId,
+			store,
+			A2(
+				elm$core$List$cons,
+				author$project$Internal$Options$internalId(domId),
+				options));
+	});
+var author$project$Material$TextField$view = author$project$Internal$TextField$Implementation$view;
+var author$project$Page$Login$UpdateTextField = function (a) {
+	return {$: 'UpdateTextField', a: a};
+};
+var author$project$Page$Login$ask = F3(
+	function (lift, model, data) {
+		return A5(
+			author$project$Material$TextField$view,
+			A2(elm$core$Basics$composeL, lift, author$project$Page$Login$Mdc),
+			'my-text-field',
+			model.mdc,
+			_List_fromArray(
+				[
+					author$project$Material$TextField$label('Text field'),
+					author$project$Material$Options$onInput(
+					A2(elm$core$Basics$composeL, lift, author$project$Page$Login$UpdateTextField)),
+					author$project$Material$TextField$outlined,
+					author$project$Material$Options$cs('demo-text-field-outlined-shaped')
+				]),
+			_List_Nil);
+	});
+var author$project$Internal$List$Implementation$avatarList = author$project$Internal$Options$cs('mdc-list--avatar-list');
+var author$project$Material$List$avatarList = author$project$Internal$List$Implementation$avatarList;
+var author$project$Internal$List$Implementation$twoLine = author$project$Internal$Options$cs('mdc-list--two-line');
+var author$project$Material$List$twoLine = author$project$Internal$List$Implementation$twoLine;
+var author$project$Internal$List$Implementation$defaultConfig = {activated: false, isRadioGroup: false, isSingleSelectionList: false, node: elm$core$Maybe$Nothing, onSelectListItem: elm$core$Maybe$Nothing, selected: false, selectedIndex: elm$core$Maybe$Nothing, useActivated: false};
+var author$project$Internal$List$Implementation$listItemDomId = F2(
+	function (domId, index) {
+		return domId + ('--' + elm$core$String$fromInt(index));
+	});
+var author$project$Internal$List$Implementation$doListItemDomId = F3(
+	function (domId, index, listItem) {
+		return listItem.focusable ? A2(author$project$Internal$List$Implementation$listItemDomId, domId, index) : '';
+	});
+var author$project$Internal$List$Implementation$findIndexHelp = F3(
+	function (index, predicate, list) {
+		findIndexHelp:
+		while (true) {
+			if (!list.b) {
+				return elm$core$Maybe$Nothing;
+			} else {
+				var first = list.a;
+				var rest = list.b;
+				if (predicate(first)) {
+					return elm$core$Maybe$Just(index);
+				} else {
+					var $temp$index = index + 1,
+						$temp$predicate = predicate,
+						$temp$list = rest;
+					index = $temp$index;
+					predicate = $temp$predicate;
+					list = $temp$list;
+					continue findIndexHelp;
+				}
+			}
+		}
+	});
+var author$project$Internal$List$Implementation$findIndex = author$project$Internal$List$Implementation$findIndexHelp(0);
+var author$project$Internal$List$Implementation$liIsSelectedOrActivated = function (li_) {
+	var li_summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, li_.options);
+	var li_config = li_summary.config;
+	return li_config.selected || li_config.activated;
+};
+var author$project$Internal$List$Implementation$listItemView = F8(
+	function (domId, lift, model, config, listItemsIds, focusedIndex, index, li_) {
+		return A9(li_.view, domId, lift, model, config, listItemsIds, focusedIndex, index, li_.options, li_.children);
+	});
+var author$project$Internal$List$Implementation$invertDecoder = function (decoder) {
+	return A2(
+		elm$json$Json$Decode$andThen,
+		function (maybe) {
+			return _Utils_eq(maybe, elm$core$Maybe$Nothing) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : elm$json$Json$Decode$fail('');
+		},
+		elm$json$Json$Decode$maybe(decoder));
+};
+var author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer = function (targetId) {
+	return A2(
+		elm$json$Json$Decode$andThen,
+		function (id) {
+			return _Utils_eq(id, targetId) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : A2(
+				elm$json$Json$Decode$field,
+				'parentNode',
+				author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId));
+		},
+		A2(elm$json$Json$Decode$field, 'id', elm$json$Json$Decode$string));
+};
+var author$project$Internal$List$Implementation$succeedIfLeavingList = function (targetId) {
+	return author$project$Internal$List$Implementation$invertDecoder(
+		A2(
+			elm$json$Json$Decode$field,
+			'relatedTarget',
+			author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId)));
+};
+var author$project$Internal$List$Model$ResetFocusedItem = {$: 'ResetFocusedItem'};
+var elm$core$Array$fromListHelp = F3(
+	function (list, nodeList, nodeListSize) {
+		fromListHelp:
+		while (true) {
+			var _n0 = A2(elm$core$Elm$JsArray$initializeFromList, elm$core$Array$branchFactor, list);
+			var jsArray = _n0.a;
+			var remainingItems = _n0.b;
+			if (_Utils_cmp(
+				elm$core$Elm$JsArray$length(jsArray),
+				elm$core$Array$branchFactor) < 0) {
+				return A2(
+					elm$core$Array$builderToArray,
+					true,
+					{nodeList: nodeList, nodeListSize: nodeListSize, tail: jsArray});
+			} else {
+				var $temp$list = remainingItems,
+					$temp$nodeList = A2(
+					elm$core$List$cons,
+					elm$core$Array$Leaf(jsArray),
+					nodeList),
+					$temp$nodeListSize = nodeListSize + 1;
+				list = $temp$list;
+				nodeList = $temp$nodeList;
+				nodeListSize = $temp$nodeListSize;
+				continue fromListHelp;
+			}
+		}
+	});
+var elm$core$Array$fromList = function (list) {
+	if (!list.b) {
+		return elm$core$Array$empty;
 	} else {
-		var err = _n0.a;
-		return A2(
-			viewPage,
-			author$project$Page$Error,
-			author$project$Page$Error$view(err));
+		return A3(elm$core$Array$fromListHelp, list, _List_Nil, 0);
 	}
+};
+var elm$html$Html$ul = _VirtualDom_node('ul');
+var author$project$Internal$List$Implementation$ul = F5(
+	function (domId, lift, model, options, items) {
+		var listItemIds = elm$core$Array$fromList(
+			A2(
+				elm$core$List$indexedMap,
+				author$project$Internal$List$Implementation$doListItemDomId(domId),
+				items));
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
+		var config = summary.config;
+		var focusedIndex = function () {
+			var _n0 = model.focused;
+			if (_n0.$ === 'Just') {
+				var focused = _n0.a;
+				return focused;
+			} else {
+				var _n1 = config.selectedIndex;
+				if (_n1.$ === 'Just') {
+					var index = _n1.a;
+					return index;
+				} else {
+					var _n2 = A2(author$project$Internal$List$Implementation$findIndex, author$project$Internal$List$Implementation$liIsSelectedOrActivated, items);
+					if (_n2.$ === 'Just') {
+						var i = _n2.a;
+						return i;
+					} else {
+						return 0;
+					}
+				}
+			}
+		}();
+		var list_nodes = A2(
+			elm$core$List$indexedMap,
+			A6(author$project$Internal$List$Implementation$listItemView, domId, lift, model, config, listItemIds, focusedIndex),
+			items);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			A2(elm$core$Maybe$withDefault, elm$html$Html$ul, config.node),
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-list'),
+					A2(
+					author$project$Internal$Options$when,
+					config.isSingleSelectionList,
+					author$project$Internal$Options$role('listbox')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isRadioGroup,
+					author$project$Internal$Options$role('radiogroup')),
+					author$project$Internal$Options$id(domId),
+					A2(
+					author$project$Internal$Options$on,
+					'focusout',
+					A2(
+						elm$json$Json$Decode$map,
+						elm$core$Basics$always(
+							lift(author$project$Internal$List$Model$ResetFocusedItem)),
+						author$project$Internal$List$Implementation$succeedIfLeavingList(domId)))
+				]),
+			_List_Nil,
+			list_nodes);
+	});
+var author$project$Internal$List$Implementation$view = F2(
+	function (lift, domId) {
+		return A5(
+			author$project$Internal$Component$render,
+			author$project$Internal$List$Implementation$getSet.get,
+			author$project$Internal$List$Implementation$ul(domId),
+			author$project$Internal$Msg$ListMsg,
+			lift,
+			domId);
+	});
+var author$project$Material$List$ul = author$project$Internal$List$Implementation$view;
+var author$project$Internal$List$Implementation$graphicClass = author$project$Internal$Options$cs('mdc-list-item__graphic');
+var author$project$Internal$List$Implementation$graphicIcon = function (options) {
+	return author$project$Internal$Icon$Implementation$view(
+		A2(elm$core$List$cons, author$project$Internal$List$Implementation$graphicClass, options));
+};
+var author$project$Material$List$graphicIcon = author$project$Internal$List$Implementation$graphicIcon;
+var author$project$Internal$List$Implementation$find = F2(
+	function (predicate, list) {
+		find:
+		while (true) {
+			if (!list.b) {
+				return elm$core$Maybe$Nothing;
+			} else {
+				var first = list.a;
+				var rest = list.b;
+				if (predicate(first)) {
+					return elm$core$Maybe$Just(first);
+				} else {
+					var $temp$predicate = predicate,
+						$temp$list = rest;
+					predicate = $temp$predicate;
+					list = $temp$list;
+					continue find;
+				}
+			}
+		}
+	});
+var elm$core$Elm$JsArray$appendN = _JsArray_appendN;
+var elm$core$Elm$JsArray$slice = _JsArray_slice;
+var elm$core$Array$appendHelpBuilder = F2(
+	function (tail, builder) {
+		var tailLen = elm$core$Elm$JsArray$length(tail);
+		var notAppended = (elm$core$Array$branchFactor - elm$core$Elm$JsArray$length(builder.tail)) - tailLen;
+		var appended = A3(elm$core$Elm$JsArray$appendN, elm$core$Array$branchFactor, builder.tail, tail);
+		return (notAppended < 0) ? {
+			nodeList: A2(
+				elm$core$List$cons,
+				elm$core$Array$Leaf(appended),
+				builder.nodeList),
+			nodeListSize: builder.nodeListSize + 1,
+			tail: A3(elm$core$Elm$JsArray$slice, notAppended, tailLen, tail)
+		} : ((!notAppended) ? {
+			nodeList: A2(
+				elm$core$List$cons,
+				elm$core$Array$Leaf(appended),
+				builder.nodeList),
+			nodeListSize: builder.nodeListSize + 1,
+			tail: elm$core$Elm$JsArray$empty
+		} : {nodeList: builder.nodeList, nodeListSize: builder.nodeListSize, tail: appended});
+	});
+var elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
+var elm$core$Array$tailIndex = function (len) {
+	return (len >>> 5) << 5;
+};
+var elm$core$Array$sliceLeft = F2(
+	function (from, array) {
+		var len = array.a;
+		var tree = array.c;
+		var tail = array.d;
+		if (!from) {
+			return array;
+		} else {
+			if (_Utils_cmp(
+				from,
+				elm$core$Array$tailIndex(len)) > -1) {
+				return A4(
+					elm$core$Array$Array_elm_builtin,
+					len - from,
+					elm$core$Array$shiftStep,
+					elm$core$Elm$JsArray$empty,
+					A3(
+						elm$core$Elm$JsArray$slice,
+						from - elm$core$Array$tailIndex(len),
+						elm$core$Elm$JsArray$length(tail),
+						tail));
+			} else {
+				var skipNodes = (from / elm$core$Array$branchFactor) | 0;
+				var helper = F2(
+					function (node, acc) {
+						if (node.$ === 'SubTree') {
+							var subTree = node.a;
+							return A3(elm$core$Elm$JsArray$foldr, helper, acc, subTree);
+						} else {
+							var leaf = node.a;
+							return A2(elm$core$List$cons, leaf, acc);
+						}
+					});
+				var leafNodes = A3(
+					elm$core$Elm$JsArray$foldr,
+					helper,
+					_List_fromArray(
+						[tail]),
+					tree);
+				var nodesToInsert = A2(elm$core$List$drop, skipNodes, leafNodes);
+				if (!nodesToInsert.b) {
+					return elm$core$Array$empty;
+				} else {
+					var head = nodesToInsert.a;
+					var rest = nodesToInsert.b;
+					var firstSlice = from - (skipNodes * elm$core$Array$branchFactor);
+					var initialBuilder = {
+						nodeList: _List_Nil,
+						nodeListSize: 0,
+						tail: A3(
+							elm$core$Elm$JsArray$slice,
+							firstSlice,
+							elm$core$Elm$JsArray$length(head),
+							head)
+					};
+					return A2(
+						elm$core$Array$builderToArray,
+						true,
+						A3(elm$core$List$foldl, elm$core$Array$appendHelpBuilder, initialBuilder, rest));
+				}
+			}
+		}
+	});
+var elm$core$Array$bitMask = 4294967295 >>> (32 - elm$core$Array$shiftStep);
+var elm$core$Bitwise$and = _Bitwise_and;
+var elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
+var elm$core$Array$fetchNewTail = F4(
+	function (shift, end, treeEnd, tree) {
+		fetchNewTail:
+		while (true) {
+			var pos = elm$core$Array$bitMask & (treeEnd >>> shift);
+			var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, pos, tree);
+			if (_n0.$ === 'SubTree') {
+				var sub = _n0.a;
+				var $temp$shift = shift - elm$core$Array$shiftStep,
+					$temp$end = end,
+					$temp$treeEnd = treeEnd,
+					$temp$tree = sub;
+				shift = $temp$shift;
+				end = $temp$end;
+				treeEnd = $temp$treeEnd;
+				tree = $temp$tree;
+				continue fetchNewTail;
+			} else {
+				var values = _n0.a;
+				return A3(elm$core$Elm$JsArray$slice, 0, elm$core$Array$bitMask & end, values);
+			}
+		}
+	});
+var elm$core$Array$hoistTree = F3(
+	function (oldShift, newShift, tree) {
+		hoistTree:
+		while (true) {
+			if ((_Utils_cmp(oldShift, newShift) < 1) || (!elm$core$Elm$JsArray$length(tree))) {
+				return tree;
+			} else {
+				var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, 0, tree);
+				if (_n0.$ === 'SubTree') {
+					var sub = _n0.a;
+					var $temp$oldShift = oldShift - elm$core$Array$shiftStep,
+						$temp$newShift = newShift,
+						$temp$tree = sub;
+					oldShift = $temp$oldShift;
+					newShift = $temp$newShift;
+					tree = $temp$tree;
+					continue hoistTree;
+				} else {
+					return tree;
+				}
+			}
+		}
+	});
+var elm$core$Elm$JsArray$unsafeSet = _JsArray_unsafeSet;
+var elm$core$Array$sliceTree = F3(
+	function (shift, endIdx, tree) {
+		var lastPos = elm$core$Array$bitMask & (endIdx >>> shift);
+		var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, lastPos, tree);
+		if (_n0.$ === 'SubTree') {
+			var sub = _n0.a;
+			var newSub = A3(elm$core$Array$sliceTree, shift - elm$core$Array$shiftStep, endIdx, sub);
+			return (!elm$core$Elm$JsArray$length(newSub)) ? A3(elm$core$Elm$JsArray$slice, 0, lastPos, tree) : A3(
+				elm$core$Elm$JsArray$unsafeSet,
+				lastPos,
+				elm$core$Array$SubTree(newSub),
+				A3(elm$core$Elm$JsArray$slice, 0, lastPos + 1, tree));
+		} else {
+			return A3(elm$core$Elm$JsArray$slice, 0, lastPos, tree);
+		}
+	});
+var elm$core$Array$sliceRight = F2(
+	function (end, array) {
+		var len = array.a;
+		var startShift = array.b;
+		var tree = array.c;
+		var tail = array.d;
+		if (_Utils_eq(end, len)) {
+			return array;
+		} else {
+			if (_Utils_cmp(
+				end,
+				elm$core$Array$tailIndex(len)) > -1) {
+				return A4(
+					elm$core$Array$Array_elm_builtin,
+					end,
+					startShift,
+					tree,
+					A3(elm$core$Elm$JsArray$slice, 0, elm$core$Array$bitMask & end, tail));
+			} else {
+				var endIdx = elm$core$Array$tailIndex(end);
+				var depth = elm$core$Basics$floor(
+					A2(
+						elm$core$Basics$logBase,
+						elm$core$Array$branchFactor,
+						A2(elm$core$Basics$max, 1, endIdx - 1)));
+				var newShift = A2(elm$core$Basics$max, 5, depth * elm$core$Array$shiftStep);
+				return A4(
+					elm$core$Array$Array_elm_builtin,
+					end,
+					newShift,
+					A3(
+						elm$core$Array$hoistTree,
+						startShift,
+						newShift,
+						A3(elm$core$Array$sliceTree, startShift, endIdx, tree)),
+					A4(elm$core$Array$fetchNewTail, startShift, end, endIdx, tree));
+			}
+		}
+	});
+var elm$core$Array$translateIndex = F2(
+	function (index, _n0) {
+		var len = _n0.a;
+		var posIndex = (index < 0) ? (len + index) : index;
+		return (posIndex < 0) ? 0 : ((_Utils_cmp(posIndex, len) > 0) ? len : posIndex);
+	});
+var elm$core$Array$slice = F3(
+	function (from, to, array) {
+		var correctTo = A2(elm$core$Array$translateIndex, to, array);
+		var correctFrom = A2(elm$core$Array$translateIndex, from, array);
+		return (_Utils_cmp(correctFrom, correctTo) > 0) ? elm$core$Array$empty : A2(
+			elm$core$Array$sliceLeft,
+			correctFrom,
+			A2(elm$core$Array$sliceRight, correctTo, array));
+	});
+var elm$core$Tuple$second = function (_n0) {
+	var y = _n0.b;
+	return y;
+};
+var elm$core$Array$toIndexedList = function (array) {
+	var len = array.a;
+	var helper = F2(
+		function (entry, _n0) {
+			var index = _n0.a;
+			var list = _n0.b;
+			return _Utils_Tuple2(
+				index - 1,
+				A2(
+					elm$core$List$cons,
+					_Utils_Tuple2(index, entry),
+					list));
+		});
+	return A3(
+		elm$core$Array$foldr,
+		helper,
+		_Utils_Tuple2(len - 1, _List_Nil),
+		array).b;
+};
+var author$project$Internal$List$Implementation$slicedIndexedList = F3(
+	function (from, to, array) {
+		return elm$core$Array$toIndexedList(
+			A3(elm$core$Array$slice, from, to, array));
+	});
+var elm$core$Array$length = function (_n0) {
+	var len = _n0.a;
+	return len;
+};
+var author$project$Internal$List$Implementation$firstNonEmptyId = F2(
+	function (from, array) {
+		var list = A3(
+			author$project$Internal$List$Implementation$slicedIndexedList,
+			from,
+			elm$core$Array$length(array),
+			array);
+		var non_empty_id = A2(
+			author$project$Internal$List$Implementation$find,
+			function (_n0) {
+				var id = _n0.b;
+				return id !== '';
+			},
+			list);
+		return non_empty_id;
+	});
+var author$project$Internal$List$Implementation$lastNonEmptyId = F2(
+	function (to, array) {
+		var list = A3(author$project$Internal$List$Implementation$slicedIndexedList, 0, to, array);
+		var non_empty_id = A2(
+			author$project$Internal$List$Implementation$find,
+			function (_n0) {
+				var i = _n0.a;
+				var id = _n0.b;
+				return id !== '';
+			},
+			elm$core$List$reverse(list));
+		return non_empty_id;
+	});
+var author$project$Internal$List$Implementation$listItemClass = author$project$Internal$Options$cs('mdc-list-item');
+var author$project$Internal$List$Model$FocusItem = F2(
+	function (a, b) {
+		return {$: 'FocusItem', a: a, b: b};
+	});
+var author$project$Internal$List$Model$SelectItem = F2(
+	function (a, b) {
+		return {$: 'SelectItem', a: a, b: b};
+	});
+var author$project$Internal$Options$onWithOptions = function (evt) {
+	return author$project$Internal$Options$Listener(evt);
+};
+var elm$core$Array$getHelp = F3(
+	function (shift, index, tree) {
+		getHelp:
+		while (true) {
+			var pos = elm$core$Array$bitMask & (index >>> shift);
+			var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, pos, tree);
+			if (_n0.$ === 'SubTree') {
+				var subTree = _n0.a;
+				var $temp$shift = shift - elm$core$Array$shiftStep,
+					$temp$index = index,
+					$temp$tree = subTree;
+				shift = $temp$shift;
+				index = $temp$index;
+				tree = $temp$tree;
+				continue getHelp;
+			} else {
+				var values = _n0.a;
+				return A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, values);
+			}
+		}
+	});
+var elm$core$Array$get = F2(
+	function (index, _n0) {
+		var len = _n0.a;
+		var startShift = _n0.b;
+		var tree = _n0.c;
+		var tail = _n0.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? elm$core$Maybe$Nothing : ((_Utils_cmp(
+			index,
+			elm$core$Array$tailIndex(len)) > -1) ? elm$core$Maybe$Just(
+			A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, tail)) : elm$core$Maybe$Just(
+			A3(elm$core$Array$getHelp, startShift, index, tree)));
+	});
+var elm$html$Html$li = _VirtualDom_node('li');
+var author$project$Internal$List$Implementation$liView = F9(
+	function (domId, lift, model, config, listItemIds, focusedIndex, index, options, children) {
+		var tab_index = _Utils_eq(focusedIndex, index) ? 0 : (-1);
+		var list_item_dom_id = A2(author$project$Internal$List$Implementation$listItemDomId, domId, index);
+		var ripple = A5(
+			author$project$Internal$Ripple$Implementation$view,
+			false,
+			list_item_dom_id,
+			A2(
+				elm$core$Basics$composeL,
+				lift,
+				author$project$Internal$List$Model$RippleMsg(list_item_dom_id)),
+			A2(
+				elm$core$Maybe$withDefault,
+				author$project$Internal$Ripple$Model$defaultModel,
+				A2(elm$core$Dict$get, list_item_dom_id, model.ripples)),
+			_List_Nil);
+		var li_summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
+		var li_config = li_summary.config;
+		var is_selected = function () {
+			var _n8 = config.selectedIndex;
+			if (_n8.$ === 'Just') {
+				var i = _n8.a;
+				return _Utils_eq(i, index);
+			} else {
+				return li_config.selected;
+			}
+		}();
+		return A5(
+			author$project$Internal$Options$apply,
+			li_summary,
+			A2(elm$core$Maybe$withDefault, elm$html$Html$li, li_config.node),
+			_List_fromArray(
+				[
+					author$project$Internal$List$Implementation$listItemClass,
+					author$project$Internal$Options$tabindex(tab_index),
+					A2(
+					author$project$Internal$Options$when,
+					config.isSingleSelectionList && (is_selected && (!config.useActivated)),
+					author$project$Internal$Options$cs('mdc-list-item--selected')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isSingleSelectionList && (is_selected && config.useActivated),
+					author$project$Internal$Options$cs('mdc-list-item--activated')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isRadioGroup,
+					A2(
+						author$project$Internal$Options$aria,
+						'checked',
+						is_selected ? 'True' : 'False')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isSingleSelectionList,
+					author$project$Internal$Options$role('option')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isRadioGroup,
+					author$project$Internal$Options$role('radio')),
+					ripple.interactionHandler,
+					ripple.properties,
+					function () {
+					var _n0 = config.onSelectListItem;
+					if (_n0.$ === 'Just') {
+						var onSelect = _n0.a;
+						return author$project$Internal$Options$onClick(
+							onSelect(index));
+					} else {
+						return author$project$Internal$Options$nop;
+					}
+				}(),
+					A2(
+					author$project$Internal$Options$onWithOptions,
+					'keydown',
+					A3(
+						elm$json$Json$Decode$map2,
+						F2(
+							function (key, keyCode) {
+								var selectItem = _Utils_eq(
+									key,
+									elm$core$Maybe$Just('Enter')) || ((keyCode === 13) || (_Utils_eq(
+									key,
+									elm$core$Maybe$Just('Space')) || (keyCode === 32)));
+								var _n1 = function () {
+									if (_Utils_eq(
+										key,
+										elm$core$Maybe$Just('ArrowDown')) || (keyCode === 40)) {
+										var focusable_element = A2(author$project$Internal$List$Implementation$firstNonEmptyId, index + 1, listItemIds);
+										if (focusable_element.$ === 'Just') {
+											var _n3 = focusable_element.a;
+											var next_index = _n3.a;
+											var next_item = _n3.b;
+											return _Utils_Tuple2(
+												elm$core$Maybe$Just(next_index),
+												elm$core$Maybe$Just(next_item));
+										} else {
+											return _Utils_Tuple2(
+												elm$core$Maybe$Just(index + 1),
+												elm$core$Maybe$Nothing);
+										}
+									} else {
+										if (_Utils_eq(
+											key,
+											elm$core$Maybe$Just('ArrowUp')) || (keyCode === 38)) {
+											var focusable_element = A2(author$project$Internal$List$Implementation$lastNonEmptyId, index, listItemIds);
+											if (focusable_element.$ === 'Just') {
+												var _n5 = focusable_element.a;
+												var previous_index = _n5.a;
+												var previous_item = _n5.b;
+												return _Utils_Tuple2(
+													elm$core$Maybe$Just(previous_index),
+													elm$core$Maybe$Just(previous_item));
+											} else {
+												return _Utils_Tuple2(
+													elm$core$Maybe$Just(index - 1),
+													elm$core$Maybe$Nothing);
+											}
+										} else {
+											if (_Utils_eq(
+												key,
+												elm$core$Maybe$Just('Home')) || (keyCode === 36)) {
+												return _Utils_Tuple2(
+													elm$core$Maybe$Just(0),
+													A2(elm$core$Array$get, 0, listItemIds));
+											} else {
+												if (_Utils_eq(
+													key,
+													elm$core$Maybe$Just('End')) || (keyCode === 35)) {
+													var last_index = elm$core$Array$length(listItemIds) - 1;
+													return _Utils_Tuple2(
+														elm$core$Maybe$Just(last_index),
+														A2(elm$core$Array$get, last_index, listItemIds));
+												} else {
+													return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Maybe$Nothing);
+												}
+											}
+										}
+									}
+								}();
+								var index_to_focus = _n1.a;
+								var id_to_focus = _n1.b;
+								var msg = function () {
+									if (selectItem) {
+										var _n6 = config.onSelectListItem;
+										if (_n6.$ === 'Just') {
+											var onSelect = _n6.a;
+											return A2(author$project$Internal$List$Model$SelectItem, index, onSelect);
+										} else {
+											return author$project$Internal$List$Model$NoOp;
+										}
+									} else {
+										var _n7 = _Utils_Tuple2(index_to_focus, id_to_focus);
+										if ((_n7.a.$ === 'Just') && (_n7.b.$ === 'Just')) {
+											var idx = _n7.a.a;
+											var id = _n7.b.a;
+											return A2(author$project$Internal$List$Model$FocusItem, idx, id);
+										} else {
+											return author$project$Internal$List$Model$NoOp;
+										}
+									}
+								}();
+								return {
+									message: lift(msg),
+									preventDefault: (!_Utils_eq(index_to_focus, elm$core$Maybe$Nothing)) || selectItem,
+									stopPropagation: false
+								};
+							}),
+						elm$json$Json$Decode$oneOf(
+							_List_fromArray(
+								[
+									A2(
+									elm$json$Json$Decode$map,
+									elm$core$Maybe$Just,
+									A2(
+										elm$json$Json$Decode$at,
+										_List_fromArray(
+											['key']),
+										elm$json$Json$Decode$string)),
+									elm$json$Json$Decode$succeed(elm$core$Maybe$Nothing)
+								])),
+						A2(
+							elm$json$Json$Decode$at,
+							_List_fromArray(
+								['keyCode']),
+							elm$json$Json$Decode$int)))
+				]),
+			_List_Nil,
+			children);
+	});
+var author$project$Internal$List$Implementation$li = F2(
+	function (options, children) {
+		return {children: children, focusable: true, options: options, view: author$project$Internal$List$Implementation$liView};
+	});
+var author$project$Material$List$li = author$project$Internal$List$Implementation$li;
+var author$project$Internal$List$Implementation$metaClass = author$project$Internal$Options$cs('mdc-list-item__meta');
+var author$project$Internal$List$Implementation$metaIcon = function (options) {
+	return author$project$Internal$Icon$Implementation$view(
+		A2(elm$core$List$cons, author$project$Internal$List$Implementation$metaClass, options));
+};
+var author$project$Material$List$metaIcon = author$project$Internal$List$Implementation$metaIcon;
+var author$project$Internal$List$Implementation$primaryText = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$span,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-item__primary-text'),
+			options));
+};
+var author$project$Material$List$primaryText = author$project$Internal$List$Implementation$primaryText;
+var author$project$Internal$List$Implementation$secondaryText = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$span,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-item__secondary-text'),
+			options));
+};
+var author$project$Material$List$secondaryText = author$project$Internal$List$Implementation$secondaryText;
+var author$project$Internal$List$Implementation$text = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$span,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-item__text'),
+			options));
+};
+var author$project$Material$List$text = author$project$Internal$List$Implementation$text;
+var author$project$Page$Login$viewCoderRow = function (_n0) {
+	var id = _n0.a;
+	var model = _n0.b;
+	return A2(
+		author$project$Material$List$li,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(author$project$Material$List$graphicIcon, _List_Nil, 'person'),
+				A2(
+				author$project$Material$List$text,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						author$project$Material$List$primaryText,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text(model.name)
+							])),
+						A2(
+						author$project$Material$List$secondaryText,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text(
+								Chadtech$elm_relational_database$Id$toString(id))
+							]))
+					])),
+				A2(author$project$Material$List$metaIcon, _List_Nil, 'info')
+			]));
+};
+var author$project$Page$Login$toPersonList = F3(
+	function (lift, model, persons) {
+		return A5(
+			author$project$Material$List$ul,
+			A2(elm$core$Basics$composeL, lift, author$project$Page$Login$Mdc),
+			'my-list',
+			model.mdc,
+			_List_fromArray(
+				[author$project$Material$List$twoLine, author$project$Material$List$avatarList]),
+			A2(elm$core$List$map, author$project$Page$Login$viewCoderRow, persons));
+	});
+var author$project$Page$Login$showResults = F4(
+	function (lift, name, db, model) {
+		var rows = A3(
+			author$project$Page$Login$toPersonList,
+			lift,
+			model,
+			A2(
+				elm$core$List$filter,
+				function (_n0) {
+					var i = _n0.a;
+					var m = _n0.b;
+					return A2(elm$core$String$startsWith, name, m.name);
+				},
+				Chadtech$elm_relational_database$Db$toList(db)));
+		return rows;
+	});
+var elm$html$Html$p = _VirtualDom_node('p');
+var author$project$Page$Login$viewSearch = F3(
+	function (lift, model, data) {
+		return {
+			body: _List_fromArray(
+				[
+					elm$html$Html$text('You\'re not logged in yet.'),
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A3(author$project$Page$Login$ask, lift, model, data)
+						])),
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A4(author$project$Page$Login$showResults, lift, model.field, data.coders, model)
+						]))
+				]),
+			title: 'Please log in.'
+		};
+	});
+var author$project$Page$Login$view = F3(
+	function (lift, model, data) {
+		var _n0 = model.user;
+		if (_n0.$ === 'Nothing') {
+			return A3(author$project$Page$Login$viewSearch, lift, model, data);
+		} else {
+			var row = _n0.a;
+			return {
+				body: _List_fromArray(
+					[
+						elm$html$Html$text('You\'re already logged in as')
+					]),
+				title: 'Already logged in as'
+			};
+		}
+	});
+var author$project$Page$view = F2(
+	function (model, data) {
+		var _n0 = model.url;
+		switch (_n0.$) {
+			case 'Data':
+				return A2(
+					author$project$Page$viewUI,
+					model,
+					A3(
+						author$project$Page$Data$view,
+						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotDataMsg),
+						model.page.data,
+						data));
+			case 'Error':
+				return A2(
+					author$project$Page$viewUI,
+					model,
+					A3(
+						author$project$Page$Error$view,
+						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotErrorMsg),
+						model.page.error,
+						data));
+			case 'StartPage':
+				return A2(
+					author$project$Page$viewUI,
+					model,
+					A3(
+						author$project$Page$Login$view,
+						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotLoginMsg),
+						model.page.login,
+						data));
+			default:
+				return A2(
+					author$project$Page$viewUI,
+					model,
+					A3(
+						author$project$Page$Login$view,
+						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotLoginMsg),
+						model.page.login,
+						data));
+		}
+	});
+var author$project$Main$view = function (model) {
+	var _n0 = A2(author$project$Page$view, model.page, model.data);
+	var title = _n0.title;
+	var body = _n0.body;
+	return {
+		body: A2(
+			elm$core$List$map,
+			elm$html$Html$map(author$project$Main$GotPageMsg),
+			body),
+		title: title
+	};
 };
 var elm$browser$Browser$application = _Browser_application;
 var author$project$Main$main = elm$browser$Browser$application(

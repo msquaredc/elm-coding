@@ -1,4 +1,4 @@
-module Page.Data exposing (Msg(..), view, Model)
+module Page.Data exposing (Msg(..), view, Model, defaultModel,update)
 
 import Browser exposing (Document)
 import Data
@@ -12,15 +12,27 @@ type Msg m
     = GotDBMsg Data.Msg
     | Mdc (Material.Msg m)
 
-type alias Model 
-    = {}
+type alias Model m
+    = {mdc: Material.Model m}
 
+defaultModel : Model m
+defaultModel = {mdc = Material.defaultModel}
 
-view : Material.Model msg -> Data.Model ->  { title : String, content : Html (Msg msg) }
-view mdc data =
+view : (Msg m -> m) -> Model m -> Data.Model -> Document m
+view lift model data =
     { title = "Data"
-    , content = Html.map GotDBMsg (Data.view data)
+    , body = [Html.map (lift << GotDBMsg) (Data.view data)]
     }
+
+update : (Msg m -> m) -> Msg m -> Model m -> ( Model m, Cmd m )
+update lift msg model =
+    case msg of
+        Mdc msg_ ->
+            Material.update (lift << Mdc) msg_ model
+
+        GotDBMsg _ ->
+            (model, Cmd.none)
+            
 
 viewContent = 
     div [][

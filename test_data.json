@@ -14,6 +14,18 @@ var data = {
     coders: {
         "coder1":{
             "name":"Jerome Bergmann"
+        },
+        "coder2":{
+            "name":"Amelia Pond"
+        },
+        "coder3":{
+            "name":"John Tolkien"
+        },
+        "coder4":{
+            "name":"Zarathustra Bottom"
+        },
+        "coder5":{
+            "name":"Alvin Top"
         }
     },
     codings: {"coding1":{coder:"coder1"}},

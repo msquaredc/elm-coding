@@ -1,112 +1,244 @@
-module Page exposing (Page(..), view, viewHeader)
+module Page exposing (Model, Msg, Page, update,defaultModel, subscriptions, view, viewHeader)
 
 import Browser exposing (Document)
+import Data
 import Html exposing (Html, a, button, div, footer, i, img, li, nav, p, span, text, ul)
 import Html.Attributes exposing (class, classList, href, style)
-import Material exposing (..)
+import Material
+import Material.Options as Options
 import Material.TopAppBar as TopAppBar
-import Material.Options as Options exposing (cs, css,styled)
 import Material.Typography as Typography
-import Data
+import Material.LayoutGrid as LayoutGrid
+import Page.Data
+import Page.Error
+import Page.Login
+import Page.Url
+import Url
+import Json.Decode as Decode
 
 
-type Page
-    = Error
-    | Research
-    | Data
+type alias Page =
+    { error : Page.Error.Model Msg
+    , data : Page.Data.Model Msg
+    , login : Page.Login.Model Msg
+    }
 
-type Msg m
+
+type GotPageMsg
+    = GotErrorMsg (Page.Error.Msg Msg)
+    | GotDataMsg (Page.Data.Msg Msg)
+    | GotLoginMsg (Page.Login.Msg Msg)
+
+
+type Msg
     = OpenDrawer
-    | Mdc (Material.Msg m)
+    | Mdc (Material.Msg Msg)
+    | PageMsg GotPageMsg
 
-type alias Model msg =
-    {mdc : Material.Model msg,
-    title : String,
-    body : List(Html msg),
-    data : Data.Model}
 
-view : Material.Model msg -> Page -> { title : String, content : Html msg } -> Document msg
-view mdc page { title, content } =
-    let 
-        header = viewHeader mdc page
-    in 
-        { title = title ++ " - Conduit2"
-        , content = viewContent header (text title) content :: [ viewFooter mdc ]
-        }
+type alias Model =
+    { mdc : Material.Model Msg
+    , page : Page
+    , url : Page.Url.Url
+    }
 
-viewContent : Html msg -> Html msg -> Html msg -> Html msg
-viewContent bar title content = 
-    styled div
-        [ css "display" "flex"
-        , css "flex-flow" "column"
-        , css "height" "100%"
+init : Url.Url -> Maybe Decode.Error -> Model
+init url dc = 
+    {mdc=Material.defaultModel
+    , page = defaultPage
+    ,url = Page.Url.fromUrl url}
+
+defaultModel : Model
+defaultModel =
+    { mdc = Material.defaultModel
+    , page = defaultPage
+    , url = Page.Url.defaultUrl
+    }
+
+
+defaultPage : Page
+defaultPage =
+    { error = Page.Error.defaultModel
+    , data = Page.Data.defaultModel
+    , login = Page.Login.defaultModel
+    }
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        Mdc msg_ ->
+            Material.update Mdc msg_ model
+
+        PageMsg m ->
+            let
+                ( page, effects ) =
+                    updatePage m model.page
+            in
+            ( { model | page = page }, effects )
+
+        _ ->
+            ( model, Cmd.none )
+
+
+updatePage : GotPageMsg -> Page -> ( Page, Cmd Msg )
+updatePage msg model =
+    case msg of
+        GotLoginMsg msg_ ->
+            let
+                ( login, effects ) =
+                    Page.Login.update (PageMsg << GotLoginMsg) msg_ model.login
+            in
+            ( { model | login = login }, effects )
+
+        GotErrorMsg msg_ ->
+            let
+                ( error, effects ) =
+                    Page.Error.update (PageMsg << GotErrorMsg) msg_ model.error
+            in
+            ( { model | error = error }, effects )
+
+        GotDataMsg msg_ ->
+            let
+                ( data, effects ) =
+                    Page.Data.update (PageMsg << GotDataMsg) msg_ model.data
+            in
+            ( { model | data = data }, effects )
+
+
+view : Model -> Data.Model -> Document Msg
+view model data =
+    case model.url of
+        Page.Url.Data ->
+            viewUI model (Page.Data.view (PageMsg << GotDataMsg) model.page.data data)
+
+        Page.Url.Error ->
+            viewUI model (Page.Error.view (PageMsg << GotErrorMsg) model.page.error data)
+
+        Page.Url.StartPage ->
+            viewUI model (Page.Login.view (PageMsg << GotLoginMsg) model.page.login data)
+
+        Page.Url.Error404 _ ->
+            viewUI model (Page.Login.view (PageMsg << GotLoginMsg) model.page.login data)
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Material.subscriptions Mdc model
+
+
+viewUI : Model -> { title : String, body : List (Html Msg) } -> Document Msg
+viewUI model { title, body } =
+    let
+        header =
+            viewHeader model title
+    in
+    { title = title ++ " - Conduit2"
+    , body = viewBody header (text title) body :: [ viewFooter model.mdc ]
+    }
+
+
+viewBody : Html msg -> Html msg -> List (Html msg) -> Html msg
+viewBody bar title content =
+    Options.styled div
+        [ Options.css "display" "flex"
+        , Options.css "flex-flow" "column"
+        , Options.css "height" "100%"
         , Typography.typography
         ]
-        [ bar 
-        , styled div
-            [ cs "demo-panel"
-            , css "display" "flex"
+        [ bar
+        , Options.styled div
+            [ Options.cs "demo-panel"
+            , Options.css "display" "flex"
             ]
             [ div
-                    []
-{-}                                 [ Page.drawer Mdc "page-drawer" model.mdc CloseDrawer SelectDrawerItem model.url model.is_drawer_open
-                    , Drawer.scrim [ Options.onClick CloseDrawer ] []
-                    ]-}[]
-            , styled div
-                    [ cs "demo-content"
---                                  , DismissibleDrawer.appContent
-                    , TopAppBar.fixedAdjust
-                    , css "width" "100%"
-                    , css "display" "flex"
-                    , css "justify-content" "flex-start"
-                    , css "flex-direction" "column"
-                    , css "align-items" "center"
+                []
+                {- }                                 [ Page.drawer Mdc "page-drawer" model.mdc CloseDrawer SelectDrawerItem model.url model.is_drawer_open
+                   , Drawer.scrim [ Options.onClick CloseDrawer ] []
+                   ]
+                -}
+                []
+            , Options.styled div
+                [ Options.cs "demo-content"
+
+                --                                  , DismissibleDrawer.appContent
+                , TopAppBar.fixedAdjust
+                , Options.css "width" "100%"
+                , Options.css "display" "flex"
+                , Options.css "justify-content" "flex-start"
+                , Options.css "flex-direction" "column"
+                , Options.css "align-items" "center"
+                ]
+                [ Options.styled div
+                    [ Options.cs "demo-content-transition"
+                    , Options.css "width" "100%"
+                    , Options.css "max-width" "1200px"
                     ]
-                    [ styled div
-                    [ cs "demo-content-transition"
-                    , css "width" "100%"
-                    , css "max-width" "1200px"
-                    ]
-                    [ content ]
-                    ]
+                    [viewLayout Nothing content Nothing]
+                ]
             ]
         ]
 
-viewHeader : Material.Model msg -> Page -> Html msg
-viewHeader mdc page =
+viewLayout : Maybe (List(Html msg)) -> List(Html msg) -> Maybe (List(Html msg)) -> Html msg
+viewLayout left middle right = 
+    LayoutGrid.view []
+            [ LayoutGrid.cell
+                [ LayoutGrid.span2
+                , LayoutGrid.span4Phone
+                ]
+                (Maybe.withDefault [] left)
+     
+            , LayoutGrid.cell
+                [ LayoutGrid.span8
+                , LayoutGrid.span6Tablet
+                ]
+                middle
+            , LayoutGrid.cell
+                [ LayoutGrid.span2
+                , LayoutGrid.span4Phone
+                ]
+                (Maybe.withDefault [] right)
+            ]
+
+
+
+viewHeader : Model -> String -> Html Msg
+viewHeader model title =
     TopAppBar.view Mdc
         "my-top-app-bar"
-        mdc
+        model.mdc
         [ TopAppBar.fixed ]
         [ TopAppBar.section [ TopAppBar.alignStart ]
             [ TopAppBar.navigationIcon Mdc
                 "my-menu"
-                mdc
-                [] -- [ Options.onClick OpenDrawer ]
+                model.mdc
+                []
+                -- [ Options.onClick OpenDrawer ]
                 "menu"
-            , TopAppBar.title [] [ text "Todo Title" ]
+            , TopAppBar.title [] [ text title ]
             ]
         , TopAppBar.section [ TopAppBar.alignEnd ]
-{-           [ TopAppBar.actionItem [] "file_download"
-            , TopAppBar.actionItem [] "print"
-            , TopAppBar.actionItem [] "bookmark"
-            ]
+            {- [ TopAppBar.actionItem [] "file_download"
+               , TopAppBar.actionItem [] "print"
+               , TopAppBar.actionItem [] "bookmark"
+               ]
             -}
             []
-        ] 
-        
-            
+        ]
+
+
 viewFooter : Material.Model msg -> Html msg
 viewFooter mdc =
-    styled div [Typography.typography][
-    footer [class "footer"]
-        [ div [ class "footer__content" ]
-            [ a [ class "footer__logo", href "/" ] [ text "conduit" ]
-            , span [ class "attribution" ]
-                [ text "An interactive learning project from "
-                , a [ href "https://thinkster.io" ] [ text "Thinkster" ]
-                , text ". Code & design licensed under MI."
+    Options.styled div
+        [ Typography.typography ]
+        [ footer [ class "footer" ]
+            [ div [ class "footer__content" ]
+                [ a [ class "footer__logo", href "/" ] [ text "conduit" ]
+                , span [ class "attribution" ]
+                    [ text "An interactive learning project from "
+                    , a [ href "https://thinkster.io" ] [ text "Thinkster" ]
+                    , text ". Code & design licensed under MI."
+                    ]
                 ]
             ]
         ]
-    ]
