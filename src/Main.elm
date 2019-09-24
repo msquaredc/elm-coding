@@ -89,7 +89,7 @@ update msg model =
         GotPageMsg msg_ ->
             let
                 (page, effect) =
-                    Page.update msg_ model.page
+                    Page.update msg_ model.page model.data
             in
                 ({model|page = page}, Cmd.map GotPageMsg effect)
         Noop -> 

@@ -64,8 +64,8 @@ defaultPage =
     }
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Msg -> Model -> Data.Model ->  ( Model, Cmd Msg )
+update msg model data =
     case msg of
         Mdc msg_ ->
             Material.update Mdc msg_ model
@@ -73,7 +73,7 @@ update msg model =
         PageMsg m ->
             let
                 ( page, effects ) =
-                    updatePage m model.page
+                    updatePage m model.page data
             in
             ( { model | page = page }, effects )
 
@@ -81,13 +81,13 @@ update msg model =
             ( model, Cmd.none )
 
 
-updatePage : GotPageMsg -> Page -> ( Page, Cmd Msg )
-updatePage msg model =
+updatePage : GotPageMsg -> Page -> Data.Model -> ( Page, Cmd Msg )
+updatePage msg model data=
     case msg of
         GotLoginMsg msg_ ->
             let
                 ( login, effects ) =
-                    Page.Login.update (PageMsg << GotLoginMsg) msg_ model.login
+                    Page.Login.update (PageMsg << GotLoginMsg) msg_ model.login data
             in
             ( { model | login = login }, effects )
 
@@ -100,10 +100,10 @@ updatePage msg model =
 
         GotDataMsg msg_ ->
             let
-                ( data, effects ) =
+                ( datam, effects ) =
                     Page.Data.update (PageMsg << GotDataMsg) msg_ model.data
             in
-            ( { model | data = data }, effects )
+            ( { model | data = datam }, effects )
 
 
 view : Model -> Data.Model -> Document Msg

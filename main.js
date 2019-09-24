@@ -8683,8 +8683,46 @@ var author$project$Page$Error$update = F3(
 var author$project$Page$Login$Mdc = function (a) {
 	return {$: 'Mdc', a: a};
 };
-var author$project$Page$Login$update = F3(
-	function (lift, msg, model) {
+var Chadtech$elm_relational_database$Db$toList = function (_n0) {
+	var dict = _n0.a;
+	return A2(
+		elm$core$List$map,
+		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
+		elm$core$Dict$toList(dict));
+};
+var elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2(elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var elm$core$String$toLower = _String_toLower;
+var author$project$Page$Login$getFilteredList = F2(
+	function (db, name) {
+		return A2(
+			elm$core$List$filter,
+			function (_n0) {
+				var i = _n0.a;
+				var m = _n0.b;
+				return A2(
+					elm$core$String$startsWith,
+					elm$core$String$toLower(name),
+					elm$core$String$toLower(m.name));
+			},
+			Chadtech$elm_relational_database$Db$toList(db));
+	});
+var elm_community$list_extra$List$Extra$getAt = F2(
+	function (idx, xs) {
+		return (idx < 0) ? elm$core$Maybe$Nothing : elm$core$List$head(
+			A2(elm$core$List$drop, idx, xs));
+	});
+var author$project$Page$Login$update = F4(
+	function (lift, msg, model, data) {
 		switch (msg.$) {
 			case 'Mdc':
 				var msg_ = msg.a;
@@ -8700,30 +8738,31 @@ var author$project$Page$Login$update = F3(
 						model,
 						{field: txt}),
 					elm$core$Platform$Cmd$none);
-			case 'Increment':
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{_var: model._var + 1}),
-					elm$core$Platform$Cmd$none);
 			default:
+				var index = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{_var: model._var - 1}),
+						{
+							user: A2(
+								elm_community$list_extra$List$Extra$getAt,
+								index,
+								A2(author$project$Page$Login$getFilteredList, data.coders, model.field))
+						}),
 					elm$core$Platform$Cmd$none);
 		}
 	});
-var author$project$Page$updatePage = F2(
-	function (msg, model) {
+var author$project$Page$updatePage = F3(
+	function (msg, model, data) {
 		switch (msg.$) {
 			case 'GotLoginMsg':
 				var msg_ = msg.a;
-				var _n1 = A3(
+				var _n1 = A4(
 					author$project$Page$Login$update,
 					A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotLoginMsg),
 					msg_,
-					model.login);
+					model.login,
+					data);
 				var login = _n1.a;
 				var effects = _n1.b;
 				return _Utils_Tuple2(
@@ -8752,24 +8791,24 @@ var author$project$Page$updatePage = F2(
 					A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotDataMsg),
 					msg_,
 					model.data);
-				var data = _n3.a;
+				var datam = _n3.a;
 				var effects = _n3.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{data: data}),
+						{data: datam}),
 					effects);
 		}
 	});
-var author$project$Page$update = F2(
-	function (msg, model) {
+var author$project$Page$update = F3(
+	function (msg, model, data) {
 		switch (msg.$) {
 			case 'Mdc':
 				var msg_ = msg.a;
 				return A3(author$project$Material$update, author$project$Page$Mdc, msg_, model);
 			case 'PageMsg':
 				var m = msg.a;
-				var _n1 = A2(author$project$Page$updatePage, m, model.page);
+				var _n1 = A3(author$project$Page$updatePage, m, model.page, data);
 				var page = _n1.a;
 				var effects = _n1.b;
 				return _Utils_Tuple2(
@@ -8786,7 +8825,7 @@ var author$project$Main$update = F2(
 		switch (msg.$) {
 			case 'GotPageMsg':
 				var msg_ = msg.a;
-				var _n1 = A2(author$project$Page$update, msg_, model.page);
+				var _n1 = A3(author$project$Page$update, msg_, model.page, model.data);
 				var page = _n1.a;
 				var effect = _n1.b;
 				return _Utils_Tuple2(
@@ -10545,13 +10584,6 @@ var author$project$Db$Extra$TooFew = F3(
 	function (a, b, c) {
 		return {$: 'TooFew', a: a, b: b, c: c};
 	});
-var Chadtech$elm_relational_database$Db$toList = function (_n0) {
-	var dict = _n0.a;
-	return A2(
-		elm$core$List$map,
-		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
-		elm$core$Dict$toList(dict));
-};
 var author$project$Db$Extra$size = function (db) {
 	return elm$core$List$length(
 		Chadtech$elm_relational_database$Db$toList(db));
@@ -10760,17 +10792,6 @@ var author$project$Data$selectFramesFromQuestionaryName = F2(
 								function (c) {
 									return _Utils_eq(c, name);
 								}))))));
-	});
-var elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2(elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
 	});
 var author$project$Db$Extra$intersection = F2(
 	function (a, b) {
@@ -11623,7 +11644,6 @@ var debois$elm_dom$DOM$childNodes = function (decoder) {
 var debois$elm_dom$DOM$parentElement = function (decoder) {
 	return A2(elm$json$Json$Decode$field, 'parentElement', decoder);
 };
-var elm$core$String$toLower = _String_toLower;
 var author$project$Internal$TabBar$Implementation$decodeGeometry = A4(
 	elm$json$Json$Decode$map3,
 	author$project$Internal$TabBar$Model$Geometry,
@@ -13065,6 +13085,17 @@ var author$project$Page$Login$ask = F3(
 	});
 var author$project$Internal$List$Implementation$avatarList = author$project$Internal$Options$cs('mdc-list--avatar-list');
 var author$project$Material$List$avatarList = author$project$Internal$List$Implementation$avatarList;
+var author$project$Internal$List$Implementation$onSelectListItem = function (handler) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{
+					onSelectListItem: elm$core$Maybe$Just(handler)
+				});
+		});
+};
+var author$project$Material$List$onSelectListItem = author$project$Internal$List$Implementation$onSelectListItem;
 var author$project$Internal$List$Implementation$twoLine = author$project$Internal$Options$cs('mdc-list--two-line');
 var author$project$Material$List$twoLine = author$project$Internal$List$Implementation$twoLine;
 var author$project$Internal$List$Implementation$defaultConfig = {activated: false, isRadioGroup: false, isSingleSelectionList: false, node: elm$core$Maybe$Nothing, onSelectListItem: elm$core$Maybe$Nothing, selected: false, selectedIndex: elm$core$Maybe$Nothing, useActivated: false};
@@ -13245,6 +13276,9 @@ var author$project$Internal$List$Implementation$view = F2(
 			domId);
 	});
 var author$project$Material$List$ul = author$project$Internal$List$Implementation$view;
+var author$project$Page$Login$Select = function (a) {
+	return {$: 'Select', a: a};
+};
 var author$project$Internal$List$Implementation$graphicClass = author$project$Internal$Options$cs('mdc-list-item__graphic');
 var author$project$Internal$List$Implementation$graphicIcon = function (options) {
 	return author$project$Internal$Icon$Implementation$view(
@@ -13860,24 +13894,21 @@ var author$project$Page$Login$toPersonList = F3(
 			'my-list',
 			model.mdc,
 			_List_fromArray(
-				[author$project$Material$List$twoLine, author$project$Material$List$avatarList]),
+				[
+					author$project$Material$List$twoLine,
+					author$project$Material$List$avatarList,
+					author$project$Material$List$onSelectListItem(
+					A2(elm$core$Basics$composeL, lift, author$project$Page$Login$Select))
+				]),
 			A2(elm$core$List$map, author$project$Page$Login$viewCoderRow, persons));
 	});
 var author$project$Page$Login$showResults = F4(
 	function (lift, name, db, model) {
-		var rows = A3(
+		return A3(
 			author$project$Page$Login$toPersonList,
 			lift,
 			model,
-			A2(
-				elm$core$List$filter,
-				function (_n0) {
-					var i = _n0.a;
-					var m = _n0.b;
-					return A2(elm$core$String$startsWith, name, m.name);
-				},
-				Chadtech$elm_relational_database$Db$toList(db)));
-		return rows;
+			A2(author$project$Page$Login$getFilteredList, db, name));
 	});
 var elm$html$Html$p = _VirtualDom_node('p');
 var author$project$Page$Login$viewSearch = F3(

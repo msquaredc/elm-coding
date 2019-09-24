@@ -13,6 +13,7 @@ import Material.Options as Options
 import Material.TextField as TextField
 import Material.List as Lists
 import StringDistance
+import List.Extra
 
 
 type alias Model m =
@@ -26,8 +27,7 @@ type alias Model m =
 type Msg m
     = UpdateTextField String
     | Mdc (Material.Msg m)
-    | Decrement
-    | Increment
+    | Select Int
 
 
 defaultModel : Model m
@@ -50,19 +50,23 @@ defaultModel =
 -}
 
 
-update : (Msg m -> m) -> Msg m -> Model m -> ( Model m, Cmd m )
-update lift msg model =
+update : (Msg m -> m) -> Msg m -> Model m -> Data.Model -> ( Model m, Cmd m )
+update lift msg model data =
     case msg of
         Mdc msg_ ->
             Material.update (lift << Mdc) msg_ model
 
         UpdateTextField txt ->
             ( { model | field = txt }, Cmd.none )
-        Increment ->
-            ( { model | var = model.var+1 }, Cmd.none )
-
-        Decrement ->
-            ( { model | var = model.var-1 }, Cmd.none )
+        
+        Select index -> 
+            ({ model | user = (List.Extra.getAt index (getFilteredList data.coders model.field))}, Cmd.none)
+        
+getFilteredList : Db Coder.Model -> String -> List (Db.Row Coder.Model)
+getFilteredList db name = 
+    db
+    |> Db.toList
+    |> List.filter (\(i, m) -> String.startsWith (String.toLower name) (String.toLower m.name))
 
 
 view : (Msg m -> m) -> Model m -> Data.Model -> Document m
@@ -98,13 +102,8 @@ ask lift model data =
 
 showResults : (Msg m -> m) -> String -> Db Coder.Model -> Model m -> Html m
 showResults lift name db model = 
-    let
-        rows = db
-                |> Db.toList
-                |> List.filter (\(i, m) -> String.startsWith name m.name)
-                |> toPersonList lift model
-    in
-        rows
+    toPersonList lift model (getFilteredList db name)
+    
 
 myDistance : String -> String -> Float
 myDistance fullname seq =
@@ -135,20 +134,21 @@ viewCoderRow (id,model) =
         ]
 
 
-ask2 : (Msg m -> m) -> Model m -> Data.Model -> Html m
+{- ask2 : (Msg m -> m) -> Model m -> Data.Model -> Html m
 ask2 lift model data =
     Html.map lift (
         div []
         [ button [ onClick Decrement ] [ text "-" ]
         , div [] [ text (String.fromInt model.var) ]
         , button [ onClick Increment ] [ text "+" ]
-    ])
+    ]) -}
 
 toPersonList : (Msg m -> m) -> Model m -> List(Db.Row Coder.Model) -> Html m
 toPersonList lift model persons  = 
     Lists.ul (lift<<Mdc) "my-list" model.mdc
         [ Lists.twoLine
         , Lists.avatarList
+        , Lists.onSelectListItem (lift <<Select)
         ]
         (List.map viewCoderRow persons)
         
