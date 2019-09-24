@@ -230,14 +230,23 @@ viewHeader model title =
 viewFooter : Material.Model msg -> Html msg
 viewFooter mdc =
     Options.styled div
-        [ Typography.typography ]
+        [ Typography.typography,
+        Options.css "position" "fixed",
+        Options.css "left" "0",
+        Options.css "bottom" "0",
+        Options.css "width" "100%",
+        Options.css "text-align" "center",
+        Options.css "background-color" "LightGrey",
+--        Options.css "color" "white",
+        Options.css "padding" "16px"
+        ] 
         [ footer [ class "footer" ]
             [ div [ class "footer__content" ]
-                [ a [ class "footer__logo", href "/" ] [ text "conduit" ]
+                [ a [ class "footer__logo", href "/" ] [ text "M²C" ]
                 , span [ class "attribution" ]
-                    [ text "An interactive learning project from "
-                    , a [ href "https://thinkster.io" ] [ text "Thinkster" ]
-                    , text ". Code & design licensed under MI."
+                    [ text " Hosted with Love at "
+                    , a [ href "https://github.com" ] [ text "GitHub" ]
+                    , text ". Code & design licensed under MIT."
                     ]
                 ]
             ]

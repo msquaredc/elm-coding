@@ -9686,7 +9686,16 @@ var author$project$Page$viewFooter = function (mdc) {
 		author$project$Material$Options$styled,
 		elm$html$Html$div,
 		_List_fromArray(
-			[author$project$Material$Typography$typography]),
+			[
+				author$project$Material$Typography$typography,
+				A2(author$project$Material$Options$css, 'position', 'fixed'),
+				A2(author$project$Material$Options$css, 'left', '0'),
+				A2(author$project$Material$Options$css, 'bottom', '0'),
+				A2(author$project$Material$Options$css, 'width', '100%'),
+				A2(author$project$Material$Options$css, 'text-align', 'center'),
+				A2(author$project$Material$Options$css, 'background-color', 'LightGrey'),
+				A2(author$project$Material$Options$css, 'padding', '16px')
+			]),
 		_List_fromArray(
 			[
 				A2(
@@ -9714,7 +9723,7 @@ var author$project$Page$viewFooter = function (mdc) {
 									]),
 								_List_fromArray(
 									[
-										elm$html$Html$text('conduit')
+										elm$html$Html$text('M²C')
 									])),
 								A2(
 								elm$html$Html$span,
@@ -9724,18 +9733,18 @@ var author$project$Page$viewFooter = function (mdc) {
 									]),
 								_List_fromArray(
 									[
-										elm$html$Html$text('An interactive learning project from '),
+										elm$html$Html$text(' Hosted with Love at '),
 										A2(
 										elm$html$Html$a,
 										_List_fromArray(
 											[
-												elm$html$Html$Attributes$href('https://thinkster.io')
+												elm$html$Html$Attributes$href('https://github.com')
 											]),
 										_List_fromArray(
 											[
-												elm$html$Html$text('Thinkster')
+												elm$html$Html$text('GitHub')
 											])),
-										elm$html$Html$text('. Code & design licensed under MI.')
+										elm$html$Html$text('. Code & design licensed under MIT.')
 									]))
 							]))
 					]))
