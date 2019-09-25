@@ -7,6 +7,7 @@ module Data exposing
     , update
     , view
     , Flags
+    , selectQuestionaryFromCoding
     )
 
 import Db exposing (Db, Row)
@@ -31,6 +32,7 @@ import Material
 import Material.Options as Options
 import Material.TabBar as TabBar
 import Random exposing (Seed)
+import Set
 
 
 
@@ -429,6 +431,18 @@ selectFramesFromCoderName model name =
         |> Result.map (Db.Extra.selectFrom model.codings (\c -> c.coder))
         |> Result.map (Db.Extra.selectFrom model.coding_frames (\c -> c.coding))
 
+selectQuestionaryFromCoding : Model -> Row Coding.Model -> Row Questionary.Model
+selectQuestionaryFromCoding model coding =
+            Db.Extra.selectFrom model.coding_frames (\c -> c.coding) (Db.fromList [coding])
+            |> Db.toList
+            |> List.map (Db.Extra.get model.answers (\c -> c.answer))
+            |> List.map (Result.andThen (Db.Extra.get model.questions (\c -> c.question)))
+            |> List.map (Result.andThen (Db.Extra.get model.questionaries (\c -> c.questionary)))
+            |> List.map (Result.toMaybe)
+            |> List.filterMap (\x->x)
+            |> List.head
+            |> Maybe.withDefault (Id.fromString "Nan",{name = "Not Found"})
+                
 
 selectFramesFromQuestionaryName : Model -> String -> Result Db.Extra.Error (Db CodingFrame.Model)
 selectFramesFromQuestionaryName model name =

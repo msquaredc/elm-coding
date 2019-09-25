@@ -5,6 +5,8 @@ import Data
 import Html exposing (Html, div, h2, text)
 import Json.Decode as Decode
 import Material
+import Db exposing (Row)
+import Entities.Coder as Coder
 
 
 type Msg m
@@ -35,8 +37,8 @@ defaultModel =
     }
 
 
-view : (Msg m -> m) -> Model m -> Data.Model -> Document m
-view lift model _ =
+view : (Msg m -> m) -> Model m -> Data.Model -> Row Coder.Model -> Document m
+view lift model _ user =
     { title = "Error"
     , body =
         Html.h2 [] [ text "Error:" ] :: List.map viewError model.error

@@ -1,8 +1,8 @@
-module Page.Login exposing (Model, Msg(..), defaultModel, update, view)
+module Page.Login exposing (Model, Msg(..), defaultModel, update, view, getFilteredList)
 
 import Browser exposing (Document)
 import Data
-import Db exposing (Db)
+import Db exposing (Db, Row)
 import Id exposing (Id)
 import Entities.Coder as Coder
 import Html exposing (Html, text,div, button,p,input)
@@ -14,13 +14,14 @@ import Material.TextField as TextField
 import Material.List as Lists
 import StringDistance
 import List.Extra
-
+import Page.Url exposing (..)
+import Entities.Coder as Coder
 
 type alias Model m =
-    { user : Maybe (Db.Row Coder.Model)
-    , field : String
+    {field : String
     , var : Int
     , mdc : Material.Model m
+    , next : Page.Url.Url
     }
 
 
@@ -32,10 +33,10 @@ type Msg m
 
 defaultModel : Model m
 defaultModel =
-    { user = Nothing
-    , field = ""
+    { field = ""
     , mdc = Material.defaultModel
     , var = 0
+    , next = Page.Url.Home
     }
 
 
@@ -60,7 +61,7 @@ update lift msg model data =
             ( { model | field = txt }, Cmd.none )
         
         Select index -> 
-            ({ model | user = (List.Extra.getAt index (getFilteredList data.coders model.field))}, Cmd.none)
+            ( model, Cmd.none)
         
 getFilteredList : Db Coder.Model -> String -> List (Db.Row Coder.Model)
 getFilteredList db name = 
@@ -69,9 +70,9 @@ getFilteredList db name =
     |> List.filter (\(i, m) -> String.startsWith (String.toLower name) (String.toLower m.name))
 
 
-view : (Msg m -> m) -> Model m -> Data.Model -> Document m
-view lift model data =
-    case model.user of
+view : (Msg m -> m) -> Model m -> Data.Model -> Maybe (Row Coder.Model)-> Document m
+view lift model data user =
+    case user of
         Nothing ->
            viewSearch lift model data
 

@@ -14,13 +14,18 @@ import Page.Data
 import Page.Error
 import Page.Login
 import Page.Url
+import Page.Home
 import Url
+import Entities.Coder
+import Db exposing (Db, Row)
+import List.Extra
 
 
 type alias Page =
     { error : Page.Error.Model Msg
     , data : Page.Data.Model Msg
     , login : Page.Login.Model Msg
+    , home : Page.Home.Model Msg
     }
 
 
@@ -28,6 +33,7 @@ type GotPageMsg
     = GotErrorMsg (Page.Error.Msg Msg)
     | GotDataMsg (Page.Data.Msg Msg)
     | GotLoginMsg (Page.Login.Msg Msg)
+    | GotHomeMsg (Page.Home.Msg Msg)
 
 
 type Msg
@@ -42,6 +48,7 @@ type alias Model =
     { mdc : Material.Model Msg
     , page : Page
     , url : Page.Url.Url
+    , user : Maybe (Row Entities.Coder.Model)
     }
 
 
@@ -50,6 +57,7 @@ init url dc =
     { mdc = Material.defaultModel
     , page = defaultPage
     , url = Page.Url.fromUrl url
+    , user = Nothing
     }
 
 
@@ -58,6 +66,7 @@ defaultModel =
     { mdc = Material.defaultModel
     , page = defaultPage
     , url = Page.Url.defaultUrl
+    , user = Nothing
     }
 
 
@@ -66,6 +75,7 @@ defaultPage =
     { error = Page.Error.defaultModel
     , data = Page.Data.defaultModel
     , login = Page.Login.defaultModel
+    , home = Page.Home.defaultModel
     }
 
 
@@ -76,11 +86,19 @@ update msg model data =
             Material.update Mdc msg_ model
 
         PageMsg m ->
-            let
-                ( page, effects ) =
-                    updatePage m model.page data
-            in
-            ( { model | page = page }, effects )
+            case m of 
+                GotLoginMsg (Page.Login.Select index) ->
+                    let 
+                        list = Page.Login.getFilteredList data.coders model.page.login.field
+                        mb_row = List.Extra.getAt index list
+                    in
+                        ({model | user = mb_row},Cmd.none)
+                _ ->
+                    let
+                        ( page, effects ) =
+                            updatePage m model.page data
+                    in
+                        ( { model | page = page }, effects )
         OpenDrawer -> 
             (model, Cmd.none)
         OpenOverflow -> 
@@ -97,7 +115,7 @@ updatePage msg model data =
                 ( login, effects ) =
                     Page.Login.update (PageMsg << GotLoginMsg) msg_ model.login data
             in
-            ( { model | login = login }, effects )
+                ( { model | login = login }, effects )
 
         GotErrorMsg msg_ ->
             let
@@ -112,28 +130,46 @@ updatePage msg model data =
                     Page.Data.update (PageMsg << GotDataMsg) msg_ model.data
             in
             ( { model | data = datam }, effects )
+        GotHomeMsg msg_ ->
+            let
+                ( homem, effects ) =
+                    Page.Home.update (PageMsg << GotHomeMsg) msg_ model.home
+            in
+            ( { model | home = homem }, effects )
 
 
 view : Model -> Data.Model -> Document Msg
 view model data =
-    case model.url of
-        Page.Url.Data ->
-            viewUI model (Page.Data.view (PageMsg << GotDataMsg) model.page.data data)
+    let 
+        viewLoggedIn viewf msg page = 
+            case model.user of
+                Just user ->
+                    viewUI model (viewf (PageMsg << msg) page data user)
+                Nothing ->
+                    viewUI model (Page.Login.view (PageMsg << GotLoginMsg) model.page.login data model.user)
+    in
+        case model.url of
+            Page.Url.Data ->
+                viewLoggedIn Page.Data.view GotDataMsg model.page.data
 
-        Page.Url.Error ->
-            viewUI model (Page.Error.view (PageMsg << GotErrorMsg) model.page.error data)
+            Page.Url.Error ->
+                viewLoggedIn Page.Error.view GotErrorMsg model.page.error
 
-        Page.Url.StartPage ->
-            viewUI model (Page.Login.view (PageMsg << GotLoginMsg) model.page.login data)
+            Page.Url.StartPage ->
+                viewLoggedIn Page.Home.view GotHomeMsg model.page.home
 
-        Page.Url.Error404 _ ->
-            viewUI model (Page.Login.view (PageMsg << GotLoginMsg) model.page.login data)
+            Page.Url.Error404 _ ->
+                viewLoggedIn Page.Error.view GotErrorMsg model.page.error
+            
+            Page.Url.Home -> 
+                viewLoggedIn Page.Home.view GotHomeMsg model.page.home
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Material.subscriptions Mdc model
 
+            
 
 viewUI : Model -> { title : String, body : List (Html Msg) } -> Document Msg
 viewUI model { title, body } =

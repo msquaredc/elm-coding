@@ -1,9 +1,9 @@
 module Page.Url exposing
     ( Url(..)
+    , defaultUrl
     , fromString
     , fromUrl
     , toString
-    , defaultUrl
     )
 
 import Url
@@ -11,6 +11,7 @@ import Url
 
 type Url
     = StartPage
+    | Home
     | Data
     | Error404 String
     | Error
@@ -24,12 +25,15 @@ toString url =
 
         Error404 requestedHash ->
             requestedHash
-        
-        Data -> 
+
+        Data ->
             "#data"
-        
+
         Error ->
             "#error"
+
+        Home ->
+            "#home"
 
 
 fromUrl : Url.Url -> Url
@@ -42,14 +46,20 @@ fromString url =
     case url of
         "" ->
             StartPage
-        
-        "data" -> 
+
+        "data" ->
             Data
 
         "error" ->
             Error
+
+        "home" ->
+            Home
+
         _ ->
             Error404 url
-    
+
+
 defaultUrl : Url
-defaultUrl = StartPage
+defaultUrl =
+    StartPage

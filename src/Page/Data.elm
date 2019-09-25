@@ -7,6 +7,8 @@ import Material.LayoutGrid as LayoutGrid
 import Material.Options exposing (styled)
 import Html exposing (Html, h2, text,div)
 import Material.Typography as Typography
+import Db exposing (Row)
+import Entities.Coder as Coder
 
 type Msg m
     = GotDBMsg Data.Msg
@@ -18,8 +20,8 @@ type alias Model m
 defaultModel : Model m
 defaultModel = {mdc = Material.defaultModel}
 
-view : (Msg m -> m) -> Model m -> Data.Model -> Document m
-view lift model data =
+view : (Msg m -> m) -> Model m -> Data.Model -> Row Coder.Model-> Document m
+view lift model data user =
     { title = "Data"
     , body = [Html.map (lift << GotDBMsg) (Data.view data)]
     }

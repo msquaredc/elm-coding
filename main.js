@@ -5579,11 +5579,13 @@ var author$project$Data$init = function (flags) {
 };
 var author$project$Page$Data$defaultModel = {mdc: author$project$Material$defaultModel};
 var author$project$Page$Error$defaultModel = {error: _List_Nil, mdc: author$project$Material$defaultModel};
-var author$project$Page$Login$defaultModel = {field: '', mdc: author$project$Material$defaultModel, user: elm$core$Maybe$Nothing, _var: 0};
-var author$project$Page$defaultPage = {data: author$project$Page$Data$defaultModel, error: author$project$Page$Error$defaultModel, login: author$project$Page$Login$defaultModel};
+var author$project$Page$Home$defaultModel = {mdc: author$project$Material$defaultModel};
+var author$project$Page$Url$Home = {$: 'Home'};
+var author$project$Page$Login$defaultModel = {field: '', mdc: author$project$Material$defaultModel, next: author$project$Page$Url$Home, _var: 0};
+var author$project$Page$defaultPage = {data: author$project$Page$Data$defaultModel, error: author$project$Page$Error$defaultModel, home: author$project$Page$Home$defaultModel, login: author$project$Page$Login$defaultModel};
 var author$project$Page$Url$StartPage = {$: 'StartPage'};
 var author$project$Page$Url$defaultUrl = author$project$Page$Url$StartPage;
-var author$project$Page$defaultModel = {mdc: author$project$Material$defaultModel, page: author$project$Page$defaultPage, url: author$project$Page$Url$defaultUrl};
+var author$project$Page$defaultModel = {mdc: author$project$Material$defaultModel, page: author$project$Page$defaultPage, url: author$project$Page$Url$defaultUrl, user: elm$core$Maybe$Nothing};
 var author$project$Main$init = F3(
 	function (flags, url, key) {
 		var result_flags = A2(elm$json$Json$Decode$decodeValue, author$project$Data$decoder, flags);
@@ -8648,6 +8650,9 @@ var author$project$Page$GotDataMsg = function (a) {
 var author$project$Page$GotErrorMsg = function (a) {
 	return {$: 'GotErrorMsg', a: a};
 };
+var author$project$Page$GotHomeMsg = function (a) {
+	return {$: 'GotHomeMsg', a: a};
+};
 var author$project$Page$GotLoginMsg = function (a) {
 	return {$: 'GotLoginMsg', a: a};
 };
@@ -8682,47 +8687,26 @@ var author$project$Page$Error$update = F3(
 			msg_,
 			model);
 	});
+var author$project$Page$Home$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
+};
+var author$project$Page$Home$update = F3(
+	function (lift, msg, model) {
+		if (msg.$ === 'Mdc') {
+			var msg_ = msg.a;
+			return A3(
+				author$project$Material$update,
+				A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
+				msg_,
+				model);
+		} else {
+			var index = msg.a;
+			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		}
+	});
 var author$project$Page$Login$Mdc = function (a) {
 	return {$: 'Mdc', a: a};
 };
-var Chadtech$elm_relational_database$Db$toList = function (_n0) {
-	var dict = _n0.a;
-	return A2(
-		elm$core$List$map,
-		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
-		elm$core$Dict$toList(dict));
-};
-var elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2(elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
-	});
-var elm$core$String$toLower = _String_toLower;
-var author$project$Page$Login$getFilteredList = F2(
-	function (db, name) {
-		return A2(
-			elm$core$List$filter,
-			function (_n0) {
-				var i = _n0.a;
-				var m = _n0.b;
-				return A2(
-					elm$core$String$startsWith,
-					elm$core$String$toLower(name),
-					elm$core$String$toLower(m.name));
-			},
-			Chadtech$elm_relational_database$Db$toList(db));
-	});
-var elm_community$list_extra$List$Extra$getAt = F2(
-	function (idx, xs) {
-		return (idx < 0) ? elm$core$Maybe$Nothing : elm$core$List$head(
-			A2(elm$core$List$drop, idx, xs));
-	});
 var author$project$Page$Login$update = F4(
 	function (lift, msg, model, data) {
 		switch (msg.$) {
@@ -8742,16 +8726,7 @@ var author$project$Page$Login$update = F4(
 					elm$core$Platform$Cmd$none);
 			default:
 				var index = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							user: A2(
-								elm_community$list_extra$List$Extra$getAt,
-								index,
-								A2(author$project$Page$Login$getFilteredList, data.coders, model.field))
-						}),
-					elm$core$Platform$Cmd$none);
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
 	});
 var author$project$Page$updatePage = F3(
@@ -8786,7 +8761,7 @@ var author$project$Page$updatePage = F3(
 						model,
 						{error: error}),
 					effects);
-			default:
+			case 'GotDataMsg':
 				var msg_ = msg.a;
 				var _n3 = A3(
 					author$project$Page$Data$update,
@@ -8800,7 +8775,54 @@ var author$project$Page$updatePage = F3(
 						model,
 						{data: datam}),
 					effects);
+			default:
+				var msg_ = msg.a;
+				var _n4 = A3(
+					author$project$Page$Home$update,
+					A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotHomeMsg),
+					msg_,
+					model.home);
+				var homem = _n4.a;
+				var effects = _n4.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{home: homem}),
+					effects);
 		}
+	});
+var Chadtech$elm_relational_database$Db$toList = function (_n0) {
+	var dict = _n0.a;
+	return A2(
+		elm$core$List$map,
+		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
+		elm$core$Dict$toList(dict));
+};
+var elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2(elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var elm$core$String$toLower = _String_toLower;
+var author$project$Page$Login$getFilteredList = F2(
+	function (db, name) {
+		return A2(
+			elm$core$List$filter,
+			function (_n0) {
+				var i = _n0.a;
+				var m = _n0.b;
+				return A2(
+					elm$core$String$startsWith,
+					elm$core$String$toLower(name),
+					elm$core$String$toLower(m.name));
+			},
+			Chadtech$elm_relational_database$Db$toList(db));
 	});
 var author$project$Page$Url$Data = {$: 'Data'};
 var author$project$Page$Url$Error = {$: 'Error'};
@@ -8815,6 +8837,8 @@ var author$project$Page$Url$fromString = function (url) {
 			return author$project$Page$Url$Data;
 		case 'error':
 			return author$project$Page$Url$Error;
+		case 'home':
+			return author$project$Page$Url$Home;
 		default:
 			return author$project$Page$Url$Error404(url);
 	}
@@ -8823,6 +8847,11 @@ var author$project$Page$Url$fromUrl = function (url) {
 	return author$project$Page$Url$fromString(
 		A2(elm$core$Maybe$withDefault, '', url.fragment));
 };
+var elm_community$list_extra$List$Extra$getAt = F2(
+	function (idx, xs) {
+		return (idx < 0) ? elm$core$Maybe$Nothing : elm$core$List$head(
+			A2(elm$core$List$drop, idx, xs));
+	});
 var author$project$Page$update = F3(
 	function (msg, model, data) {
 		switch (msg.$) {
@@ -8831,14 +8860,25 @@ var author$project$Page$update = F3(
 				return A3(author$project$Material$update, author$project$Page$Mdc, msg_, model);
 			case 'PageMsg':
 				var m = msg.a;
-				var _n1 = A3(author$project$Page$updatePage, m, model.page, data);
-				var page = _n1.a;
-				var effects = _n1.b;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{page: page}),
-					effects);
+				if ((m.$ === 'GotLoginMsg') && (m.a.$ === 'Select')) {
+					var index = m.a.a;
+					var list = A2(author$project$Page$Login$getFilteredList, data.coders, model.page.login.field);
+					var mb_row = A2(elm_community$list_extra$List$Extra$getAt, index, list);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{user: mb_row}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					var _n2 = A3(author$project$Page$updatePage, m, model.page, data);
+					var page = _n2.a;
+					var effects = _n2.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{page: page}),
+						effects);
+				}
 			case 'OpenDrawer':
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 			case 'OpenOverflow':
@@ -12734,8 +12774,8 @@ var author$project$Data$view = function (model) {
 var author$project$Page$Data$GotDBMsg = function (a) {
 	return {$: 'GotDBMsg', a: a};
 };
-var author$project$Page$Data$view = F3(
-	function (lift, model, data) {
+var author$project$Page$Data$view = F4(
+	function (lift, model, data, user) {
 		return {
 			body: _List_fromArray(
 				[
@@ -12753,8 +12793,8 @@ var author$project$Page$Error$viewError = function (error) {
 		elm$json$Json$Decode$errorToString(err));
 };
 var elm$html$Html$h2 = _VirtualDom_node('h2');
-var author$project$Page$Error$view = F3(
-	function (lift, model, _n0) {
+var author$project$Page$Error$view = F4(
+	function (lift, model, _n0, user) {
 		return {
 			body: A2(
 				elm$core$List$cons,
@@ -12767,6 +12807,918 @@ var author$project$Page$Error$view = F3(
 						])),
 				A2(elm$core$List$map, author$project$Page$Error$viewError, model.error)),
 			title: 'Error'
+		};
+	});
+var author$project$Data$selectQuestionaryFromCoding = F2(
+	function (model, coding) {
+		return A2(
+			elm$core$Maybe$withDefault,
+			_Utils_Tuple2(
+				Chadtech$elm_relational_database$Id$fromString('Nan'),
+				{name: 'Not Found'}),
+			elm$core$List$head(
+				A2(
+					elm$core$List$filterMap,
+					function (x) {
+						return x;
+					},
+					A2(
+						elm$core$List$map,
+						elm$core$Result$toMaybe,
+						A2(
+							elm$core$List$map,
+							elm$core$Result$andThen(
+								A2(
+									author$project$Db$Extra$get,
+									model.questionaries,
+									function (c) {
+										return c.questionary;
+									})),
+							A2(
+								elm$core$List$map,
+								elm$core$Result$andThen(
+									A2(
+										author$project$Db$Extra$get,
+										model.questions,
+										function (c) {
+											return c.question;
+										})),
+								A2(
+									elm$core$List$map,
+									A2(
+										author$project$Db$Extra$get,
+										model.answers,
+										function (c) {
+											return c.answer;
+										}),
+									Chadtech$elm_relational_database$Db$toList(
+										A3(
+											author$project$Db$Extra$selectFrom,
+											model.coding_frames,
+											function (c) {
+												return c.coding;
+											},
+											Chadtech$elm_relational_database$Db$fromList(
+												_List_fromArray(
+													[coding])))))))))));
+	});
+var author$project$Internal$List$Implementation$graphicClass = author$project$Internal$Options$cs('mdc-list-item__graphic');
+var author$project$Internal$List$Implementation$graphicIcon = function (options) {
+	return author$project$Internal$Icon$Implementation$view(
+		A2(elm$core$List$cons, author$project$Internal$List$Implementation$graphicClass, options));
+};
+var author$project$Material$List$graphicIcon = author$project$Internal$List$Implementation$graphicIcon;
+var author$project$Internal$List$Implementation$defaultConfig = {activated: false, isRadioGroup: false, isSingleSelectionList: false, node: elm$core$Maybe$Nothing, onSelectListItem: elm$core$Maybe$Nothing, selected: false, selectedIndex: elm$core$Maybe$Nothing, useActivated: false};
+var author$project$Internal$List$Implementation$find = F2(
+	function (predicate, list) {
+		find:
+		while (true) {
+			if (!list.b) {
+				return elm$core$Maybe$Nothing;
+			} else {
+				var first = list.a;
+				var rest = list.b;
+				if (predicate(first)) {
+					return elm$core$Maybe$Just(first);
+				} else {
+					var $temp$predicate = predicate,
+						$temp$list = rest;
+					predicate = $temp$predicate;
+					list = $temp$list;
+					continue find;
+				}
+			}
+		}
+	});
+var elm$core$Elm$JsArray$appendN = _JsArray_appendN;
+var elm$core$Elm$JsArray$slice = _JsArray_slice;
+var elm$core$Array$appendHelpBuilder = F2(
+	function (tail, builder) {
+		var tailLen = elm$core$Elm$JsArray$length(tail);
+		var notAppended = (elm$core$Array$branchFactor - elm$core$Elm$JsArray$length(builder.tail)) - tailLen;
+		var appended = A3(elm$core$Elm$JsArray$appendN, elm$core$Array$branchFactor, builder.tail, tail);
+		return (notAppended < 0) ? {
+			nodeList: A2(
+				elm$core$List$cons,
+				elm$core$Array$Leaf(appended),
+				builder.nodeList),
+			nodeListSize: builder.nodeListSize + 1,
+			tail: A3(elm$core$Elm$JsArray$slice, notAppended, tailLen, tail)
+		} : ((!notAppended) ? {
+			nodeList: A2(
+				elm$core$List$cons,
+				elm$core$Array$Leaf(appended),
+				builder.nodeList),
+			nodeListSize: builder.nodeListSize + 1,
+			tail: elm$core$Elm$JsArray$empty
+		} : {nodeList: builder.nodeList, nodeListSize: builder.nodeListSize, tail: appended});
+	});
+var elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
+var elm$core$Array$tailIndex = function (len) {
+	return (len >>> 5) << 5;
+};
+var elm$core$Array$sliceLeft = F2(
+	function (from, array) {
+		var len = array.a;
+		var tree = array.c;
+		var tail = array.d;
+		if (!from) {
+			return array;
+		} else {
+			if (_Utils_cmp(
+				from,
+				elm$core$Array$tailIndex(len)) > -1) {
+				return A4(
+					elm$core$Array$Array_elm_builtin,
+					len - from,
+					elm$core$Array$shiftStep,
+					elm$core$Elm$JsArray$empty,
+					A3(
+						elm$core$Elm$JsArray$slice,
+						from - elm$core$Array$tailIndex(len),
+						elm$core$Elm$JsArray$length(tail),
+						tail));
+			} else {
+				var skipNodes = (from / elm$core$Array$branchFactor) | 0;
+				var helper = F2(
+					function (node, acc) {
+						if (node.$ === 'SubTree') {
+							var subTree = node.a;
+							return A3(elm$core$Elm$JsArray$foldr, helper, acc, subTree);
+						} else {
+							var leaf = node.a;
+							return A2(elm$core$List$cons, leaf, acc);
+						}
+					});
+				var leafNodes = A3(
+					elm$core$Elm$JsArray$foldr,
+					helper,
+					_List_fromArray(
+						[tail]),
+					tree);
+				var nodesToInsert = A2(elm$core$List$drop, skipNodes, leafNodes);
+				if (!nodesToInsert.b) {
+					return elm$core$Array$empty;
+				} else {
+					var head = nodesToInsert.a;
+					var rest = nodesToInsert.b;
+					var firstSlice = from - (skipNodes * elm$core$Array$branchFactor);
+					var initialBuilder = {
+						nodeList: _List_Nil,
+						nodeListSize: 0,
+						tail: A3(
+							elm$core$Elm$JsArray$slice,
+							firstSlice,
+							elm$core$Elm$JsArray$length(head),
+							head)
+					};
+					return A2(
+						elm$core$Array$builderToArray,
+						true,
+						A3(elm$core$List$foldl, elm$core$Array$appendHelpBuilder, initialBuilder, rest));
+				}
+			}
+		}
+	});
+var elm$core$Array$bitMask = 4294967295 >>> (32 - elm$core$Array$shiftStep);
+var elm$core$Bitwise$and = _Bitwise_and;
+var elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
+var elm$core$Array$fetchNewTail = F4(
+	function (shift, end, treeEnd, tree) {
+		fetchNewTail:
+		while (true) {
+			var pos = elm$core$Array$bitMask & (treeEnd >>> shift);
+			var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, pos, tree);
+			if (_n0.$ === 'SubTree') {
+				var sub = _n0.a;
+				var $temp$shift = shift - elm$core$Array$shiftStep,
+					$temp$end = end,
+					$temp$treeEnd = treeEnd,
+					$temp$tree = sub;
+				shift = $temp$shift;
+				end = $temp$end;
+				treeEnd = $temp$treeEnd;
+				tree = $temp$tree;
+				continue fetchNewTail;
+			} else {
+				var values = _n0.a;
+				return A3(elm$core$Elm$JsArray$slice, 0, elm$core$Array$bitMask & end, values);
+			}
+		}
+	});
+var elm$core$Array$hoistTree = F3(
+	function (oldShift, newShift, tree) {
+		hoistTree:
+		while (true) {
+			if ((_Utils_cmp(oldShift, newShift) < 1) || (!elm$core$Elm$JsArray$length(tree))) {
+				return tree;
+			} else {
+				var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, 0, tree);
+				if (_n0.$ === 'SubTree') {
+					var sub = _n0.a;
+					var $temp$oldShift = oldShift - elm$core$Array$shiftStep,
+						$temp$newShift = newShift,
+						$temp$tree = sub;
+					oldShift = $temp$oldShift;
+					newShift = $temp$newShift;
+					tree = $temp$tree;
+					continue hoistTree;
+				} else {
+					return tree;
+				}
+			}
+		}
+	});
+var elm$core$Elm$JsArray$unsafeSet = _JsArray_unsafeSet;
+var elm$core$Array$sliceTree = F3(
+	function (shift, endIdx, tree) {
+		var lastPos = elm$core$Array$bitMask & (endIdx >>> shift);
+		var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, lastPos, tree);
+		if (_n0.$ === 'SubTree') {
+			var sub = _n0.a;
+			var newSub = A3(elm$core$Array$sliceTree, shift - elm$core$Array$shiftStep, endIdx, sub);
+			return (!elm$core$Elm$JsArray$length(newSub)) ? A3(elm$core$Elm$JsArray$slice, 0, lastPos, tree) : A3(
+				elm$core$Elm$JsArray$unsafeSet,
+				lastPos,
+				elm$core$Array$SubTree(newSub),
+				A3(elm$core$Elm$JsArray$slice, 0, lastPos + 1, tree));
+		} else {
+			return A3(elm$core$Elm$JsArray$slice, 0, lastPos, tree);
+		}
+	});
+var elm$core$Array$sliceRight = F2(
+	function (end, array) {
+		var len = array.a;
+		var startShift = array.b;
+		var tree = array.c;
+		var tail = array.d;
+		if (_Utils_eq(end, len)) {
+			return array;
+		} else {
+			if (_Utils_cmp(
+				end,
+				elm$core$Array$tailIndex(len)) > -1) {
+				return A4(
+					elm$core$Array$Array_elm_builtin,
+					end,
+					startShift,
+					tree,
+					A3(elm$core$Elm$JsArray$slice, 0, elm$core$Array$bitMask & end, tail));
+			} else {
+				var endIdx = elm$core$Array$tailIndex(end);
+				var depth = elm$core$Basics$floor(
+					A2(
+						elm$core$Basics$logBase,
+						elm$core$Array$branchFactor,
+						A2(elm$core$Basics$max, 1, endIdx - 1)));
+				var newShift = A2(elm$core$Basics$max, 5, depth * elm$core$Array$shiftStep);
+				return A4(
+					elm$core$Array$Array_elm_builtin,
+					end,
+					newShift,
+					A3(
+						elm$core$Array$hoistTree,
+						startShift,
+						newShift,
+						A3(elm$core$Array$sliceTree, startShift, endIdx, tree)),
+					A4(elm$core$Array$fetchNewTail, startShift, end, endIdx, tree));
+			}
+		}
+	});
+var elm$core$Array$translateIndex = F2(
+	function (index, _n0) {
+		var len = _n0.a;
+		var posIndex = (index < 0) ? (len + index) : index;
+		return (posIndex < 0) ? 0 : ((_Utils_cmp(posIndex, len) > 0) ? len : posIndex);
+	});
+var elm$core$Array$slice = F3(
+	function (from, to, array) {
+		var correctTo = A2(elm$core$Array$translateIndex, to, array);
+		var correctFrom = A2(elm$core$Array$translateIndex, from, array);
+		return (_Utils_cmp(correctFrom, correctTo) > 0) ? elm$core$Array$empty : A2(
+			elm$core$Array$sliceLeft,
+			correctFrom,
+			A2(elm$core$Array$sliceRight, correctTo, array));
+	});
+var elm$core$Tuple$second = function (_n0) {
+	var y = _n0.b;
+	return y;
+};
+var elm$core$Array$toIndexedList = function (array) {
+	var len = array.a;
+	var helper = F2(
+		function (entry, _n0) {
+			var index = _n0.a;
+			var list = _n0.b;
+			return _Utils_Tuple2(
+				index - 1,
+				A2(
+					elm$core$List$cons,
+					_Utils_Tuple2(index, entry),
+					list));
+		});
+	return A3(
+		elm$core$Array$foldr,
+		helper,
+		_Utils_Tuple2(len - 1, _List_Nil),
+		array).b;
+};
+var author$project$Internal$List$Implementation$slicedIndexedList = F3(
+	function (from, to, array) {
+		return elm$core$Array$toIndexedList(
+			A3(elm$core$Array$slice, from, to, array));
+	});
+var elm$core$Array$length = function (_n0) {
+	var len = _n0.a;
+	return len;
+};
+var author$project$Internal$List$Implementation$firstNonEmptyId = F2(
+	function (from, array) {
+		var list = A3(
+			author$project$Internal$List$Implementation$slicedIndexedList,
+			from,
+			elm$core$Array$length(array),
+			array);
+		var non_empty_id = A2(
+			author$project$Internal$List$Implementation$find,
+			function (_n0) {
+				var id = _n0.b;
+				return id !== '';
+			},
+			list);
+		return non_empty_id;
+	});
+var author$project$Internal$List$Implementation$lastNonEmptyId = F2(
+	function (to, array) {
+		var list = A3(author$project$Internal$List$Implementation$slicedIndexedList, 0, to, array);
+		var non_empty_id = A2(
+			author$project$Internal$List$Implementation$find,
+			function (_n0) {
+				var i = _n0.a;
+				var id = _n0.b;
+				return id !== '';
+			},
+			elm$core$List$reverse(list));
+		return non_empty_id;
+	});
+var author$project$Internal$List$Implementation$listItemClass = author$project$Internal$Options$cs('mdc-list-item');
+var author$project$Internal$List$Implementation$listItemDomId = F2(
+	function (domId, index) {
+		return domId + ('--' + elm$core$String$fromInt(index));
+	});
+var author$project$Internal$List$Model$FocusItem = F2(
+	function (a, b) {
+		return {$: 'FocusItem', a: a, b: b};
+	});
+var author$project$Internal$List$Model$SelectItem = F2(
+	function (a, b) {
+		return {$: 'SelectItem', a: a, b: b};
+	});
+var author$project$Internal$Options$onWithOptions = function (evt) {
+	return author$project$Internal$Options$Listener(evt);
+};
+var elm$core$Array$getHelp = F3(
+	function (shift, index, tree) {
+		getHelp:
+		while (true) {
+			var pos = elm$core$Array$bitMask & (index >>> shift);
+			var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, pos, tree);
+			if (_n0.$ === 'SubTree') {
+				var subTree = _n0.a;
+				var $temp$shift = shift - elm$core$Array$shiftStep,
+					$temp$index = index,
+					$temp$tree = subTree;
+				shift = $temp$shift;
+				index = $temp$index;
+				tree = $temp$tree;
+				continue getHelp;
+			} else {
+				var values = _n0.a;
+				return A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, values);
+			}
+		}
+	});
+var elm$core$Array$get = F2(
+	function (index, _n0) {
+		var len = _n0.a;
+		var startShift = _n0.b;
+		var tree = _n0.c;
+		var tail = _n0.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? elm$core$Maybe$Nothing : ((_Utils_cmp(
+			index,
+			elm$core$Array$tailIndex(len)) > -1) ? elm$core$Maybe$Just(
+			A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, tail)) : elm$core$Maybe$Just(
+			A3(elm$core$Array$getHelp, startShift, index, tree)));
+	});
+var elm$html$Html$li = _VirtualDom_node('li');
+var author$project$Internal$List$Implementation$liView = F9(
+	function (domId, lift, model, config, listItemIds, focusedIndex, index, options, children) {
+		var tab_index = _Utils_eq(focusedIndex, index) ? 0 : (-1);
+		var list_item_dom_id = A2(author$project$Internal$List$Implementation$listItemDomId, domId, index);
+		var ripple = A5(
+			author$project$Internal$Ripple$Implementation$view,
+			false,
+			list_item_dom_id,
+			A2(
+				elm$core$Basics$composeL,
+				lift,
+				author$project$Internal$List$Model$RippleMsg(list_item_dom_id)),
+			A2(
+				elm$core$Maybe$withDefault,
+				author$project$Internal$Ripple$Model$defaultModel,
+				A2(elm$core$Dict$get, list_item_dom_id, model.ripples)),
+			_List_Nil);
+		var li_summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
+		var li_config = li_summary.config;
+		var is_selected = function () {
+			var _n8 = config.selectedIndex;
+			if (_n8.$ === 'Just') {
+				var i = _n8.a;
+				return _Utils_eq(i, index);
+			} else {
+				return li_config.selected;
+			}
+		}();
+		return A5(
+			author$project$Internal$Options$apply,
+			li_summary,
+			A2(elm$core$Maybe$withDefault, elm$html$Html$li, li_config.node),
+			_List_fromArray(
+				[
+					author$project$Internal$List$Implementation$listItemClass,
+					author$project$Internal$Options$tabindex(tab_index),
+					A2(
+					author$project$Internal$Options$when,
+					config.isSingleSelectionList && (is_selected && (!config.useActivated)),
+					author$project$Internal$Options$cs('mdc-list-item--selected')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isSingleSelectionList && (is_selected && config.useActivated),
+					author$project$Internal$Options$cs('mdc-list-item--activated')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isRadioGroup,
+					A2(
+						author$project$Internal$Options$aria,
+						'checked',
+						is_selected ? 'True' : 'False')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isSingleSelectionList,
+					author$project$Internal$Options$role('option')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isRadioGroup,
+					author$project$Internal$Options$role('radio')),
+					ripple.interactionHandler,
+					ripple.properties,
+					function () {
+					var _n0 = config.onSelectListItem;
+					if (_n0.$ === 'Just') {
+						var onSelect = _n0.a;
+						return author$project$Internal$Options$onClick(
+							onSelect(index));
+					} else {
+						return author$project$Internal$Options$nop;
+					}
+				}(),
+					A2(
+					author$project$Internal$Options$onWithOptions,
+					'keydown',
+					A3(
+						elm$json$Json$Decode$map2,
+						F2(
+							function (key, keyCode) {
+								var selectItem = _Utils_eq(
+									key,
+									elm$core$Maybe$Just('Enter')) || ((keyCode === 13) || (_Utils_eq(
+									key,
+									elm$core$Maybe$Just('Space')) || (keyCode === 32)));
+								var _n1 = function () {
+									if (_Utils_eq(
+										key,
+										elm$core$Maybe$Just('ArrowDown')) || (keyCode === 40)) {
+										var focusable_element = A2(author$project$Internal$List$Implementation$firstNonEmptyId, index + 1, listItemIds);
+										if (focusable_element.$ === 'Just') {
+											var _n3 = focusable_element.a;
+											var next_index = _n3.a;
+											var next_item = _n3.b;
+											return _Utils_Tuple2(
+												elm$core$Maybe$Just(next_index),
+												elm$core$Maybe$Just(next_item));
+										} else {
+											return _Utils_Tuple2(
+												elm$core$Maybe$Just(index + 1),
+												elm$core$Maybe$Nothing);
+										}
+									} else {
+										if (_Utils_eq(
+											key,
+											elm$core$Maybe$Just('ArrowUp')) || (keyCode === 38)) {
+											var focusable_element = A2(author$project$Internal$List$Implementation$lastNonEmptyId, index, listItemIds);
+											if (focusable_element.$ === 'Just') {
+												var _n5 = focusable_element.a;
+												var previous_index = _n5.a;
+												var previous_item = _n5.b;
+												return _Utils_Tuple2(
+													elm$core$Maybe$Just(previous_index),
+													elm$core$Maybe$Just(previous_item));
+											} else {
+												return _Utils_Tuple2(
+													elm$core$Maybe$Just(index - 1),
+													elm$core$Maybe$Nothing);
+											}
+										} else {
+											if (_Utils_eq(
+												key,
+												elm$core$Maybe$Just('Home')) || (keyCode === 36)) {
+												return _Utils_Tuple2(
+													elm$core$Maybe$Just(0),
+													A2(elm$core$Array$get, 0, listItemIds));
+											} else {
+												if (_Utils_eq(
+													key,
+													elm$core$Maybe$Just('End')) || (keyCode === 35)) {
+													var last_index = elm$core$Array$length(listItemIds) - 1;
+													return _Utils_Tuple2(
+														elm$core$Maybe$Just(last_index),
+														A2(elm$core$Array$get, last_index, listItemIds));
+												} else {
+													return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Maybe$Nothing);
+												}
+											}
+										}
+									}
+								}();
+								var index_to_focus = _n1.a;
+								var id_to_focus = _n1.b;
+								var msg = function () {
+									if (selectItem) {
+										var _n6 = config.onSelectListItem;
+										if (_n6.$ === 'Just') {
+											var onSelect = _n6.a;
+											return A2(author$project$Internal$List$Model$SelectItem, index, onSelect);
+										} else {
+											return author$project$Internal$List$Model$NoOp;
+										}
+									} else {
+										var _n7 = _Utils_Tuple2(index_to_focus, id_to_focus);
+										if ((_n7.a.$ === 'Just') && (_n7.b.$ === 'Just')) {
+											var idx = _n7.a.a;
+											var id = _n7.b.a;
+											return A2(author$project$Internal$List$Model$FocusItem, idx, id);
+										} else {
+											return author$project$Internal$List$Model$NoOp;
+										}
+									}
+								}();
+								return {
+									message: lift(msg),
+									preventDefault: (!_Utils_eq(index_to_focus, elm$core$Maybe$Nothing)) || selectItem,
+									stopPropagation: false
+								};
+							}),
+						elm$json$Json$Decode$oneOf(
+							_List_fromArray(
+								[
+									A2(
+									elm$json$Json$Decode$map,
+									elm$core$Maybe$Just,
+									A2(
+										elm$json$Json$Decode$at,
+										_List_fromArray(
+											['key']),
+										elm$json$Json$Decode$string)),
+									elm$json$Json$Decode$succeed(elm$core$Maybe$Nothing)
+								])),
+						A2(
+							elm$json$Json$Decode$at,
+							_List_fromArray(
+								['keyCode']),
+							elm$json$Json$Decode$int)))
+				]),
+			_List_Nil,
+			children);
+	});
+var author$project$Internal$List$Implementation$li = F2(
+	function (options, children) {
+		return {children: children, focusable: true, options: options, view: author$project$Internal$List$Implementation$liView};
+	});
+var author$project$Material$List$li = author$project$Internal$List$Implementation$li;
+var author$project$Internal$List$Implementation$metaClass = author$project$Internal$Options$cs('mdc-list-item__meta');
+var author$project$Internal$List$Implementation$metaIcon = function (options) {
+	return author$project$Internal$Icon$Implementation$view(
+		A2(elm$core$List$cons, author$project$Internal$List$Implementation$metaClass, options));
+};
+var author$project$Material$List$metaIcon = author$project$Internal$List$Implementation$metaIcon;
+var author$project$Internal$List$Implementation$primaryText = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$span,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-item__primary-text'),
+			options));
+};
+var author$project$Material$List$primaryText = author$project$Internal$List$Implementation$primaryText;
+var author$project$Internal$List$Implementation$secondaryText = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$span,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-item__secondary-text'),
+			options));
+};
+var author$project$Material$List$secondaryText = author$project$Internal$List$Implementation$secondaryText;
+var author$project$Internal$List$Implementation$text = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$span,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-item__text'),
+			options));
+};
+var author$project$Material$List$text = author$project$Internal$List$Implementation$text;
+var author$project$Page$Home$viewCoding = F2(
+	function (data, _n0) {
+		var id = _n0.a;
+		var model = _n0.b;
+		var _n1 = A2(
+			author$project$Data$selectQuestionaryFromCoding,
+			data,
+			_Utils_Tuple2(id, model));
+		var qid = _n1.a;
+		var questionary = _n1.b;
+		return A2(
+			author$project$Material$List$li,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(author$project$Material$List$graphicIcon, _List_Nil, 'person'),
+					A2(
+					author$project$Material$List$text,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							author$project$Material$List$primaryText,
+							_List_Nil,
+							_List_fromArray(
+								[
+									elm$html$Html$text(questionary.name)
+								])),
+							A2(
+							author$project$Material$List$secondaryText,
+							_List_Nil,
+							_List_fromArray(
+								[
+									elm$html$Html$text(
+									Chadtech$elm_relational_database$Id$toString(id))
+								]))
+						])),
+					A2(author$project$Material$List$metaIcon, _List_Nil, 'info')
+				]));
+	});
+var author$project$Internal$List$Implementation$avatarList = author$project$Internal$Options$cs('mdc-list--avatar-list');
+var author$project$Material$List$avatarList = author$project$Internal$List$Implementation$avatarList;
+var author$project$Internal$List$Implementation$onSelectListItem = function (handler) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{
+					onSelectListItem: elm$core$Maybe$Just(handler)
+				});
+		});
+};
+var author$project$Material$List$onSelectListItem = author$project$Internal$List$Implementation$onSelectListItem;
+var author$project$Internal$List$Implementation$twoLine = author$project$Internal$Options$cs('mdc-list--two-line');
+var author$project$Material$List$twoLine = author$project$Internal$List$Implementation$twoLine;
+var author$project$Internal$List$Implementation$doListItemDomId = F3(
+	function (domId, index, listItem) {
+		return listItem.focusable ? A2(author$project$Internal$List$Implementation$listItemDomId, domId, index) : '';
+	});
+var author$project$Internal$List$Implementation$findIndexHelp = F3(
+	function (index, predicate, list) {
+		findIndexHelp:
+		while (true) {
+			if (!list.b) {
+				return elm$core$Maybe$Nothing;
+			} else {
+				var first = list.a;
+				var rest = list.b;
+				if (predicate(first)) {
+					return elm$core$Maybe$Just(index);
+				} else {
+					var $temp$index = index + 1,
+						$temp$predicate = predicate,
+						$temp$list = rest;
+					index = $temp$index;
+					predicate = $temp$predicate;
+					list = $temp$list;
+					continue findIndexHelp;
+				}
+			}
+		}
+	});
+var author$project$Internal$List$Implementation$findIndex = author$project$Internal$List$Implementation$findIndexHelp(0);
+var author$project$Internal$List$Implementation$liIsSelectedOrActivated = function (li_) {
+	var li_summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, li_.options);
+	var li_config = li_summary.config;
+	return li_config.selected || li_config.activated;
+};
+var author$project$Internal$List$Implementation$listItemView = F8(
+	function (domId, lift, model, config, listItemsIds, focusedIndex, index, li_) {
+		return A9(li_.view, domId, lift, model, config, listItemsIds, focusedIndex, index, li_.options, li_.children);
+	});
+var author$project$Internal$List$Implementation$invertDecoder = function (decoder) {
+	return A2(
+		elm$json$Json$Decode$andThen,
+		function (maybe) {
+			return _Utils_eq(maybe, elm$core$Maybe$Nothing) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : elm$json$Json$Decode$fail('');
+		},
+		elm$json$Json$Decode$maybe(decoder));
+};
+var author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer = function (targetId) {
+	return A2(
+		elm$json$Json$Decode$andThen,
+		function (id) {
+			return _Utils_eq(id, targetId) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : A2(
+				elm$json$Json$Decode$field,
+				'parentNode',
+				author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId));
+		},
+		A2(elm$json$Json$Decode$field, 'id', elm$json$Json$Decode$string));
+};
+var author$project$Internal$List$Implementation$succeedIfLeavingList = function (targetId) {
+	return author$project$Internal$List$Implementation$invertDecoder(
+		A2(
+			elm$json$Json$Decode$field,
+			'relatedTarget',
+			author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId)));
+};
+var author$project$Internal$List$Model$ResetFocusedItem = {$: 'ResetFocusedItem'};
+var elm$core$Array$fromListHelp = F3(
+	function (list, nodeList, nodeListSize) {
+		fromListHelp:
+		while (true) {
+			var _n0 = A2(elm$core$Elm$JsArray$initializeFromList, elm$core$Array$branchFactor, list);
+			var jsArray = _n0.a;
+			var remainingItems = _n0.b;
+			if (_Utils_cmp(
+				elm$core$Elm$JsArray$length(jsArray),
+				elm$core$Array$branchFactor) < 0) {
+				return A2(
+					elm$core$Array$builderToArray,
+					true,
+					{nodeList: nodeList, nodeListSize: nodeListSize, tail: jsArray});
+			} else {
+				var $temp$list = remainingItems,
+					$temp$nodeList = A2(
+					elm$core$List$cons,
+					elm$core$Array$Leaf(jsArray),
+					nodeList),
+					$temp$nodeListSize = nodeListSize + 1;
+				list = $temp$list;
+				nodeList = $temp$nodeList;
+				nodeListSize = $temp$nodeListSize;
+				continue fromListHelp;
+			}
+		}
+	});
+var elm$core$Array$fromList = function (list) {
+	if (!list.b) {
+		return elm$core$Array$empty;
+	} else {
+		return A3(elm$core$Array$fromListHelp, list, _List_Nil, 0);
+	}
+};
+var elm$html$Html$ul = _VirtualDom_node('ul');
+var author$project$Internal$List$Implementation$ul = F5(
+	function (domId, lift, model, options, items) {
+		var listItemIds = elm$core$Array$fromList(
+			A2(
+				elm$core$List$indexedMap,
+				author$project$Internal$List$Implementation$doListItemDomId(domId),
+				items));
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
+		var config = summary.config;
+		var focusedIndex = function () {
+			var _n0 = model.focused;
+			if (_n0.$ === 'Just') {
+				var focused = _n0.a;
+				return focused;
+			} else {
+				var _n1 = config.selectedIndex;
+				if (_n1.$ === 'Just') {
+					var index = _n1.a;
+					return index;
+				} else {
+					var _n2 = A2(author$project$Internal$List$Implementation$findIndex, author$project$Internal$List$Implementation$liIsSelectedOrActivated, items);
+					if (_n2.$ === 'Just') {
+						var i = _n2.a;
+						return i;
+					} else {
+						return 0;
+					}
+				}
+			}
+		}();
+		var list_nodes = A2(
+			elm$core$List$indexedMap,
+			A6(author$project$Internal$List$Implementation$listItemView, domId, lift, model, config, listItemIds, focusedIndex),
+			items);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			A2(elm$core$Maybe$withDefault, elm$html$Html$ul, config.node),
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-list'),
+					A2(
+					author$project$Internal$Options$when,
+					config.isSingleSelectionList,
+					author$project$Internal$Options$role('listbox')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isRadioGroup,
+					author$project$Internal$Options$role('radiogroup')),
+					author$project$Internal$Options$id(domId),
+					A2(
+					author$project$Internal$Options$on,
+					'focusout',
+					A2(
+						elm$json$Json$Decode$map,
+						elm$core$Basics$always(
+							lift(author$project$Internal$List$Model$ResetFocusedItem)),
+						author$project$Internal$List$Implementation$succeedIfLeavingList(domId)))
+				]),
+			_List_Nil,
+			list_nodes);
+	});
+var author$project$Internal$List$Implementation$view = F2(
+	function (lift, domId) {
+		return A5(
+			author$project$Internal$Component$render,
+			author$project$Internal$List$Implementation$getSet.get,
+			author$project$Internal$List$Implementation$ul(domId),
+			author$project$Internal$Msg$ListMsg,
+			lift,
+			domId);
+	});
+var author$project$Material$List$ul = author$project$Internal$List$Implementation$view;
+var author$project$Page$Home$Select = function (a) {
+	return {$: 'Select', a: a};
+};
+var author$project$Page$Home$viewCodingList = F3(
+	function (lift, model, codings) {
+		return A5(
+			author$project$Material$List$ul,
+			A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
+			'my-list',
+			model.mdc,
+			_List_fromArray(
+				[
+					author$project$Material$List$twoLine,
+					author$project$Material$List$avatarList,
+					author$project$Material$List$onSelectListItem(
+					A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Select))
+				]),
+			codings);
+	});
+var author$project$Page$Home$viewCodings = F4(
+	function (lift, model, data, coder) {
+		return A3(
+			author$project$Page$Home$viewCodingList,
+			lift,
+			model,
+			A2(
+				elm$core$List$map,
+				author$project$Page$Home$viewCoding(data),
+				Chadtech$elm_relational_database$Db$toList(
+					A3(
+						author$project$Db$Extra$selectFrom,
+						data.codings,
+						function (c) {
+							return c.coder;
+						},
+						Chadtech$elm_relational_database$Db$fromList(
+							_List_fromArray(
+								[coder]))))));
+	});
+var author$project$Page$Home$view = F4(
+	function (lift, model, data, user) {
+		return {
+			body: A2(
+				elm$core$List$cons,
+				elm$html$Html$text('My codings in Process:'),
+				A2(
+					elm$core$List$cons,
+					A4(author$project$Page$Home$viewCodings, lift, model, data, user),
+					_List_Nil)),
+			title: 'Home'
 		};
 	});
 var elm$html$Html$Events$targetValue = A2(
@@ -13238,776 +14190,9 @@ var author$project$Page$Login$ask = F3(
 				]),
 			_List_Nil);
 	});
-var author$project$Internal$List$Implementation$avatarList = author$project$Internal$Options$cs('mdc-list--avatar-list');
-var author$project$Material$List$avatarList = author$project$Internal$List$Implementation$avatarList;
-var author$project$Internal$List$Implementation$onSelectListItem = function (handler) {
-	return author$project$Internal$Options$option(
-		function (config) {
-			return _Utils_update(
-				config,
-				{
-					onSelectListItem: elm$core$Maybe$Just(handler)
-				});
-		});
-};
-var author$project$Material$List$onSelectListItem = author$project$Internal$List$Implementation$onSelectListItem;
-var author$project$Internal$List$Implementation$twoLine = author$project$Internal$Options$cs('mdc-list--two-line');
-var author$project$Material$List$twoLine = author$project$Internal$List$Implementation$twoLine;
-var author$project$Internal$List$Implementation$defaultConfig = {activated: false, isRadioGroup: false, isSingleSelectionList: false, node: elm$core$Maybe$Nothing, onSelectListItem: elm$core$Maybe$Nothing, selected: false, selectedIndex: elm$core$Maybe$Nothing, useActivated: false};
-var author$project$Internal$List$Implementation$listItemDomId = F2(
-	function (domId, index) {
-		return domId + ('--' + elm$core$String$fromInt(index));
-	});
-var author$project$Internal$List$Implementation$doListItemDomId = F3(
-	function (domId, index, listItem) {
-		return listItem.focusable ? A2(author$project$Internal$List$Implementation$listItemDomId, domId, index) : '';
-	});
-var author$project$Internal$List$Implementation$findIndexHelp = F3(
-	function (index, predicate, list) {
-		findIndexHelp:
-		while (true) {
-			if (!list.b) {
-				return elm$core$Maybe$Nothing;
-			} else {
-				var first = list.a;
-				var rest = list.b;
-				if (predicate(first)) {
-					return elm$core$Maybe$Just(index);
-				} else {
-					var $temp$index = index + 1,
-						$temp$predicate = predicate,
-						$temp$list = rest;
-					index = $temp$index;
-					predicate = $temp$predicate;
-					list = $temp$list;
-					continue findIndexHelp;
-				}
-			}
-		}
-	});
-var author$project$Internal$List$Implementation$findIndex = author$project$Internal$List$Implementation$findIndexHelp(0);
-var author$project$Internal$List$Implementation$liIsSelectedOrActivated = function (li_) {
-	var li_summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, li_.options);
-	var li_config = li_summary.config;
-	return li_config.selected || li_config.activated;
-};
-var author$project$Internal$List$Implementation$listItemView = F8(
-	function (domId, lift, model, config, listItemsIds, focusedIndex, index, li_) {
-		return A9(li_.view, domId, lift, model, config, listItemsIds, focusedIndex, index, li_.options, li_.children);
-	});
-var author$project$Internal$List$Implementation$invertDecoder = function (decoder) {
-	return A2(
-		elm$json$Json$Decode$andThen,
-		function (maybe) {
-			return _Utils_eq(maybe, elm$core$Maybe$Nothing) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : elm$json$Json$Decode$fail('');
-		},
-		elm$json$Json$Decode$maybe(decoder));
-};
-var author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer = function (targetId) {
-	return A2(
-		elm$json$Json$Decode$andThen,
-		function (id) {
-			return _Utils_eq(id, targetId) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : A2(
-				elm$json$Json$Decode$field,
-				'parentNode',
-				author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId));
-		},
-		A2(elm$json$Json$Decode$field, 'id', elm$json$Json$Decode$string));
-};
-var author$project$Internal$List$Implementation$succeedIfLeavingList = function (targetId) {
-	return author$project$Internal$List$Implementation$invertDecoder(
-		A2(
-			elm$json$Json$Decode$field,
-			'relatedTarget',
-			author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId)));
-};
-var author$project$Internal$List$Model$ResetFocusedItem = {$: 'ResetFocusedItem'};
-var elm$core$Array$fromListHelp = F3(
-	function (list, nodeList, nodeListSize) {
-		fromListHelp:
-		while (true) {
-			var _n0 = A2(elm$core$Elm$JsArray$initializeFromList, elm$core$Array$branchFactor, list);
-			var jsArray = _n0.a;
-			var remainingItems = _n0.b;
-			if (_Utils_cmp(
-				elm$core$Elm$JsArray$length(jsArray),
-				elm$core$Array$branchFactor) < 0) {
-				return A2(
-					elm$core$Array$builderToArray,
-					true,
-					{nodeList: nodeList, nodeListSize: nodeListSize, tail: jsArray});
-			} else {
-				var $temp$list = remainingItems,
-					$temp$nodeList = A2(
-					elm$core$List$cons,
-					elm$core$Array$Leaf(jsArray),
-					nodeList),
-					$temp$nodeListSize = nodeListSize + 1;
-				list = $temp$list;
-				nodeList = $temp$nodeList;
-				nodeListSize = $temp$nodeListSize;
-				continue fromListHelp;
-			}
-		}
-	});
-var elm$core$Array$fromList = function (list) {
-	if (!list.b) {
-		return elm$core$Array$empty;
-	} else {
-		return A3(elm$core$Array$fromListHelp, list, _List_Nil, 0);
-	}
-};
-var elm$html$Html$ul = _VirtualDom_node('ul');
-var author$project$Internal$List$Implementation$ul = F5(
-	function (domId, lift, model, options, items) {
-		var listItemIds = elm$core$Array$fromList(
-			A2(
-				elm$core$List$indexedMap,
-				author$project$Internal$List$Implementation$doListItemDomId(domId),
-				items));
-		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
-		var config = summary.config;
-		var focusedIndex = function () {
-			var _n0 = model.focused;
-			if (_n0.$ === 'Just') {
-				var focused = _n0.a;
-				return focused;
-			} else {
-				var _n1 = config.selectedIndex;
-				if (_n1.$ === 'Just') {
-					var index = _n1.a;
-					return index;
-				} else {
-					var _n2 = A2(author$project$Internal$List$Implementation$findIndex, author$project$Internal$List$Implementation$liIsSelectedOrActivated, items);
-					if (_n2.$ === 'Just') {
-						var i = _n2.a;
-						return i;
-					} else {
-						return 0;
-					}
-				}
-			}
-		}();
-		var list_nodes = A2(
-			elm$core$List$indexedMap,
-			A6(author$project$Internal$List$Implementation$listItemView, domId, lift, model, config, listItemIds, focusedIndex),
-			items);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			A2(elm$core$Maybe$withDefault, elm$html$Html$ul, config.node),
-			_List_fromArray(
-				[
-					author$project$Internal$Options$cs('mdc-list'),
-					A2(
-					author$project$Internal$Options$when,
-					config.isSingleSelectionList,
-					author$project$Internal$Options$role('listbox')),
-					A2(
-					author$project$Internal$Options$when,
-					config.isRadioGroup,
-					author$project$Internal$Options$role('radiogroup')),
-					author$project$Internal$Options$id(domId),
-					A2(
-					author$project$Internal$Options$on,
-					'focusout',
-					A2(
-						elm$json$Json$Decode$map,
-						elm$core$Basics$always(
-							lift(author$project$Internal$List$Model$ResetFocusedItem)),
-						author$project$Internal$List$Implementation$succeedIfLeavingList(domId)))
-				]),
-			_List_Nil,
-			list_nodes);
-	});
-var author$project$Internal$List$Implementation$view = F2(
-	function (lift, domId) {
-		return A5(
-			author$project$Internal$Component$render,
-			author$project$Internal$List$Implementation$getSet.get,
-			author$project$Internal$List$Implementation$ul(domId),
-			author$project$Internal$Msg$ListMsg,
-			lift,
-			domId);
-	});
-var author$project$Material$List$ul = author$project$Internal$List$Implementation$view;
 var author$project$Page$Login$Select = function (a) {
 	return {$: 'Select', a: a};
 };
-var author$project$Internal$List$Implementation$graphicClass = author$project$Internal$Options$cs('mdc-list-item__graphic');
-var author$project$Internal$List$Implementation$graphicIcon = function (options) {
-	return author$project$Internal$Icon$Implementation$view(
-		A2(elm$core$List$cons, author$project$Internal$List$Implementation$graphicClass, options));
-};
-var author$project$Material$List$graphicIcon = author$project$Internal$List$Implementation$graphicIcon;
-var author$project$Internal$List$Implementation$find = F2(
-	function (predicate, list) {
-		find:
-		while (true) {
-			if (!list.b) {
-				return elm$core$Maybe$Nothing;
-			} else {
-				var first = list.a;
-				var rest = list.b;
-				if (predicate(first)) {
-					return elm$core$Maybe$Just(first);
-				} else {
-					var $temp$predicate = predicate,
-						$temp$list = rest;
-					predicate = $temp$predicate;
-					list = $temp$list;
-					continue find;
-				}
-			}
-		}
-	});
-var elm$core$Elm$JsArray$appendN = _JsArray_appendN;
-var elm$core$Elm$JsArray$slice = _JsArray_slice;
-var elm$core$Array$appendHelpBuilder = F2(
-	function (tail, builder) {
-		var tailLen = elm$core$Elm$JsArray$length(tail);
-		var notAppended = (elm$core$Array$branchFactor - elm$core$Elm$JsArray$length(builder.tail)) - tailLen;
-		var appended = A3(elm$core$Elm$JsArray$appendN, elm$core$Array$branchFactor, builder.tail, tail);
-		return (notAppended < 0) ? {
-			nodeList: A2(
-				elm$core$List$cons,
-				elm$core$Array$Leaf(appended),
-				builder.nodeList),
-			nodeListSize: builder.nodeListSize + 1,
-			tail: A3(elm$core$Elm$JsArray$slice, notAppended, tailLen, tail)
-		} : ((!notAppended) ? {
-			nodeList: A2(
-				elm$core$List$cons,
-				elm$core$Array$Leaf(appended),
-				builder.nodeList),
-			nodeListSize: builder.nodeListSize + 1,
-			tail: elm$core$Elm$JsArray$empty
-		} : {nodeList: builder.nodeList, nodeListSize: builder.nodeListSize, tail: appended});
-	});
-var elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
-var elm$core$Array$tailIndex = function (len) {
-	return (len >>> 5) << 5;
-};
-var elm$core$Array$sliceLeft = F2(
-	function (from, array) {
-		var len = array.a;
-		var tree = array.c;
-		var tail = array.d;
-		if (!from) {
-			return array;
-		} else {
-			if (_Utils_cmp(
-				from,
-				elm$core$Array$tailIndex(len)) > -1) {
-				return A4(
-					elm$core$Array$Array_elm_builtin,
-					len - from,
-					elm$core$Array$shiftStep,
-					elm$core$Elm$JsArray$empty,
-					A3(
-						elm$core$Elm$JsArray$slice,
-						from - elm$core$Array$tailIndex(len),
-						elm$core$Elm$JsArray$length(tail),
-						tail));
-			} else {
-				var skipNodes = (from / elm$core$Array$branchFactor) | 0;
-				var helper = F2(
-					function (node, acc) {
-						if (node.$ === 'SubTree') {
-							var subTree = node.a;
-							return A3(elm$core$Elm$JsArray$foldr, helper, acc, subTree);
-						} else {
-							var leaf = node.a;
-							return A2(elm$core$List$cons, leaf, acc);
-						}
-					});
-				var leafNodes = A3(
-					elm$core$Elm$JsArray$foldr,
-					helper,
-					_List_fromArray(
-						[tail]),
-					tree);
-				var nodesToInsert = A2(elm$core$List$drop, skipNodes, leafNodes);
-				if (!nodesToInsert.b) {
-					return elm$core$Array$empty;
-				} else {
-					var head = nodesToInsert.a;
-					var rest = nodesToInsert.b;
-					var firstSlice = from - (skipNodes * elm$core$Array$branchFactor);
-					var initialBuilder = {
-						nodeList: _List_Nil,
-						nodeListSize: 0,
-						tail: A3(
-							elm$core$Elm$JsArray$slice,
-							firstSlice,
-							elm$core$Elm$JsArray$length(head),
-							head)
-					};
-					return A2(
-						elm$core$Array$builderToArray,
-						true,
-						A3(elm$core$List$foldl, elm$core$Array$appendHelpBuilder, initialBuilder, rest));
-				}
-			}
-		}
-	});
-var elm$core$Array$bitMask = 4294967295 >>> (32 - elm$core$Array$shiftStep);
-var elm$core$Bitwise$and = _Bitwise_and;
-var elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
-var elm$core$Array$fetchNewTail = F4(
-	function (shift, end, treeEnd, tree) {
-		fetchNewTail:
-		while (true) {
-			var pos = elm$core$Array$bitMask & (treeEnd >>> shift);
-			var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, pos, tree);
-			if (_n0.$ === 'SubTree') {
-				var sub = _n0.a;
-				var $temp$shift = shift - elm$core$Array$shiftStep,
-					$temp$end = end,
-					$temp$treeEnd = treeEnd,
-					$temp$tree = sub;
-				shift = $temp$shift;
-				end = $temp$end;
-				treeEnd = $temp$treeEnd;
-				tree = $temp$tree;
-				continue fetchNewTail;
-			} else {
-				var values = _n0.a;
-				return A3(elm$core$Elm$JsArray$slice, 0, elm$core$Array$bitMask & end, values);
-			}
-		}
-	});
-var elm$core$Array$hoistTree = F3(
-	function (oldShift, newShift, tree) {
-		hoistTree:
-		while (true) {
-			if ((_Utils_cmp(oldShift, newShift) < 1) || (!elm$core$Elm$JsArray$length(tree))) {
-				return tree;
-			} else {
-				var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, 0, tree);
-				if (_n0.$ === 'SubTree') {
-					var sub = _n0.a;
-					var $temp$oldShift = oldShift - elm$core$Array$shiftStep,
-						$temp$newShift = newShift,
-						$temp$tree = sub;
-					oldShift = $temp$oldShift;
-					newShift = $temp$newShift;
-					tree = $temp$tree;
-					continue hoistTree;
-				} else {
-					return tree;
-				}
-			}
-		}
-	});
-var elm$core$Elm$JsArray$unsafeSet = _JsArray_unsafeSet;
-var elm$core$Array$sliceTree = F3(
-	function (shift, endIdx, tree) {
-		var lastPos = elm$core$Array$bitMask & (endIdx >>> shift);
-		var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, lastPos, tree);
-		if (_n0.$ === 'SubTree') {
-			var sub = _n0.a;
-			var newSub = A3(elm$core$Array$sliceTree, shift - elm$core$Array$shiftStep, endIdx, sub);
-			return (!elm$core$Elm$JsArray$length(newSub)) ? A3(elm$core$Elm$JsArray$slice, 0, lastPos, tree) : A3(
-				elm$core$Elm$JsArray$unsafeSet,
-				lastPos,
-				elm$core$Array$SubTree(newSub),
-				A3(elm$core$Elm$JsArray$slice, 0, lastPos + 1, tree));
-		} else {
-			return A3(elm$core$Elm$JsArray$slice, 0, lastPos, tree);
-		}
-	});
-var elm$core$Array$sliceRight = F2(
-	function (end, array) {
-		var len = array.a;
-		var startShift = array.b;
-		var tree = array.c;
-		var tail = array.d;
-		if (_Utils_eq(end, len)) {
-			return array;
-		} else {
-			if (_Utils_cmp(
-				end,
-				elm$core$Array$tailIndex(len)) > -1) {
-				return A4(
-					elm$core$Array$Array_elm_builtin,
-					end,
-					startShift,
-					tree,
-					A3(elm$core$Elm$JsArray$slice, 0, elm$core$Array$bitMask & end, tail));
-			} else {
-				var endIdx = elm$core$Array$tailIndex(end);
-				var depth = elm$core$Basics$floor(
-					A2(
-						elm$core$Basics$logBase,
-						elm$core$Array$branchFactor,
-						A2(elm$core$Basics$max, 1, endIdx - 1)));
-				var newShift = A2(elm$core$Basics$max, 5, depth * elm$core$Array$shiftStep);
-				return A4(
-					elm$core$Array$Array_elm_builtin,
-					end,
-					newShift,
-					A3(
-						elm$core$Array$hoistTree,
-						startShift,
-						newShift,
-						A3(elm$core$Array$sliceTree, startShift, endIdx, tree)),
-					A4(elm$core$Array$fetchNewTail, startShift, end, endIdx, tree));
-			}
-		}
-	});
-var elm$core$Array$translateIndex = F2(
-	function (index, _n0) {
-		var len = _n0.a;
-		var posIndex = (index < 0) ? (len + index) : index;
-		return (posIndex < 0) ? 0 : ((_Utils_cmp(posIndex, len) > 0) ? len : posIndex);
-	});
-var elm$core$Array$slice = F3(
-	function (from, to, array) {
-		var correctTo = A2(elm$core$Array$translateIndex, to, array);
-		var correctFrom = A2(elm$core$Array$translateIndex, from, array);
-		return (_Utils_cmp(correctFrom, correctTo) > 0) ? elm$core$Array$empty : A2(
-			elm$core$Array$sliceLeft,
-			correctFrom,
-			A2(elm$core$Array$sliceRight, correctTo, array));
-	});
-var elm$core$Tuple$second = function (_n0) {
-	var y = _n0.b;
-	return y;
-};
-var elm$core$Array$toIndexedList = function (array) {
-	var len = array.a;
-	var helper = F2(
-		function (entry, _n0) {
-			var index = _n0.a;
-			var list = _n0.b;
-			return _Utils_Tuple2(
-				index - 1,
-				A2(
-					elm$core$List$cons,
-					_Utils_Tuple2(index, entry),
-					list));
-		});
-	return A3(
-		elm$core$Array$foldr,
-		helper,
-		_Utils_Tuple2(len - 1, _List_Nil),
-		array).b;
-};
-var author$project$Internal$List$Implementation$slicedIndexedList = F3(
-	function (from, to, array) {
-		return elm$core$Array$toIndexedList(
-			A3(elm$core$Array$slice, from, to, array));
-	});
-var elm$core$Array$length = function (_n0) {
-	var len = _n0.a;
-	return len;
-};
-var author$project$Internal$List$Implementation$firstNonEmptyId = F2(
-	function (from, array) {
-		var list = A3(
-			author$project$Internal$List$Implementation$slicedIndexedList,
-			from,
-			elm$core$Array$length(array),
-			array);
-		var non_empty_id = A2(
-			author$project$Internal$List$Implementation$find,
-			function (_n0) {
-				var id = _n0.b;
-				return id !== '';
-			},
-			list);
-		return non_empty_id;
-	});
-var author$project$Internal$List$Implementation$lastNonEmptyId = F2(
-	function (to, array) {
-		var list = A3(author$project$Internal$List$Implementation$slicedIndexedList, 0, to, array);
-		var non_empty_id = A2(
-			author$project$Internal$List$Implementation$find,
-			function (_n0) {
-				var i = _n0.a;
-				var id = _n0.b;
-				return id !== '';
-			},
-			elm$core$List$reverse(list));
-		return non_empty_id;
-	});
-var author$project$Internal$List$Implementation$listItemClass = author$project$Internal$Options$cs('mdc-list-item');
-var author$project$Internal$List$Model$FocusItem = F2(
-	function (a, b) {
-		return {$: 'FocusItem', a: a, b: b};
-	});
-var author$project$Internal$List$Model$SelectItem = F2(
-	function (a, b) {
-		return {$: 'SelectItem', a: a, b: b};
-	});
-var author$project$Internal$Options$onWithOptions = function (evt) {
-	return author$project$Internal$Options$Listener(evt);
-};
-var elm$core$Array$getHelp = F3(
-	function (shift, index, tree) {
-		getHelp:
-		while (true) {
-			var pos = elm$core$Array$bitMask & (index >>> shift);
-			var _n0 = A2(elm$core$Elm$JsArray$unsafeGet, pos, tree);
-			if (_n0.$ === 'SubTree') {
-				var subTree = _n0.a;
-				var $temp$shift = shift - elm$core$Array$shiftStep,
-					$temp$index = index,
-					$temp$tree = subTree;
-				shift = $temp$shift;
-				index = $temp$index;
-				tree = $temp$tree;
-				continue getHelp;
-			} else {
-				var values = _n0.a;
-				return A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, values);
-			}
-		}
-	});
-var elm$core$Array$get = F2(
-	function (index, _n0) {
-		var len = _n0.a;
-		var startShift = _n0.b;
-		var tree = _n0.c;
-		var tail = _n0.d;
-		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? elm$core$Maybe$Nothing : ((_Utils_cmp(
-			index,
-			elm$core$Array$tailIndex(len)) > -1) ? elm$core$Maybe$Just(
-			A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, tail)) : elm$core$Maybe$Just(
-			A3(elm$core$Array$getHelp, startShift, index, tree)));
-	});
-var elm$html$Html$li = _VirtualDom_node('li');
-var author$project$Internal$List$Implementation$liView = F9(
-	function (domId, lift, model, config, listItemIds, focusedIndex, index, options, children) {
-		var tab_index = _Utils_eq(focusedIndex, index) ? 0 : (-1);
-		var list_item_dom_id = A2(author$project$Internal$List$Implementation$listItemDomId, domId, index);
-		var ripple = A5(
-			author$project$Internal$Ripple$Implementation$view,
-			false,
-			list_item_dom_id,
-			A2(
-				elm$core$Basics$composeL,
-				lift,
-				author$project$Internal$List$Model$RippleMsg(list_item_dom_id)),
-			A2(
-				elm$core$Maybe$withDefault,
-				author$project$Internal$Ripple$Model$defaultModel,
-				A2(elm$core$Dict$get, list_item_dom_id, model.ripples)),
-			_List_Nil);
-		var li_summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
-		var li_config = li_summary.config;
-		var is_selected = function () {
-			var _n8 = config.selectedIndex;
-			if (_n8.$ === 'Just') {
-				var i = _n8.a;
-				return _Utils_eq(i, index);
-			} else {
-				return li_config.selected;
-			}
-		}();
-		return A5(
-			author$project$Internal$Options$apply,
-			li_summary,
-			A2(elm$core$Maybe$withDefault, elm$html$Html$li, li_config.node),
-			_List_fromArray(
-				[
-					author$project$Internal$List$Implementation$listItemClass,
-					author$project$Internal$Options$tabindex(tab_index),
-					A2(
-					author$project$Internal$Options$when,
-					config.isSingleSelectionList && (is_selected && (!config.useActivated)),
-					author$project$Internal$Options$cs('mdc-list-item--selected')),
-					A2(
-					author$project$Internal$Options$when,
-					config.isSingleSelectionList && (is_selected && config.useActivated),
-					author$project$Internal$Options$cs('mdc-list-item--activated')),
-					A2(
-					author$project$Internal$Options$when,
-					config.isRadioGroup,
-					A2(
-						author$project$Internal$Options$aria,
-						'checked',
-						is_selected ? 'True' : 'False')),
-					A2(
-					author$project$Internal$Options$when,
-					config.isSingleSelectionList,
-					author$project$Internal$Options$role('option')),
-					A2(
-					author$project$Internal$Options$when,
-					config.isRadioGroup,
-					author$project$Internal$Options$role('radio')),
-					ripple.interactionHandler,
-					ripple.properties,
-					function () {
-					var _n0 = config.onSelectListItem;
-					if (_n0.$ === 'Just') {
-						var onSelect = _n0.a;
-						return author$project$Internal$Options$onClick(
-							onSelect(index));
-					} else {
-						return author$project$Internal$Options$nop;
-					}
-				}(),
-					A2(
-					author$project$Internal$Options$onWithOptions,
-					'keydown',
-					A3(
-						elm$json$Json$Decode$map2,
-						F2(
-							function (key, keyCode) {
-								var selectItem = _Utils_eq(
-									key,
-									elm$core$Maybe$Just('Enter')) || ((keyCode === 13) || (_Utils_eq(
-									key,
-									elm$core$Maybe$Just('Space')) || (keyCode === 32)));
-								var _n1 = function () {
-									if (_Utils_eq(
-										key,
-										elm$core$Maybe$Just('ArrowDown')) || (keyCode === 40)) {
-										var focusable_element = A2(author$project$Internal$List$Implementation$firstNonEmptyId, index + 1, listItemIds);
-										if (focusable_element.$ === 'Just') {
-											var _n3 = focusable_element.a;
-											var next_index = _n3.a;
-											var next_item = _n3.b;
-											return _Utils_Tuple2(
-												elm$core$Maybe$Just(next_index),
-												elm$core$Maybe$Just(next_item));
-										} else {
-											return _Utils_Tuple2(
-												elm$core$Maybe$Just(index + 1),
-												elm$core$Maybe$Nothing);
-										}
-									} else {
-										if (_Utils_eq(
-											key,
-											elm$core$Maybe$Just('ArrowUp')) || (keyCode === 38)) {
-											var focusable_element = A2(author$project$Internal$List$Implementation$lastNonEmptyId, index, listItemIds);
-											if (focusable_element.$ === 'Just') {
-												var _n5 = focusable_element.a;
-												var previous_index = _n5.a;
-												var previous_item = _n5.b;
-												return _Utils_Tuple2(
-													elm$core$Maybe$Just(previous_index),
-													elm$core$Maybe$Just(previous_item));
-											} else {
-												return _Utils_Tuple2(
-													elm$core$Maybe$Just(index - 1),
-													elm$core$Maybe$Nothing);
-											}
-										} else {
-											if (_Utils_eq(
-												key,
-												elm$core$Maybe$Just('Home')) || (keyCode === 36)) {
-												return _Utils_Tuple2(
-													elm$core$Maybe$Just(0),
-													A2(elm$core$Array$get, 0, listItemIds));
-											} else {
-												if (_Utils_eq(
-													key,
-													elm$core$Maybe$Just('End')) || (keyCode === 35)) {
-													var last_index = elm$core$Array$length(listItemIds) - 1;
-													return _Utils_Tuple2(
-														elm$core$Maybe$Just(last_index),
-														A2(elm$core$Array$get, last_index, listItemIds));
-												} else {
-													return _Utils_Tuple2(elm$core$Maybe$Nothing, elm$core$Maybe$Nothing);
-												}
-											}
-										}
-									}
-								}();
-								var index_to_focus = _n1.a;
-								var id_to_focus = _n1.b;
-								var msg = function () {
-									if (selectItem) {
-										var _n6 = config.onSelectListItem;
-										if (_n6.$ === 'Just') {
-											var onSelect = _n6.a;
-											return A2(author$project$Internal$List$Model$SelectItem, index, onSelect);
-										} else {
-											return author$project$Internal$List$Model$NoOp;
-										}
-									} else {
-										var _n7 = _Utils_Tuple2(index_to_focus, id_to_focus);
-										if ((_n7.a.$ === 'Just') && (_n7.b.$ === 'Just')) {
-											var idx = _n7.a.a;
-											var id = _n7.b.a;
-											return A2(author$project$Internal$List$Model$FocusItem, idx, id);
-										} else {
-											return author$project$Internal$List$Model$NoOp;
-										}
-									}
-								}();
-								return {
-									message: lift(msg),
-									preventDefault: (!_Utils_eq(index_to_focus, elm$core$Maybe$Nothing)) || selectItem,
-									stopPropagation: false
-								};
-							}),
-						elm$json$Json$Decode$oneOf(
-							_List_fromArray(
-								[
-									A2(
-									elm$json$Json$Decode$map,
-									elm$core$Maybe$Just,
-									A2(
-										elm$json$Json$Decode$at,
-										_List_fromArray(
-											['key']),
-										elm$json$Json$Decode$string)),
-									elm$json$Json$Decode$succeed(elm$core$Maybe$Nothing)
-								])),
-						A2(
-							elm$json$Json$Decode$at,
-							_List_fromArray(
-								['keyCode']),
-							elm$json$Json$Decode$int)))
-				]),
-			_List_Nil,
-			children);
-	});
-var author$project$Internal$List$Implementation$li = F2(
-	function (options, children) {
-		return {children: children, focusable: true, options: options, view: author$project$Internal$List$Implementation$liView};
-	});
-var author$project$Material$List$li = author$project$Internal$List$Implementation$li;
-var author$project$Internal$List$Implementation$metaClass = author$project$Internal$Options$cs('mdc-list-item__meta');
-var author$project$Internal$List$Implementation$metaIcon = function (options) {
-	return author$project$Internal$Icon$Implementation$view(
-		A2(elm$core$List$cons, author$project$Internal$List$Implementation$metaClass, options));
-};
-var author$project$Material$List$metaIcon = author$project$Internal$List$Implementation$metaIcon;
-var author$project$Internal$List$Implementation$primaryText = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$span,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-list-item__primary-text'),
-			options));
-};
-var author$project$Material$List$primaryText = author$project$Internal$List$Implementation$primaryText;
-var author$project$Internal$List$Implementation$secondaryText = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$span,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-list-item__secondary-text'),
-			options));
-};
-var author$project$Material$List$secondaryText = author$project$Internal$List$Implementation$secondaryText;
-var author$project$Internal$List$Implementation$text = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$span,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-list-item__text'),
-			options));
-};
-var author$project$Material$List$text = author$project$Internal$List$Implementation$text;
 var author$project$Page$Login$viewCoderRow = function (_n0) {
 	var id = _n0.a;
 	var model = _n0.b;
@@ -14090,13 +14275,12 @@ var author$project$Page$Login$viewSearch = F3(
 			title: 'Please log in.'
 		};
 	});
-var author$project$Page$Login$view = F3(
-	function (lift, model, data) {
-		var _n0 = model.user;
-		if (_n0.$ === 'Nothing') {
+var author$project$Page$Login$view = F4(
+	function (lift, model, data, user) {
+		if (user.$ === 'Nothing') {
 			return A3(author$project$Page$Login$viewSearch, lift, model, data);
 		} else {
-			var row = _n0.a;
+			var row = user.a;
 			return {
 				body: _List_fromArray(
 					[
@@ -14108,44 +14292,44 @@ var author$project$Page$Login$view = F3(
 	});
 var author$project$Page$view = F2(
 	function (model, data) {
+		var viewLoggedIn = F3(
+			function (viewf, msg, page) {
+				var _n1 = model.user;
+				if (_n1.$ === 'Just') {
+					var user = _n1.a;
+					return A2(
+						author$project$Page$viewUI,
+						model,
+						A4(
+							viewf,
+							A2(elm$core$Basics$composeL, author$project$Page$PageMsg, msg),
+							page,
+							data,
+							user));
+				} else {
+					return A2(
+						author$project$Page$viewUI,
+						model,
+						A4(
+							author$project$Page$Login$view,
+							A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotLoginMsg),
+							model.page.login,
+							data,
+							model.user));
+				}
+			});
 		var _n0 = model.url;
 		switch (_n0.$) {
 			case 'Data':
-				return A2(
-					author$project$Page$viewUI,
-					model,
-					A3(
-						author$project$Page$Data$view,
-						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotDataMsg),
-						model.page.data,
-						data));
+				return A3(viewLoggedIn, author$project$Page$Data$view, author$project$Page$GotDataMsg, model.page.data);
 			case 'Error':
-				return A2(
-					author$project$Page$viewUI,
-					model,
-					A3(
-						author$project$Page$Error$view,
-						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotErrorMsg),
-						model.page.error,
-						data));
+				return A3(viewLoggedIn, author$project$Page$Error$view, author$project$Page$GotErrorMsg, model.page.error);
 			case 'StartPage':
-				return A2(
-					author$project$Page$viewUI,
-					model,
-					A3(
-						author$project$Page$Login$view,
-						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotLoginMsg),
-						model.page.login,
-						data));
+				return A3(viewLoggedIn, author$project$Page$Home$view, author$project$Page$GotHomeMsg, model.page.home);
+			case 'Error404':
+				return A3(viewLoggedIn, author$project$Page$Error$view, author$project$Page$GotErrorMsg, model.page.error);
 			default:
-				return A2(
-					author$project$Page$viewUI,
-					model,
-					A3(
-						author$project$Page$Login$view,
-						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotLoginMsg),
-						model.page.login,
-						data));
+				return A3(viewLoggedIn, author$project$Page$Home$view, author$project$Page$GotHomeMsg, model.page.home);
 		}
 	});
 var author$project$Main$view = function (model) {
