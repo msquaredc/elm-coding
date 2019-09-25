@@ -1,20 +1,20 @@
-module Page exposing (Model, Msg, Page, update,defaultModel, subscriptions, view, viewHeader)
+module Page exposing (Model, Msg(..), Page, defaultModel, subscriptions, update, view, viewHeader)
 
 import Browser exposing (Document)
 import Data
 import Html exposing (Html, a, button, div, footer, i, img, li, nav, p, span, text, ul)
 import Html.Attributes exposing (class, classList, href, style)
+import Json.Decode as Decode
 import Material
+import Material.LayoutGrid as LayoutGrid
 import Material.Options as Options
 import Material.TopAppBar as TopAppBar
 import Material.Typography as Typography
-import Material.LayoutGrid as LayoutGrid
 import Page.Data
 import Page.Error
 import Page.Login
 import Page.Url
 import Url
-import Json.Decode as Decode
 
 
 type alias Page =
@@ -34,6 +34,8 @@ type Msg
     = OpenDrawer
     | Mdc (Material.Msg Msg)
     | PageMsg GotPageMsg
+    | OpenOverflow
+    | UrlChanged Url.Url
 
 
 type alias Model =
@@ -42,11 +44,14 @@ type alias Model =
     , url : Page.Url.Url
     }
 
+
 init : Url.Url -> Maybe Decode.Error -> Model
-init url dc = 
-    {mdc=Material.defaultModel
+init url dc =
+    { mdc = Material.defaultModel
     , page = defaultPage
-    ,url = Page.Url.fromUrl url}
+    , url = Page.Url.fromUrl url
+    }
+
 
 defaultModel : Model
 defaultModel =
@@ -64,7 +69,7 @@ defaultPage =
     }
 
 
-update : Msg -> Model -> Data.Model ->  ( Model, Cmd Msg )
+update : Msg -> Model -> Data.Model -> ( Model, Cmd Msg )
 update msg model data =
     case msg of
         Mdc msg_ ->
@@ -76,13 +81,16 @@ update msg model data =
                     updatePage m model.page data
             in
             ( { model | page = page }, effects )
-
-        _ ->
-            ( model, Cmd.none )
+        OpenDrawer -> 
+            (model, Cmd.none)
+        OpenOverflow -> 
+            (model, Cmd.none)
+        UrlChanged url -> 
+            ({model | url = Page.Url.fromUrl url}, Cmd.none)
 
 
 updatePage : GotPageMsg -> Page -> Data.Model -> ( Page, Cmd Msg )
-updatePage msg model data=
+updatePage msg model data =
     case msg of
         GotLoginMsg msg_ ->
             let
@@ -174,32 +182,31 @@ viewBody bar title content =
                     , Options.css "width" "100%"
                     , Options.css "max-width" "1200px"
                     ]
-                    [viewLayout Nothing content Nothing]
+                    [ viewLayout Nothing content Nothing ]
                 ]
             ]
         ]
 
-viewLayout : Maybe (List(Html msg)) -> List(Html msg) -> Maybe (List(Html msg)) -> Html msg
-viewLayout left middle right = 
-    LayoutGrid.view []
-            [ LayoutGrid.cell
-                [ LayoutGrid.span2
-                , LayoutGrid.span4Phone
-                ]
-                (Maybe.withDefault [] left)
-     
-            , LayoutGrid.cell
-                [ LayoutGrid.span8
-                , LayoutGrid.span6Tablet
-                ]
-                middle
-            , LayoutGrid.cell
-                [ LayoutGrid.span2
-                , LayoutGrid.span4Phone
-                ]
-                (Maybe.withDefault [] right)
-            ]
 
+viewLayout : Maybe (List (Html msg)) -> List (Html msg) -> Maybe (List (Html msg)) -> Html msg
+viewLayout left middle right =
+    LayoutGrid.view []
+        [ LayoutGrid.cell
+            [ LayoutGrid.span2
+            , LayoutGrid.span4Phone
+            ]
+            (Maybe.withDefault [] left)
+        , LayoutGrid.cell
+            [ LayoutGrid.span8
+            , LayoutGrid.span6Tablet
+            ]
+            middle
+        , LayoutGrid.cell
+            [ LayoutGrid.span2
+            , LayoutGrid.span4Phone
+            ]
+            (Maybe.withDefault [] right)
+        ]
 
 
 viewHeader : Model -> String -> Html Msg
@@ -212,8 +219,7 @@ viewHeader model title =
             [ TopAppBar.navigationIcon Mdc
                 "my-menu"
                 model.mdc
-                []
-                -- [ Options.onClick OpenDrawer ]
+                [ Options.onClick OpenDrawer ]
                 "menu"
             , TopAppBar.title [] [ text title ]
             ]
@@ -223,23 +229,23 @@ viewHeader model title =
                , TopAppBar.actionItem [] "bookmark"
                ]
             -}
-            []
+            [ TopAppBar.actionItem Mdc "options" model.mdc [ Options.onClick OpenOverflow ] "more_vert" ]
         ]
 
 
 viewFooter : Material.Model msg -> Html msg
 viewFooter mdc =
     Options.styled div
-        [ Typography.typography,
-        Options.css "position" "fixed",
-        Options.css "left" "0",
-        Options.css "bottom" "0",
-        Options.css "width" "100%",
-        Options.css "text-align" "center",
-        Options.css "background-color" "LightGrey",
---        Options.css "color" "white",
-        Options.css "padding" "16px"
-        ] 
+        [ Typography.typography
+        , Options.css "position" "fixed"
+        , Options.css "left" "0"
+        , Options.css "bottom" "0"
+        , Options.css "width" "100%"
+        , Options.css "text-align" "center"
+        , Options.css "background-color" "LightGrey"
+        , --        Options.css "color" "white",
+          Options.css "padding" "16px"
+        ]
         [ footer [ class "footer" ]
             [ div [ class "footer__content" ]
                 [ a [ class "footer__logo", href "/" ] [ text "M²C" ]

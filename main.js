@@ -4448,6 +4448,12 @@ var _Regex_splitAtMost = F3(function(n, re, str)
 });
 
 var _Regex_infinity = Infinity;
+var author$project$Main$LinkClicked = function (a) {
+	return {$: 'LinkClicked', a: a};
+};
+var author$project$Main$UrlChanged = function (a) {
+	return {$: 'UrlChanged', a: a};
+};
 var elm$core$Basics$apR = F2(
 	function (x, f) {
 		return f(x);
@@ -5587,22 +5593,15 @@ var author$project$Main$init = F3(
 			var data = _n1.a;
 			var rcmd = _n1.b;
 			return _Utils_Tuple2(
-				{data: data, page: author$project$Page$defaultModel},
+				{data: data, key: key, page: author$project$Page$defaultModel},
 				elm$core$Platform$Cmd$none);
 		} else {
 			var error = result_flags.a;
 			return _Utils_Tuple2(
-				{data: author$project$Data$empty, page: author$project$Page$defaultModel},
+				{data: author$project$Data$empty, key: key, page: author$project$Page$defaultModel},
 				elm$core$Platform$Cmd$none);
 		}
 	});
-var author$project$Main$Noop = {$: 'Noop'};
-var author$project$Main$onUrlChange = function (url) {
-	return author$project$Main$Noop;
-};
-var author$project$Main$onUrlRequest = function (a) {
-	return author$project$Main$Noop;
-};
 var author$project$Main$GotPageMsg = function (a) {
 	return {$: 'GotPageMsg', a: a};
 };
@@ -8640,6 +8639,9 @@ var author$project$Data$update = F2(
 var author$project$Main$GotDataMsg = function (a) {
 	return {$: 'GotDataMsg', a: a};
 };
+var author$project$Page$UrlChanged = function (a) {
+	return {$: 'UrlChanged', a: a};
+};
 var author$project$Page$GotDataMsg = function (a) {
 	return {$: 'GotDataMsg', a: a};
 };
@@ -8800,6 +8802,27 @@ var author$project$Page$updatePage = F3(
 					effects);
 		}
 	});
+var author$project$Page$Url$Data = {$: 'Data'};
+var author$project$Page$Url$Error = {$: 'Error'};
+var author$project$Page$Url$Error404 = function (a) {
+	return {$: 'Error404', a: a};
+};
+var author$project$Page$Url$fromString = function (url) {
+	switch (url) {
+		case '':
+			return author$project$Page$Url$StartPage;
+		case 'data':
+			return author$project$Page$Url$Data;
+		case 'error':
+			return author$project$Page$Url$Error;
+		default:
+			return author$project$Page$Url$Error404(url);
+	}
+};
+var author$project$Page$Url$fromUrl = function (url) {
+	return author$project$Page$Url$fromString(
+		A2(elm$core$Maybe$withDefault, '', url.fragment));
+};
 var author$project$Page$update = F3(
 	function (msg, model, data) {
 		switch (msg.$) {
@@ -8816,10 +8839,67 @@ var author$project$Page$update = F3(
 						model,
 						{page: page}),
 					effects);
-			default:
+			case 'OpenDrawer':
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			case 'OpenOverflow':
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			default:
+				var url = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							url: author$project$Page$Url$fromUrl(url)
+						}),
+					elm$core$Platform$Cmd$none);
 		}
 	});
+var elm$browser$Browser$Navigation$load = _Browser_load;
+var elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
+var elm$url$Url$addPort = F2(
+	function (maybePort, starter) {
+		if (maybePort.$ === 'Nothing') {
+			return starter;
+		} else {
+			var port_ = maybePort.a;
+			return starter + (':' + elm$core$String$fromInt(port_));
+		}
+	});
+var elm$url$Url$addPrefixed = F3(
+	function (prefix, maybeSegment, starter) {
+		if (maybeSegment.$ === 'Nothing') {
+			return starter;
+		} else {
+			var segment = maybeSegment.a;
+			return _Utils_ap(
+				starter,
+				_Utils_ap(prefix, segment));
+		}
+	});
+var elm$url$Url$toString = function (url) {
+	var http = function () {
+		var _n0 = url.protocol;
+		if (_n0.$ === 'Http') {
+			return 'http://';
+		} else {
+			return 'https://';
+		}
+	}();
+	return A3(
+		elm$url$Url$addPrefixed,
+		'#',
+		url.fragment,
+		A3(
+			elm$url$Url$addPrefixed,
+			'?',
+			url.query,
+			_Utils_ap(
+				A2(
+					elm$url$Url$addPort,
+					url.port_,
+					_Utils_ap(http, url.host)),
+				url.path)));
+};
 var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -8835,7 +8915,7 @@ var author$project$Main$update = F2(
 					A2(elm$core$Platform$Cmd$map, author$project$Main$GotPageMsg, effect));
 			case 'Noop':
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-			default:
+			case 'GotDataMsg':
 				var msg_ = msg.a;
 				var _n2 = A2(author$project$Data$update, msg_, model.data);
 				var data = _n2.a;
@@ -8845,6 +8925,36 @@ var author$project$Main$update = F2(
 						model,
 						{data: data}),
 					A2(elm$core$Platform$Cmd$map, author$project$Main$GotDataMsg, effect));
+			case 'LinkClicked':
+				var urlRequest = msg.a;
+				if (urlRequest.$ === 'Internal') {
+					var url = urlRequest.a;
+					return _Utils_Tuple2(
+						model,
+						A2(
+							elm$browser$Browser$Navigation$pushUrl,
+							model.key,
+							elm$url$Url$toString(url)));
+				} else {
+					var href = urlRequest.a;
+					return _Utils_Tuple2(
+						model,
+						elm$browser$Browser$Navigation$load(href));
+				}
+			default:
+				var url = msg.a;
+				var _n4 = A3(
+					author$project$Page$update,
+					author$project$Page$UrlChanged(url),
+					model.page,
+					model.data);
+				var page = _n4.a;
+				var effect = _n4.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{page: page}),
+					A2(elm$core$Platform$Cmd$map, author$project$Main$GotPageMsg, effect));
 		}
 	});
 var author$project$Internal$Options$Class = function (a) {
@@ -9750,21 +9860,29 @@ var author$project$Page$viewFooter = function (mdc) {
 					]))
 			]));
 };
-var author$project$Internal$TopAppBar$Implementation$alignEnd = author$project$Internal$Options$cs('mdc-top-app-bar__section--align-end');
-var author$project$Material$TopAppBar$alignEnd = author$project$Internal$TopAppBar$Implementation$alignEnd;
-var author$project$Internal$TopAppBar$Implementation$alignStart = author$project$Internal$Options$cs('mdc-top-app-bar__section--align-start');
-var author$project$Material$TopAppBar$alignStart = author$project$Internal$TopAppBar$Implementation$alignStart;
-var author$project$Internal$Options$Set = function (a) {
-	return {$: 'Set', a: a};
-};
-var author$project$Internal$Options$option = author$project$Internal$Options$Set;
-var author$project$Internal$TopAppBar$Implementation$fixed = author$project$Internal$Options$option(
-	function (config) {
-		return _Utils_update(
-			config,
-			{fixed: true});
+var author$project$Internal$Options$Listener = F2(
+	function (a, b) {
+		return {$: 'Listener', a: a, b: b};
 	});
-var author$project$Material$TopAppBar$fixed = author$project$Internal$TopAppBar$Implementation$fixed;
+var author$project$Internal$Options$on = F2(
+	function (event, decodeMessage) {
+		return A2(
+			author$project$Internal$Options$Listener,
+			event,
+			A2(
+				elm$json$Json$Decode$map,
+				function (message) {
+					return {message: message, preventDefault: false, stopPropagation: false};
+				},
+				decodeMessage));
+	});
+var author$project$Internal$Options$onClick = function (msg) {
+	return A2(
+		author$project$Internal$Options$on,
+		'click',
+		elm$json$Json$Decode$succeed(msg));
+};
+var author$project$Material$Options$onClick = author$project$Internal$Options$onClick;
 var author$project$Internal$Msg$Dispatch = function (a) {
 	return {$: 'Dispatch', a: a};
 };
@@ -9803,6 +9921,10 @@ var author$project$Internal$Component$render = F3(
 						options));
 			});
 	});
+var author$project$Internal$Options$Set = function (a) {
+	return {$: 'Set', a: a};
+};
+var author$project$Internal$Options$option = author$project$Internal$Options$Set;
 var author$project$Internal$Icon$Implementation$node = function (ctor) {
 	return author$project$Internal$Options$option(
 		function (config) {
@@ -9929,22 +10051,6 @@ var author$project$Internal$Options$Many = function (a) {
 };
 var author$project$Internal$Options$many = author$project$Internal$Options$Many;
 var author$project$Material$Options$many = author$project$Internal$Options$many;
-var author$project$Internal$Options$Listener = F2(
-	function (a, b) {
-		return {$: 'Listener', a: a, b: b};
-	});
-var author$project$Internal$Options$on = F2(
-	function (event, decodeMessage) {
-		return A2(
-			author$project$Internal$Options$Listener,
-			event,
-			A2(
-				elm$json$Json$Decode$map,
-				function (message) {
-					return {message: message, preventDefault: false, stopPropagation: false};
-				},
-				decodeMessage));
-	});
 var author$project$Material$Options$on = author$project$Internal$Options$on;
 var author$project$Internal$GlobalEvents$listener = F2(
 	function (name, decoder) {
@@ -10347,6 +10453,30 @@ var author$project$Internal$TopAppBar$Implementation$actionItem = F2(
 			lift,
 			index);
 	});
+var author$project$Material$TopAppBar$actionItem = F5(
+	function (lift, index, model, options, name) {
+		return A5(
+			author$project$Internal$TopAppBar$Implementation$actionItem,
+			lift,
+			index,
+			model,
+			A2(
+				elm$core$List$cons,
+				author$project$Material$Options$cs('mdc-top-app-bar__action-item'),
+				options),
+			name);
+	});
+var author$project$Internal$TopAppBar$Implementation$alignEnd = author$project$Internal$Options$cs('mdc-top-app-bar__section--align-end');
+var author$project$Material$TopAppBar$alignEnd = author$project$Internal$TopAppBar$Implementation$alignEnd;
+var author$project$Internal$TopAppBar$Implementation$alignStart = author$project$Internal$Options$cs('mdc-top-app-bar__section--align-start');
+var author$project$Material$TopAppBar$alignStart = author$project$Internal$TopAppBar$Implementation$alignStart;
+var author$project$Internal$TopAppBar$Implementation$fixed = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{fixed: true});
+	});
+var author$project$Material$TopAppBar$fixed = author$project$Internal$TopAppBar$Implementation$fixed;
 var author$project$Material$TopAppBar$navigationIcon = F5(
 	function (lift, index, model, options, name) {
 		return A5(
@@ -10536,6 +10666,8 @@ var author$project$Internal$TopAppBar$Implementation$topAppBar = F4(
 	});
 var author$project$Internal$TopAppBar$Implementation$view = A3(author$project$Internal$Component$render, author$project$Internal$TopAppBar$Implementation$getSet.get, author$project$Internal$TopAppBar$Implementation$topAppBar, author$project$Internal$Msg$TopAppBarMsg);
 var author$project$Material$TopAppBar$view = author$project$Internal$TopAppBar$Implementation$view;
+var author$project$Page$OpenDrawer = {$: 'OpenDrawer'};
+var author$project$Page$OpenOverflow = {$: 'OpenOverflow'};
 var author$project$Page$viewHeader = F2(
 	function (model, title) {
 		return A5(
@@ -10553,7 +10685,16 @@ var author$project$Page$viewHeader = F2(
 						[author$project$Material$TopAppBar$alignStart]),
 					_List_fromArray(
 						[
-							A5(author$project$Material$TopAppBar$navigationIcon, author$project$Page$Mdc, 'my-menu', model.mdc, _List_Nil, 'menu'),
+							A5(
+							author$project$Material$TopAppBar$navigationIcon,
+							author$project$Page$Mdc,
+							'my-menu',
+							model.mdc,
+							_List_fromArray(
+								[
+									author$project$Material$Options$onClick(author$project$Page$OpenDrawer)
+								]),
+							'menu'),
 							A2(
 							author$project$Material$TopAppBar$title,
 							_List_Nil,
@@ -10566,7 +10707,19 @@ var author$project$Page$viewHeader = F2(
 					author$project$Material$TopAppBar$section,
 					_List_fromArray(
 						[author$project$Material$TopAppBar$alignEnd]),
-					_List_Nil)
+					_List_fromArray(
+						[
+							A5(
+							author$project$Material$TopAppBar$actionItem,
+							author$project$Page$Mdc,
+							'options',
+							model.mdc,
+							_List_fromArray(
+								[
+									author$project$Material$Options$onClick(author$project$Page$OpenOverflow)
+								]),
+							'more_vert')
+						]))
 				]));
 	});
 var author$project$Page$viewUI = F2(
@@ -11564,13 +11717,6 @@ var author$project$Data$viewContent3 = F3(
 var author$project$Data$Click = function (a) {
 	return {$: 'Click', a: a};
 };
-var author$project$Internal$Options$onClick = function (msg) {
-	return A2(
-		author$project$Internal$Options$on,
-		'click',
-		elm$json$Json$Decode$succeed(msg));
-};
-var author$project$Material$Options$onClick = author$project$Internal$Options$onClick;
 var author$project$Internal$TabBar$Implementation$activeTab = function (value) {
 	return author$project$Internal$Options$option(
 		function (config) {
@@ -14016,5 +14162,5 @@ var author$project$Main$view = function (model) {
 };
 var elm$browser$Browser$application = _Browser_application;
 var author$project$Main$main = elm$browser$Browser$application(
-	{init: author$project$Main$init, onUrlChange: author$project$Main$onUrlChange, onUrlRequest: author$project$Main$onUrlRequest, subscriptions: author$project$Main$subscriptions, update: author$project$Main$update, view: author$project$Main$view});
+	{init: author$project$Main$init, onUrlChange: author$project$Main$UrlChanged, onUrlRequest: author$project$Main$LinkClicked, subscriptions: author$project$Main$subscriptions, update: author$project$Main$update, view: author$project$Main$view});
 _Platform_export({'Main':{'init':author$project$Main$main(elm$json$Json$Decode$value)(0)}});}(this));

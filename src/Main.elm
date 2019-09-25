@@ -1,7 +1,7 @@
 port module Main exposing (Msg(..), activeUsers)
 
 import Browser
-import Browser.Navigation
+import Browser.Navigation as Nav
 import Data
 import Dict
 import Html
@@ -20,12 +20,17 @@ import Url
 type Msg
     = GotPageMsg Page.Msg
     | GotDataMsg Data.Msg
+    | LinkClicked Browser.UrlRequest
+    | UrlChanged Url.Url
     | Noop
+
 
 type alias Model =
     { data : Data.Model
     , page : Page.Model
+    , key : Nav.Key
     }
+
 
 type alias Flags =
     { research : Research.Flags }
@@ -35,8 +40,8 @@ main : Program Value Model Msg
 main =
     Browser.application
         { init = init
-        , onUrlChange = onUrlChange
-        , onUrlRequest = onUrlRequest
+        , onUrlChange = UrlChanged
+        , onUrlRequest = LinkClicked
         , update = update
         , subscriptions = subscriptions
         , view = view
@@ -50,7 +55,12 @@ onUrlChange url =
 
 onUrlRequest : Browser.UrlRequest -> Msg
 onUrlRequest a =
-    Noop
+    case a of
+        Browser.Internal i ->
+            Noop
+
+        Browser.External e ->
+            Noop
 
 
 
@@ -62,7 +72,7 @@ onUrlRequest a =
 -}
 
 
-init : Value -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd msg )
+init : Value -> Url.Url -> Nav.Key -> ( Model, Cmd msg )
 init flags url key =
     let
         result_flags =
@@ -74,13 +84,20 @@ init flags url key =
                 ( data, rcmd ) =
                     Data.init flag_value
             in
-            ( { data = data, 
-                page = Page.defaultModel
-            }, Cmd.none )
+            ( { data = data
+              , page = Page.defaultModel
+              , key = key
+              }
+            , Cmd.none
+            )
 
         Err error ->
-            ( { page = Page.defaultModel,
-                data = Data.empty }, Cmd.none )
+            ( { page = Page.defaultModel
+              , data = Data.empty
+              , key = key
+              }
+            , Cmd.none
+            )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -88,55 +105,74 @@ update msg model =
     case msg of
         GotPageMsg msg_ ->
             let
-                (page, effect) =
+                ( page, effect ) =
                     Page.update msg_ model.page model.data
             in
-                ({model|page = page}, Cmd.map GotPageMsg effect)
-        Noop -> 
-            (model,Cmd.none)
+            ( { model | page = page }, Cmd.map GotPageMsg effect )
+
+        Noop ->
+            ( model, Cmd.none )
+
         GotDataMsg msg_ ->
             let
-                (data, effect) =
+                ( data, effect ) =
                     Data.update msg_ model.data
             in
-                ({model|data = data}, Cmd.map GotDataMsg effect)
+            ( { model | data = data }, Cmd.map GotDataMsg effect )
+
+        LinkClicked urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Nav.pushUrl model.key (Url.toString url) )
+
+                Browser.External href ->
+                    ( model, Nav.load href )
+
+        UrlChanged url ->
+            let
+                ( page, effect ) =
+                    Page.update (Page.UrlChanged url) model.page model.data
+            in
+                ( { model | page = page }, Cmd.map GotPageMsg effect )
+            
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.map GotPageMsg (Page.subscriptions model.page)
-    
 
 
 view : Model -> Browser.Document Msg
 view model =
-    let 
-        {title, body}=
+    let
+        { title, body } =
             Page.view model.page model.data
     in
-        {title = title,
-        body = List.map (Html.map GotPageMsg) body}
-
-    {- let
-        viewPage page mapper viewer page_model =
-            let
-                { title, body } =
-                    Page.view model.mdc page (viewer page_model model.mdc Mdc model.data)
-            in
-            { title = title
-            , body = List.map (Html.map mapper) body
-            }
-    in
-    case model.page of
-        Page.Data data ->
-            viewPage Page.Data GotDataMsg Page.Data.view data
-
-        Page.Error err ->
-            { title = "None"
-            , body = [Html.text "nothing"]
-            } -}
+    { title = title
+    , body = List.map (Html.map GotPageMsg) body
+    }
 
 
 
+{- let
+       viewPage page mapper viewer page_model =
+           let
+               { title, body } =
+                   Page.view model.mdc page (viewer page_model model.mdc Mdc model.data)
+           in
+           { title = title
+           , body = List.map (Html.map mapper) body
+           }
+   in
+   case model.page of
+       Page.Data data ->
+           viewPage Page.Data GotDataMsg Page.Data.view data
+
+       Page.Error err ->
+           { title = "None"
+           , body = [Html.text "nothing"]
+           }
+-}
 --            viewPage Page.Error GotErrorMsg Page.Error.view err
 {- Redirect _ ->
        Page.view viewer Page.Other Blank.view
