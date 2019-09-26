@@ -14,7 +14,7 @@ type alias Model m
 type Msg m 
     = Mdc (Material.Msg m)
 
-view : (Msg m -> m) -> Model m -> Html m
+--view : (Msg m -> m) -> Model m -> Html m
 view lift model =
     Card.view
         [ css "width" "350px"
@@ -51,7 +51,7 @@ view lift model =
               ]
         , Card.actions []
               [ Card.actionButtons []
-                    [ Button.view Mdc "my-read-action" model.mdc
+                    [ Button.view (lift << Mdc) "my-read-action" model.mdc
                           [ Card.actionButton
                           , Button.ripple
                           ]
@@ -59,7 +59,7 @@ view lift model =
                           ]
                     ]
               , Card.actionIcons []
-                    [ IconButton.view Mdc "my-favorite-action" model.mdc
+                    [ IconButton.view (lift << Mdc) "my-favorite-action" model.mdc
                           [ Card.actionIcon
                           , IconButton.icon
                             { on = "favorite"

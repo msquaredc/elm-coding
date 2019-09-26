@@ -10,13 +10,16 @@ import Material.LayoutGrid as LayoutGrid
 import Material.Options as Options
 import Material.TopAppBar as TopAppBar
 import Material.Typography as Typography
+import Material.SimplifiedList as SL
 import Page.Data
 import Page.Error
 import Page.Login
 import Page.Url
 import Page.Home
+import Page.Code
 import Url
 import Entities.Coder
+import Entities.Coding
 import Db exposing (Db, Row)
 import List.Extra
 
@@ -26,6 +29,7 @@ type alias Page =
     , data : Page.Data.Model Msg
     , login : Page.Login.Model Msg
     , home : Page.Home.Model Msg
+    , code : Page.Code.Model Msg
     }
 
 
@@ -34,6 +38,7 @@ type GotPageMsg
     | GotDataMsg (Page.Data.Msg Msg)
     | GotLoginMsg (Page.Login.Msg Msg)
     | GotHomeMsg (Page.Home.Msg Msg)
+    | GotCodeMsg (Page.Code.Msg Msg)
 
 
 type Msg
@@ -42,6 +47,8 @@ type Msg
     | PageMsg GotPageMsg
     | OpenOverflow
     | UrlChanged Url.Url
+    | DataMsg (Data.Msg)
+    | GenerateFrame (Row Entities.Coding.Model)
 
 
 type alias Model =
@@ -49,6 +56,7 @@ type alias Model =
     , page : Page
     , url : Page.Url.Url
     , user : Maybe (Row Entities.Coder.Model)
+    , coding : Maybe (Row Entities.Coding.Model)
     }
 
 
@@ -58,6 +66,7 @@ init url dc =
     , page = defaultPage
     , url = Page.Url.fromUrl url
     , user = Nothing
+    , coding = Nothing
     }
 
 
@@ -67,6 +76,7 @@ defaultModel =
     , page = defaultPage
     , url = Page.Url.defaultUrl
     , user = Nothing
+    , coding = Nothing
     }
 
 
@@ -76,11 +86,12 @@ defaultPage =
     , data = Page.Data.defaultModel
     , login = Page.Login.defaultModel
     , home = Page.Home.defaultModel
+    , code = Page.Code.defaultModel
     }
 
 
-update : Msg -> Model -> Data.Model -> ( Model, Cmd Msg )
-update msg model data =
+update : Msg -> Data.Model -> Model  -> ( Model, Cmd Msg )
+update msg data model =
     case msg of
         Mdc msg_ ->
             Material.update Mdc msg_ model
@@ -93,6 +104,15 @@ update msg model data =
                         mb_row = List.Extra.getAt index list
                     in
                         ({model | user = mb_row},Cmd.none)
+                GotHomeMsg (Page.Home.ListMsg (SL.Select coding)) -> 
+                    let 
+                        new_model = {model | coding = Just coding}
+                        new_model2 = {new_model | url = Page.Url.Code}
+                    in
+                        new_model2
+                        |> update (GenerateFrame coding) data
+                GotCodeMsg (Page.Code.DataMsg msg_) -> 
+                    update (DataMsg msg_) data model
                 _ ->
                     let
                         ( page, effects ) =
@@ -105,6 +125,11 @@ update msg model data =
             (model, Cmd.none)
         UrlChanged url -> 
             ({model | url = Page.Url.fromUrl url}, Cmd.none)
+        GenerateFrame coding -> 
+            (model, Cmd.none)
+        DataMsg _ -> 
+            (model, Cmd.none)
+
 
 
 updatePage : GotPageMsg -> Page -> Data.Model -> ( Page, Cmd Msg )
@@ -136,6 +161,12 @@ updatePage msg model data =
                     Page.Home.update (PageMsg << GotHomeMsg) msg_ model.home
             in
             ( { model | home = homem }, effects )
+        GotCodeMsg msg_ -> 
+            let
+                ( codem, effects ) =
+                    Page.Code.update (PageMsg << GotCodeMsg) msg_ model.code
+            in
+            ( { model | code = codem }, effects )
 
 
 view : Model -> Data.Model -> Document Msg
@@ -164,6 +195,20 @@ view model data =
             Page.Url.Home -> 
                 viewLoggedIn Page.Home.view GotHomeMsg model.page.home
 
+            Page.Url.Code ->
+                case model.coding of
+                    Just coding ->
+                        viewUI model (Page.Code.view (PageMsg << GotCodeMsg) model.page.code data coding)
+                
+                    Nothing ->
+                        viewLoggedIn Page.Home.view GotHomeMsg model.page.home
+                
+                
+
+                        
+                
+            
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -178,9 +223,12 @@ viewUI model { title, body } =
             viewHeader model title
     in
     { title = title ++ " - Conduit2"
-    , body = viewBody header (text title) body :: [ viewFooter model.mdc ]
+    , body = viewBody header (text title) body :: viewDebug model :: [ viewFooter model.mdc ]
     }
 
+viewDebug : Model -> Html msg
+viewDebug model =
+    text (Page.Url.toString model.url)
 
 viewBody : Html msg -> Html msg -> List (Html msg) -> Html msg
 viewBody bar title content =

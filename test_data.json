@@ -30,7 +30,7 @@ var data = {
     },
     codings: {"coding1":{coder:"coder1"}},
     coding_answers: {},
-    coding_frames: {"coding_frame1":{coding:"coding1",answer:"answer1",created:13,modified:33},"coding_frame99":{coding:"a28",answer:"answer1123",created:15, modified:22}},
+    coding_frames: {"coding_frame1":{coding:"coding1",answer:"answer1",created:13,modified:33,accessed:53},"coding_frame99":{coding:"a28",answer:"answer1123",created:15, modified:22, accessed:31}},
     coding_questionaries: {
         "coding_questionary1":{
             name:"First Coding Questionary", 

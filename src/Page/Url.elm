@@ -15,6 +15,7 @@ type Url
     | Data
     | Error404 String
     | Error
+    | Code
 
 
 toString : Url -> String
@@ -34,6 +35,9 @@ toString url =
 
         Home ->
             "#home"
+        
+        Code ->
+            "#code"
 
 
 fromUrl : Url.Url -> Url
@@ -56,6 +60,8 @@ fromString url =
         "home" ->
             Home
 
+        "code" ->
+            Code
         _ ->
             Error404 url
 

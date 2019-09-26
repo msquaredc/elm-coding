@@ -7,11 +7,12 @@ import Entities.Coder as Coder
 import Entities.Coding as Coding
 import Entities.Question as Question
 import Entities.Questionary as Questionary
+import Entities.Timestamp as Timestamp
 import Html exposing (Html, div, h3, p, text)
 import Html.Attributes exposing (..)
 import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
-import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+import Json.Decode.Pipeline exposing (hardcoded, optional, required,custom)
 import Material.DataTable as DataTable exposing (numeric, table, tbody, td, th, thead, tr, trh)
 import Time
 
@@ -19,8 +20,7 @@ import Time
 type alias Model =
     { answer : Id Answer.Model
     , coding : Id Coding.Model
-    , created : Int
-    , modified : Int
+    , timestamp : Timestamp.Model
     }
 
 
@@ -29,16 +29,15 @@ decoder =
     Decode.succeed Model
         |> required "answer" Id.decoder
         |> required "coding" Id.decoder
-        |> required "created" Decode.int
-        |> required "modified" Decode.int
+        |> custom Timestamp.decoder
+        
 
 
 empty : Model
 empty =
     { answer = Id.fromString "empty"
     , coding = Id.fromString "empty"
-    , created = 0
-    , modified = 0
+    , timestamp = Timestamp.empty
     }
 
 
@@ -66,8 +65,8 @@ view model =
     div []
         [ p [] [ text ("Answer: " ++ Id.toString model.answer) ]
         , p [] [ text ("Coding: " ++ Id.toString model.coding) ]
-        , p [] [ text ("Created: " ++ String.fromInt model.created) ]
-        , p [] [ text ("Modified: " ++ String.fromInt model.modified) ]
+        , p [] [ text ("Created: " ++ String.fromInt model.timestamp.created) ]
+        , p [] [ text ("Modified: " ++ String.fromInt model.timestamp.modified) ]
         ]
 
 
@@ -99,8 +98,8 @@ toTableRow ( id, model ) =
         [ td [] [ text (Id.toString id) ]
         , td [] [ text (Id.toString model.answer) ]
         , td [] [ text (Id.toString model.coding) ]
-        , td [] [ text (String.fromInt model.created) ]
-        , td [] [ text (String.fromInt model.modified) ]
+        , td [] [ text (String.fromInt model.timestamp.created) ]
+        , td [] [ text (String.fromInt model.timestamp.modified) ]
         ]
 
 
@@ -116,4 +115,4 @@ selectFramesFromCodings db coders =
 lastFrame : Db Model -> Row Model
 lastFrame frames =
     Db.toList frames
-    |> List.foldl (\(idf,first) -> (\(ids,second) -> if first.modified > second.modified then (idf,first) else (ids,second))) (Id.fromString "empty", empty)
+    |> List.foldl (\(idf,first) -> (\(ids,second) -> if first.timestamp.modified > second.timestamp.modified then (idf,first) else (ids,second))) (Id.fromString "empty", empty)

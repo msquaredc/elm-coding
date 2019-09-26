@@ -4349,6 +4349,52 @@ function _Browser_load(url)
 }
 
 
+
+function _Time_now(millisToPosix)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(millisToPosix(Date.now())));
+	});
+}
+
+var _Time_setInterval = F2(function(interval, task)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var id = setInterval(function() { _Scheduler_rawSpawn(task); }, interval);
+		return function() { clearInterval(id); };
+	});
+});
+
+function _Time_here()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(
+			A2(elm$time$Time$customZone, -(new Date().getTimezoneOffset()), _List_Nil)
+		));
+	});
+}
+
+
+function _Time_getZoneName()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		try
+		{
+			var name = elm$time$Time$Name(Intl.DateTimeFormat().resolvedOptions().timeZone);
+		}
+		catch (e)
+		{
+			var name = elm$time$Time$Offset(new Date().getTimezoneOffset());
+		}
+		callback(_Scheduler_succeed(name));
+	});
+}
+
+
 // CREATE
 
 var _Regex_never = /.^/;
@@ -5067,45 +5113,60 @@ var author$project$Entities$Coding$decoder = A3(
 	'coder',
 	Chadtech$elm_relational_database$Id$decoder,
 	elm$json$Json$Decode$succeed(author$project$Entities$Coding$Model));
-var author$project$Entities$Coding$Answer$Model = F3(
-	function (coding_question, coding_frame, value) {
-		return {coding_frame: coding_frame, coding_question: coding_question, value: value};
+var author$project$Entities$Coding$Answer$Model = F4(
+	function (coding_question, coding_frame, value, timestamp) {
+		return {coding_frame: coding_frame, coding_question: coding_question, timestamp: timestamp, value: value};
 	});
-var author$project$Entities$Coding$Answer$decoder = A3(
-	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'value',
-	elm$json$Json$Decode$string,
-	A3(
-		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'coding_frame',
-		Chadtech$elm_relational_database$Id$decoder,
-		A3(
-			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'coding_question',
-			Chadtech$elm_relational_database$Id$decoder,
-			elm$json$Json$Decode$succeed(author$project$Entities$Coding$Answer$Model))));
-var author$project$Entities$Coding$Frame$Model = F4(
-	function (answer, coding, created, modified) {
-		return {answer: answer, coding: coding, created: created, modified: modified};
+var author$project$Entities$Timestamp$Model = F3(
+	function (created, modified, accessed) {
+		return {accessed: accessed, created: created, modified: modified};
 	});
 var elm$json$Json$Decode$int = _Json_decodeInt;
-var author$project$Entities$Coding$Frame$decoder = A3(
+var author$project$Entities$Timestamp$decoder = A3(
 	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'modified',
+	'accessed',
 	elm$json$Json$Decode$int,
 	A3(
 		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'created',
+		'modified',
 		elm$json$Json$Decode$int,
 		A3(
 			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'coding',
+			'created',
+			elm$json$Json$Decode$int,
+			elm$json$Json$Decode$succeed(author$project$Entities$Timestamp$Model))));
+var author$project$Entities$Coding$Answer$decoder = A2(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+	author$project$Entities$Timestamp$decoder,
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'value',
+		elm$json$Json$Decode$string,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'coding_frame',
 			Chadtech$elm_relational_database$Id$decoder,
 			A3(
 				NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'answer',
+				'coding_question',
 				Chadtech$elm_relational_database$Id$decoder,
-				elm$json$Json$Decode$succeed(author$project$Entities$Coding$Frame$Model)))));
+				elm$json$Json$Decode$succeed(author$project$Entities$Coding$Answer$Model)))));
+var author$project$Entities$Coding$Frame$Model = F3(
+	function (answer, coding, timestamp) {
+		return {answer: answer, coding: coding, timestamp: timestamp};
+	});
+var author$project$Entities$Coding$Frame$decoder = A2(
+	NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+	author$project$Entities$Timestamp$decoder,
+	A3(
+		NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'coding',
+		Chadtech$elm_relational_database$Id$decoder,
+		A3(
+			NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+			'answer',
+			Chadtech$elm_relational_database$Id$decoder,
+			elm$json$Json$Decode$succeed(author$project$Entities$Coding$Frame$Model))));
 var author$project$Entities$Coding$Question$Model = F3(
 	function (coding_questionary, text, input_type) {
 		return {coding_questionary: coding_questionary, input_type: input_type, text: text};
@@ -5577,15 +5638,20 @@ var author$project$Data$init = function (flags) {
 		author$project$Data$initDictToDb(flags.users))(flags.seed)(flags.mdc)(flags.current_tab);
 	return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 };
+var author$project$Page$Code$defaultModel = {mdc: author$project$Material$defaultModel};
 var author$project$Page$Data$defaultModel = {mdc: author$project$Material$defaultModel};
 var author$project$Page$Error$defaultModel = {error: _List_Nil, mdc: author$project$Material$defaultModel};
 var author$project$Page$Home$defaultModel = {mdc: author$project$Material$defaultModel};
 var author$project$Page$Url$Home = {$: 'Home'};
 var author$project$Page$Login$defaultModel = {field: '', mdc: author$project$Material$defaultModel, next: author$project$Page$Url$Home, _var: 0};
-var author$project$Page$defaultPage = {data: author$project$Page$Data$defaultModel, error: author$project$Page$Error$defaultModel, home: author$project$Page$Home$defaultModel, login: author$project$Page$Login$defaultModel};
+var author$project$Page$defaultPage = {code: author$project$Page$Code$defaultModel, data: author$project$Page$Data$defaultModel, error: author$project$Page$Error$defaultModel, home: author$project$Page$Home$defaultModel, login: author$project$Page$Login$defaultModel};
 var author$project$Page$Url$StartPage = {$: 'StartPage'};
 var author$project$Page$Url$defaultUrl = author$project$Page$Url$StartPage;
-var author$project$Page$defaultModel = {mdc: author$project$Material$defaultModel, page: author$project$Page$defaultPage, url: author$project$Page$Url$defaultUrl, user: elm$core$Maybe$Nothing};
+var author$project$Page$defaultModel = {coding: elm$core$Maybe$Nothing, mdc: author$project$Material$defaultModel, page: author$project$Page$defaultPage, url: author$project$Page$Url$defaultUrl, user: elm$core$Maybe$Nothing};
+var author$project$Page$Error$DecodeError = function (a) {
+	return {$: 'DecodeError', a: a};
+};
+var author$project$Page$Url$Error = {$: 'Error'};
 var author$project$Main$init = F3(
 	function (flags, url, key) {
 		var result_flags = A2(elm$json$Json$Decode$decodeValue, author$project$Data$decoder, flags);
@@ -5599,8 +5665,28 @@ var author$project$Main$init = F3(
 				elm$core$Platform$Cmd$none);
 		} else {
 			var error = result_flags.a;
+			var page_model_new = author$project$Page$defaultModel;
+			var page_new1 = _Utils_update(
+				page_model_new,
+				{url: author$project$Page$Url$Error});
+			var page_error = page_new1.page.error;
+			var page_error_new = _Utils_update(
+				page_error,
+				{
+					error: _List_fromArray(
+						[
+							author$project$Page$Error$DecodeError(error)
+						])
+				});
+			var page = page_new1.page;
+			var page_new = _Utils_update(
+				page,
+				{error: page_error_new});
+			var res_page = _Utils_update(
+				page_new1,
+				{page: page_new});
 			return _Utils_Tuple2(
-				{data: author$project$Data$empty, key: key, page: author$project$Page$defaultModel},
+				{data: author$project$Data$empty, key: key, page: res_page},
 				elm$core$Platform$Cmd$none);
 		}
 	});
@@ -6183,9 +6269,6 @@ var author$project$Main$subscriptions = function (model) {
 		author$project$Main$GotPageMsg,
 		author$project$Page$subscriptions(model.page));
 };
-var author$project$Data$Mdc = function (a) {
-	return {$: 'Mdc', a: a};
-};
 var elm$core$Dict$get = F2(
 	function (targetKey, dict) {
 		get:
@@ -6217,14 +6300,398 @@ var elm$core$Dict$get = F2(
 			}
 		}
 	});
-var Chadtech$elm_relational_database$Db$get = F2(
-	function (_n0, thisId) {
-		var dict = _n0.a;
-		return A2(
-			elm$core$Dict$get,
-			Chadtech$elm_relational_database$Id$toString(thisId),
-			dict);
+var elm$core$Dict$getMin = function (dict) {
+	getMin:
+	while (true) {
+		if ((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) {
+			var left = dict.d;
+			var $temp$dict = left;
+			dict = $temp$dict;
+			continue getMin;
+		} else {
+			return dict;
+		}
+	}
+};
+var elm$core$Dict$moveRedLeft = function (dict) {
+	if (((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) && (dict.e.$ === 'RBNode_elm_builtin')) {
+		if ((dict.e.d.$ === 'RBNode_elm_builtin') && (dict.e.d.a.$ === 'Red')) {
+			var clr = dict.a;
+			var k = dict.b;
+			var v = dict.c;
+			var _n1 = dict.d;
+			var lClr = _n1.a;
+			var lK = _n1.b;
+			var lV = _n1.c;
+			var lLeft = _n1.d;
+			var lRight = _n1.e;
+			var _n2 = dict.e;
+			var rClr = _n2.a;
+			var rK = _n2.b;
+			var rV = _n2.c;
+			var rLeft = _n2.d;
+			var _n3 = rLeft.a;
+			var rlK = rLeft.b;
+			var rlV = rLeft.c;
+			var rlL = rLeft.d;
+			var rlR = rLeft.e;
+			var rRight = _n2.e;
+			return A5(
+				elm$core$Dict$RBNode_elm_builtin,
+				elm$core$Dict$Red,
+				rlK,
+				rlV,
+				A5(
+					elm$core$Dict$RBNode_elm_builtin,
+					elm$core$Dict$Black,
+					k,
+					v,
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					rlL),
+				A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Black, rK, rV, rlR, rRight));
+		} else {
+			var clr = dict.a;
+			var k = dict.b;
+			var v = dict.c;
+			var _n4 = dict.d;
+			var lClr = _n4.a;
+			var lK = _n4.b;
+			var lV = _n4.c;
+			var lLeft = _n4.d;
+			var lRight = _n4.e;
+			var _n5 = dict.e;
+			var rClr = _n5.a;
+			var rK = _n5.b;
+			var rV = _n5.c;
+			var rLeft = _n5.d;
+			var rRight = _n5.e;
+			if (clr.$ === 'Black') {
+				return A5(
+					elm$core$Dict$RBNode_elm_builtin,
+					elm$core$Dict$Black,
+					k,
+					v,
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight));
+			} else {
+				return A5(
+					elm$core$Dict$RBNode_elm_builtin,
+					elm$core$Dict$Black,
+					k,
+					v,
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight));
+			}
+		}
+	} else {
+		return dict;
+	}
+};
+var elm$core$Dict$moveRedRight = function (dict) {
+	if (((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) && (dict.e.$ === 'RBNode_elm_builtin')) {
+		if ((dict.d.d.$ === 'RBNode_elm_builtin') && (dict.d.d.a.$ === 'Red')) {
+			var clr = dict.a;
+			var k = dict.b;
+			var v = dict.c;
+			var _n1 = dict.d;
+			var lClr = _n1.a;
+			var lK = _n1.b;
+			var lV = _n1.c;
+			var _n2 = _n1.d;
+			var _n3 = _n2.a;
+			var llK = _n2.b;
+			var llV = _n2.c;
+			var llLeft = _n2.d;
+			var llRight = _n2.e;
+			var lRight = _n1.e;
+			var _n4 = dict.e;
+			var rClr = _n4.a;
+			var rK = _n4.b;
+			var rV = _n4.c;
+			var rLeft = _n4.d;
+			var rRight = _n4.e;
+			return A5(
+				elm$core$Dict$RBNode_elm_builtin,
+				elm$core$Dict$Red,
+				lK,
+				lV,
+				A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Black, llK, llV, llLeft, llRight),
+				A5(
+					elm$core$Dict$RBNode_elm_builtin,
+					elm$core$Dict$Black,
+					k,
+					v,
+					lRight,
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight)));
+		} else {
+			var clr = dict.a;
+			var k = dict.b;
+			var v = dict.c;
+			var _n5 = dict.d;
+			var lClr = _n5.a;
+			var lK = _n5.b;
+			var lV = _n5.c;
+			var lLeft = _n5.d;
+			var lRight = _n5.e;
+			var _n6 = dict.e;
+			var rClr = _n6.a;
+			var rK = _n6.b;
+			var rV = _n6.c;
+			var rLeft = _n6.d;
+			var rRight = _n6.e;
+			if (clr.$ === 'Black') {
+				return A5(
+					elm$core$Dict$RBNode_elm_builtin,
+					elm$core$Dict$Black,
+					k,
+					v,
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight));
+			} else {
+				return A5(
+					elm$core$Dict$RBNode_elm_builtin,
+					elm$core$Dict$Black,
+					k,
+					v,
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
+					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight));
+			}
+		}
+	} else {
+		return dict;
+	}
+};
+var elm$core$Dict$removeHelpPrepEQGT = F7(
+	function (targetKey, dict, color, key, value, left, right) {
+		if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
+			var _n1 = left.a;
+			var lK = left.b;
+			var lV = left.c;
+			var lLeft = left.d;
+			var lRight = left.e;
+			return A5(
+				elm$core$Dict$RBNode_elm_builtin,
+				color,
+				lK,
+				lV,
+				lLeft,
+				A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, key, value, lRight, right));
+		} else {
+			_n2$2:
+			while (true) {
+				if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Black')) {
+					if (right.d.$ === 'RBNode_elm_builtin') {
+						if (right.d.a.$ === 'Black') {
+							var _n3 = right.a;
+							var _n4 = right.d;
+							var _n5 = _n4.a;
+							return elm$core$Dict$moveRedRight(dict);
+						} else {
+							break _n2$2;
+						}
+					} else {
+						var _n6 = right.a;
+						var _n7 = right.d;
+						return elm$core$Dict$moveRedRight(dict);
+					}
+				} else {
+					break _n2$2;
+				}
+			}
+			return dict;
+		}
 	});
+var elm$core$Dict$removeMin = function (dict) {
+	if ((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) {
+		var color = dict.a;
+		var key = dict.b;
+		var value = dict.c;
+		var left = dict.d;
+		var lColor = left.a;
+		var lLeft = left.d;
+		var right = dict.e;
+		if (lColor.$ === 'Black') {
+			if ((lLeft.$ === 'RBNode_elm_builtin') && (lLeft.a.$ === 'Red')) {
+				var _n3 = lLeft.a;
+				return A5(
+					elm$core$Dict$RBNode_elm_builtin,
+					color,
+					key,
+					value,
+					elm$core$Dict$removeMin(left),
+					right);
+			} else {
+				var _n4 = elm$core$Dict$moveRedLeft(dict);
+				if (_n4.$ === 'RBNode_elm_builtin') {
+					var nColor = _n4.a;
+					var nKey = _n4.b;
+					var nValue = _n4.c;
+					var nLeft = _n4.d;
+					var nRight = _n4.e;
+					return A5(
+						elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						elm$core$Dict$removeMin(nLeft),
+						nRight);
+				} else {
+					return elm$core$Dict$RBEmpty_elm_builtin;
+				}
+			}
+		} else {
+			return A5(
+				elm$core$Dict$RBNode_elm_builtin,
+				color,
+				key,
+				value,
+				elm$core$Dict$removeMin(left),
+				right);
+		}
+	} else {
+		return elm$core$Dict$RBEmpty_elm_builtin;
+	}
+};
+var elm$core$Dict$removeHelp = F2(
+	function (targetKey, dict) {
+		if (dict.$ === 'RBEmpty_elm_builtin') {
+			return elm$core$Dict$RBEmpty_elm_builtin;
+		} else {
+			var color = dict.a;
+			var key = dict.b;
+			var value = dict.c;
+			var left = dict.d;
+			var right = dict.e;
+			if (_Utils_cmp(targetKey, key) < 0) {
+				if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Black')) {
+					var _n4 = left.a;
+					var lLeft = left.d;
+					if ((lLeft.$ === 'RBNode_elm_builtin') && (lLeft.a.$ === 'Red')) {
+						var _n6 = lLeft.a;
+						return A5(
+							elm$core$Dict$RBNode_elm_builtin,
+							color,
+							key,
+							value,
+							A2(elm$core$Dict$removeHelp, targetKey, left),
+							right);
+					} else {
+						var _n7 = elm$core$Dict$moveRedLeft(dict);
+						if (_n7.$ === 'RBNode_elm_builtin') {
+							var nColor = _n7.a;
+							var nKey = _n7.b;
+							var nValue = _n7.c;
+							var nLeft = _n7.d;
+							var nRight = _n7.e;
+							return A5(
+								elm$core$Dict$balance,
+								nColor,
+								nKey,
+								nValue,
+								A2(elm$core$Dict$removeHelp, targetKey, nLeft),
+								nRight);
+						} else {
+							return elm$core$Dict$RBEmpty_elm_builtin;
+						}
+					}
+				} else {
+					return A5(
+						elm$core$Dict$RBNode_elm_builtin,
+						color,
+						key,
+						value,
+						A2(elm$core$Dict$removeHelp, targetKey, left),
+						right);
+				}
+			} else {
+				return A2(
+					elm$core$Dict$removeHelpEQGT,
+					targetKey,
+					A7(elm$core$Dict$removeHelpPrepEQGT, targetKey, dict, color, key, value, left, right));
+			}
+		}
+	});
+var elm$core$Dict$removeHelpEQGT = F2(
+	function (targetKey, dict) {
+		if (dict.$ === 'RBNode_elm_builtin') {
+			var color = dict.a;
+			var key = dict.b;
+			var value = dict.c;
+			var left = dict.d;
+			var right = dict.e;
+			if (_Utils_eq(targetKey, key)) {
+				var _n1 = elm$core$Dict$getMin(right);
+				if (_n1.$ === 'RBNode_elm_builtin') {
+					var minKey = _n1.b;
+					var minValue = _n1.c;
+					return A5(
+						elm$core$Dict$balance,
+						color,
+						minKey,
+						minValue,
+						left,
+						elm$core$Dict$removeMin(right));
+				} else {
+					return elm$core$Dict$RBEmpty_elm_builtin;
+				}
+			} else {
+				return A5(
+					elm$core$Dict$balance,
+					color,
+					key,
+					value,
+					left,
+					A2(elm$core$Dict$removeHelp, targetKey, right));
+			}
+		} else {
+			return elm$core$Dict$RBEmpty_elm_builtin;
+		}
+	});
+var elm$core$Dict$remove = F2(
+	function (key, dict) {
+		var _n0 = A2(elm$core$Dict$removeHelp, key, dict);
+		if ((_n0.$ === 'RBNode_elm_builtin') && (_n0.a.$ === 'Red')) {
+			var _n1 = _n0.a;
+			var k = _n0.b;
+			var v = _n0.c;
+			var l = _n0.d;
+			var r = _n0.e;
+			return A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Black, k, v, l, r);
+		} else {
+			var x = _n0;
+			return x;
+		}
+	});
+var elm$core$Dict$update = F3(
+	function (targetKey, alter, dictionary) {
+		var _n0 = alter(
+			A2(elm$core$Dict$get, targetKey, dictionary));
+		if (_n0.$ === 'Just') {
+			var value = _n0.a;
+			return A3(elm$core$Dict$insert, targetKey, value, dictionary);
+		} else {
+			return A2(elm$core$Dict$remove, targetKey, dictionary);
+		}
+	});
+var Chadtech$elm_relational_database$Db$update = F3(
+	function (id, f, _n0) {
+		var dict = _n0.a;
+		return Chadtech$elm_relational_database$Db$Db(
+			A3(
+				elm$core$Dict$update,
+				Chadtech$elm_relational_database$Id$toString(id),
+				f,
+				dict));
+	});
+var author$project$Data$Generate = function (a) {
+	return {$: 'Generate', a: a};
+};
+var author$project$Data$GenerateCodingAnswers = function (a) {
+	return {$: 'GenerateCodingAnswers', a: a};
+};
+var author$project$Data$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
+};
 var Chadtech$elm_relational_database$Db$insert = F2(
 	function (_n0, _n1) {
 		var thisId = _n0.a;
@@ -6236,6 +6703,500 @@ var Chadtech$elm_relational_database$Db$insert = F2(
 				Chadtech$elm_relational_database$Id$toString(thisId),
 				item,
 				dict));
+	});
+var elm$core$Char$fromCode = _Char_fromCode;
+var Chadtech$elm_relational_database$Id$toChar = function (_int) {
+	var code = (_int < 10) ? (_int + 48) : ((_int < 36) ? (_int + 55) : (_int + 61));
+	return elm$core$Char$fromCode(code);
+};
+var elm$core$String$fromList = _String_fromList;
+var Chadtech$elm_relational_database$Id$intsToString = A2(
+	elm$core$Basics$composeR,
+	elm$core$List$map(Chadtech$elm_relational_database$Id$toChar),
+	elm$core$String$fromList);
+var elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var elm$core$Bitwise$and = _Bitwise_and;
+var elm$random$Random$Generator = function (a) {
+	return {$: 'Generator', a: a};
+};
+var elm$core$Bitwise$xor = _Bitwise_xor;
+var elm$random$Random$peel = function (_n0) {
+	var state = _n0.a;
+	var word = (state ^ (state >>> ((state >>> 28) + 4))) * 277803737;
+	return ((word >>> 22) ^ word) >>> 0;
+};
+var elm$random$Random$int = F2(
+	function (a, b) {
+		return elm$random$Random$Generator(
+			function (seed0) {
+				var _n0 = (_Utils_cmp(a, b) < 0) ? _Utils_Tuple2(a, b) : _Utils_Tuple2(b, a);
+				var lo = _n0.a;
+				var hi = _n0.b;
+				var range = (hi - lo) + 1;
+				if (!((range - 1) & range)) {
+					return _Utils_Tuple2(
+						(((range - 1) & elm$random$Random$peel(seed0)) >>> 0) + lo,
+						elm$random$Random$next(seed0));
+				} else {
+					var threshhold = (((-range) >>> 0) % range) >>> 0;
+					var accountForBias = function (seed) {
+						accountForBias:
+						while (true) {
+							var x = elm$random$Random$peel(seed);
+							var seedN = elm$random$Random$next(seed);
+							if (_Utils_cmp(x, threshhold) < 0) {
+								var $temp$seed = seedN;
+								seed = $temp$seed;
+								continue accountForBias;
+							} else {
+								return _Utils_Tuple2((x % range) + lo, seedN);
+							}
+						}
+					};
+					return accountForBias(seed0);
+				}
+			});
+	});
+var elm$random$Random$listHelp = F4(
+	function (revList, n, gen, seed) {
+		listHelp:
+		while (true) {
+			if (n < 1) {
+				return _Utils_Tuple2(revList, seed);
+			} else {
+				var _n0 = gen(seed);
+				var value = _n0.a;
+				var newSeed = _n0.b;
+				var $temp$revList = A2(elm$core$List$cons, value, revList),
+					$temp$n = n - 1,
+					$temp$gen = gen,
+					$temp$seed = newSeed;
+				revList = $temp$revList;
+				n = $temp$n;
+				gen = $temp$gen;
+				seed = $temp$seed;
+				continue listHelp;
+			}
+		}
+	});
+var elm$random$Random$list = F2(
+	function (n, _n0) {
+		var gen = _n0.a;
+		return elm$random$Random$Generator(
+			function (seed) {
+				return A4(elm$random$Random$listHelp, _List_Nil, n, gen, seed);
+			});
+	});
+var elm$random$Random$map = F2(
+	function (func, _n0) {
+		var genA = _n0.a;
+		return elm$random$Random$Generator(
+			function (seed0) {
+				var _n1 = genA(seed0);
+				var a = _n1.a;
+				var seed1 = _n1.b;
+				return _Utils_Tuple2(
+					func(a),
+					seed1);
+			});
+	});
+var Chadtech$elm_relational_database$Id$generator = A2(
+	elm$random$Random$map,
+	A2(elm$core$Basics$composeR, Chadtech$elm_relational_database$Id$intsToString, Chadtech$elm_relational_database$Id$Id),
+	A2(
+		elm$random$Random$list,
+		64,
+		A2(elm$random$Random$int, 0, 61)));
+var author$project$Data$SetTime = F2(
+	function (a, b) {
+		return {$: 'SetTime', a: a, b: b};
+	});
+var author$project$Data$TimedCodingAnswer = function (a) {
+	return {$: 'TimedCodingAnswer', a: a};
+};
+var elm$core$Dict$filter = F2(
+	function (isGood, dict) {
+		return A3(
+			elm$core$Dict$foldl,
+			F3(
+				function (k, v, d) {
+					return A2(isGood, k, v) ? A3(elm$core$Dict$insert, k, v, d) : d;
+				}),
+			elm$core$Dict$empty,
+			dict);
+	});
+var Chadtech$elm_relational_database$Db$filter = F2(
+	function (rowFilterFunction, _n0) {
+		var dict = _n0.a;
+		var uncurried = F2(
+			function (key, value) {
+				return rowFilterFunction(
+					_Utils_Tuple2(
+						Chadtech$elm_relational_database$Id$fromString(key),
+						value));
+			});
+		return Chadtech$elm_relational_database$Db$Db(
+			A2(elm$core$Dict$filter, uncurried, dict));
+	});
+var Chadtech$elm_relational_database$Db$toList = function (_n0) {
+	var dict = _n0.a;
+	return A2(
+		elm$core$List$map,
+		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
+		elm$core$Dict$toList(dict));
+};
+var author$project$Data$NoResult = {$: 'NoResult'};
+var elm$core$Result$fromMaybe = F2(
+	function (err, maybe) {
+		if (maybe.$ === 'Just') {
+			var v = maybe.a;
+			return elm$core$Result$Ok(v);
+		} else {
+			return elm$core$Result$Err(err);
+		}
+	});
+var elm_community$list_extra$List$Extra$maximumBy = F2(
+	function (f, ls) {
+		var maxBy = F2(
+			function (x, _n1) {
+				var y = _n1.a;
+				var fy = _n1.b;
+				var fx = f(x);
+				return (_Utils_cmp(fx, fy) > 0) ? _Utils_Tuple2(x, fx) : _Utils_Tuple2(y, fy);
+			});
+		if (ls.b) {
+			if (!ls.b.b) {
+				var l_ = ls.a;
+				return elm$core$Maybe$Just(l_);
+			} else {
+				var l_ = ls.a;
+				var ls_ = ls.b;
+				return elm$core$Maybe$Just(
+					A3(
+						elm$core$List$foldl,
+						maxBy,
+						_Utils_Tuple2(
+							l_,
+							f(l_)),
+						ls_).a);
+			}
+		} else {
+			return elm$core$Maybe$Nothing;
+		}
+	});
+var author$project$Data$getCodingAnswer = F3(
+	function (model, _n0, _n1) {
+		var fid = _n0.a;
+		var frame = _n0.b;
+		var qid = _n1.a;
+		var question = _n1.b;
+		return A2(
+			elm$core$Result$fromMaybe,
+			author$project$Data$NoResult,
+			A2(
+				elm_community$list_extra$List$Extra$maximumBy,
+				function (_n4) {
+					var id = _n4.a;
+					var m = _n4.b;
+					return m.timestamp.modified;
+				},
+				Chadtech$elm_relational_database$Db$toList(
+					A2(
+						Chadtech$elm_relational_database$Db$filter,
+						function (_n3) {
+							var x = _n3.b;
+							return _Utils_eq(x.coding_question, qid);
+						},
+						A2(
+							Chadtech$elm_relational_database$Db$filter,
+							function (_n2) {
+								var x = _n2.b;
+								return _Utils_eq(x.coding_frame, fid);
+							},
+							model.coding_answers)))));
+	});
+var author$project$Entities$Timestamp$All = function (a) {
+	return {$: 'All', a: a};
+};
+var author$project$Entities$Timestamp$empty = {accessed: 0, created: 0, modified: 0};
+var elm$random$Random$step = F2(
+	function (_n0, seed) {
+		var generator = _n0.a;
+		return generator(seed);
+	});
+var elm$time$Time$Name = function (a) {
+	return {$: 'Name', a: a};
+};
+var elm$time$Time$Offset = function (a) {
+	return {$: 'Offset', a: a};
+};
+var elm$time$Time$Zone = F2(
+	function (a, b) {
+		return {$: 'Zone', a: a, b: b};
+	});
+var elm$time$Time$customZone = elm$time$Time$Zone;
+var elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var elm$time$Time$millisToPosix = elm$time$Time$Posix;
+var elm$time$Time$now = _Time_now(elm$time$Time$millisToPosix);
+var author$project$Data$generateCodingAnswer = F3(
+	function (model, coding_frame, coding_question) {
+		var candidate = A3(author$project$Data$getCodingAnswer, model, coding_frame, coding_question);
+		if (candidate.$ === 'Ok') {
+			var value = candidate.a;
+			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		} else {
+			var _n1 = candidate.a;
+			var _n2 = coding_question;
+			var qid = _n2.a;
+			var qm = _n2.b;
+			var _n3 = A2(elm$random$Random$step, Chadtech$elm_relational_database$Id$generator, model.seed);
+			var new_coding_answer_id = _n3.a;
+			var new_seed = _n3.b;
+			var _n4 = coding_frame;
+			var cid = _n4.a;
+			var cm = _n4.b;
+			var new_coding_answer = {coding_frame: cid, coding_question: qid, timestamp: author$project$Entities$Timestamp$empty, value: ''};
+			var new_coding_answers = A2(
+				Chadtech$elm_relational_database$Db$insert,
+				_Utils_Tuple2(new_coding_answer_id, new_coding_answer),
+				model.coding_answers);
+			var new_model = _Utils_update(
+				model,
+				{coding_answers: new_coding_answers});
+			var new_model2 = _Utils_update(
+				new_model,
+				{seed: new_seed});
+			return _Utils_Tuple2(
+				new_model2,
+				A2(
+					elm$core$Task$perform,
+					function (x) {
+						return A2(
+							author$project$Data$SetTime,
+							author$project$Data$TimedCodingAnswer(new_coding_answer_id),
+							author$project$Entities$Timestamp$All(x));
+					},
+					elm$time$Time$now));
+		}
+	});
+var Chadtech$elm_relational_database$Db$get = F2(
+	function (_n0, thisId) {
+		var dict = _n0.a;
+		return A2(
+			elm$core$Dict$get,
+			Chadtech$elm_relational_database$Id$toString(thisId),
+			dict);
+	});
+var author$project$Db$Extra$Absent = {$: 'Absent'};
+var author$project$Db$Extra$get = F3(
+	function (b, accessor, _n0) {
+		var ida = _n0.a;
+		var valuea = _n0.b;
+		var idb = accessor(valuea);
+		var _n1 = A2(Chadtech$elm_relational_database$Db$get, b, idb);
+		if (_n1.$ === 'Just') {
+			var valueb = _n1.a;
+			return elm$core$Result$Ok(
+				_Utils_Tuple2(idb, valueb));
+		} else {
+			return elm$core$Result$Err(author$project$Db$Extra$Absent);
+		}
+	});
+var elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var author$project$Db$Extra$selectFrom = F3(
+	function (db, accessor, id_db) {
+		var id_list = A2(
+			elm$core$List$map,
+			function (_n1) {
+				var id = _n1.a;
+				return id;
+			},
+			Chadtech$elm_relational_database$Db$toList(id_db));
+		return A2(
+			Chadtech$elm_relational_database$Db$filter,
+			function (_n0) {
+				var id = _n0.a;
+				var value = _n0.b;
+				return A2(
+					elm$core$List$member,
+					accessor(value),
+					id_list);
+			},
+			db);
+	});
+var elm$core$Result$andThen = F2(
+	function (callback, result) {
+		if (result.$ === 'Ok') {
+			var value = result.a;
+			return callback(value);
+		} else {
+			var msg = result.a;
+			return elm$core$Result$Err(msg);
+		}
+	});
+var elm$core$Result$map = F2(
+	function (func, ra) {
+		if (ra.$ === 'Ok') {
+			var a = ra.a;
+			return elm$core$Result$Ok(
+				func(a));
+		} else {
+			var e = ra.a;
+			return elm$core$Result$Err(e);
+		}
+	});
+var author$project$Data$getCodingQuestionsViaAnswer = F2(
+	function (model, frame) {
+		return A2(
+			elm$core$Result$map,
+			A2(
+				author$project$Db$Extra$selectFrom,
+				model.coding_questions,
+				function (c) {
+					return c.coding_questionary;
+				}),
+			A2(
+				elm$core$Result$map,
+				A2(
+					author$project$Db$Extra$selectFrom,
+					model.coding_questionaries,
+					function (c) {
+						return c.question;
+					}),
+				A2(
+					elm$core$Result$map,
+					function (c) {
+						return A2(Chadtech$elm_relational_database$Db$insert, c, Chadtech$elm_relational_database$Db$empty);
+					},
+					A2(
+						elm$core$Result$andThen,
+						A2(
+							author$project$Db$Extra$get,
+							model.questions,
+							function (c) {
+								return c.question;
+							}),
+						A3(
+							author$project$Db$Extra$get,
+							model.answers,
+							function (c) {
+								return c.answer;
+							},
+							frame)))));
+	});
+var elm$core$Debug$todo = _Debug_todo;
+var author$project$Data$generateCodingAnswers = F2(
+	function (model, coding_frame) {
+		var missing_questions = _Debug_todo(
+			'Data',
+			{
+				start: {line: 297, column: 29},
+				end: {line: 297, column: 39}
+			})('implement missing questions');
+		var coding_questions = A2(author$project$Data$getCodingQuestionsViaAnswer, model, coding_frame);
+		return _Debug_todo(
+			'Data',
+			{
+				start: {line: 299, column: 9},
+				end: {line: 299, column: 19}
+			})('Implement codingAnswers Return');
+	});
+var author$project$Data$hasValidFrameQuestionPath = F2(
+	function (model, frame) {
+		var _n0 = A2(author$project$Data$getCodingQuestionsViaAnswer, model, frame);
+		if (_n0.$ === 'Ok') {
+			var value = _n0.a;
+			return true;
+		} else {
+			var error = _n0.a;
+			return false;
+		}
+	});
+var author$project$Db$Extra$selectFromRow = F3(
+	function (db, accessor, _n0) {
+		var id = _n0.a;
+		var row = _n0.b;
+		return A2(
+			Chadtech$elm_relational_database$Db$filter,
+			function (_n1) {
+				var value = _n1.b;
+				return _Utils_eq(
+					accessor(value),
+					id);
+			},
+			db);
+	});
+var elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2(elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var author$project$Data$getCurrentFrames = F2(
+	function (model, coding) {
+		return A2(
+			elm$core$List$filter,
+			author$project$Data$hasValidFrameQuestionPath(model),
+			Chadtech$elm_relational_database$Db$toList(
+				A3(
+					author$project$Db$Extra$selectFromRow,
+					model.coding_frames,
+					function (value) {
+						return value.coding;
+					},
+					coding)));
+	});
+var author$project$Data$getCurrentFrame = F2(
+	function (model, coding) {
+		return A2(
+			elm$core$Result$fromMaybe,
+			author$project$Data$NoResult,
+			A2(
+				elm_community$list_extra$List$Extra$maximumBy,
+				function (_n0) {
+					var id = _n0.a;
+					var m = _n0.b;
+					return m.timestamp.accessed;
+				},
+				A2(author$project$Data$getCurrentFrames, model, coding)));
 	});
 var author$project$Data$optionalUpdate = F3(
 	function (id, database, updater) {
@@ -6389,6 +7350,56 @@ var author$project$Data$updateEntity = F2(
 						}),
 					elm$core$Platform$Cmd$none);
 		}
+	});
+var elm$time$Time$posixToMillis = function (_n0) {
+	var millis = _n0.a;
+	return millis;
+};
+var author$project$Entities$Timestamp$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'All':
+				var time_ = msg.a;
+				var time = elm$time$Time$posixToMillis(time_);
+				return _Utils_Tuple2(
+					{accessed: time, created: time, modified: time},
+					elm$core$Platform$Cmd$none);
+			case 'Created':
+				var time_ = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							created: elm$time$Time$posixToMillis(time_)
+						}),
+					elm$core$Platform$Cmd$none);
+			case 'Modified':
+				var time_ = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							modified: elm$time$Time$posixToMillis(time_)
+						}),
+					elm$core$Platform$Cmd$none);
+			default:
+				var time_ = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							accessed: elm$time$Time$posixToMillis(time_)
+						}),
+					elm$core$Platform$Cmd$none);
+		}
+	});
+var author$project$Entities$Timestamp$updateTimestamp = F2(
+	function (msg, object) {
+		var _n0 = A2(author$project$Entities$Timestamp$update, msg, object.timestamp);
+		var new_timestamp = _n0.a;
+		return _Utils_update(
+			object,
+			{timestamp: new_timestamp});
 	});
 var author$project$Internal$Ripple$Model$Idle = {$: 'Idle'};
 var author$project$Internal$Ripple$Model$defaultModel = {animationCounter: 0, animationState: author$project$Internal$Ripple$Model$Idle, clientRect: elm$core$Maybe$Nothing, focused: false};
@@ -7755,9 +8766,6 @@ var author$project$Internal$Msg$SnackbarMsg = F2(
 		return {$: 'SnackbarMsg', a: a, b: b};
 	});
 var author$project$Internal$Snackbar$Model$Inert = {$: 'Inert'};
-var elm$core$Basics$negate = function (n) {
-	return -n;
-};
 var author$project$Internal$Snackbar$Model$defaultModel = {open: false, queue: _List_Nil, seq: -1, state: author$project$Internal$Snackbar$Model$Inert};
 var author$project$Internal$Snackbar$Implementation$getSet = A3(
 	author$project$Internal$Component$indexed,
@@ -8629,13 +9637,75 @@ var author$project$Data$update = F2(
 			case 'Mdc':
 				var msg_ = msg.a;
 				return A3(author$project$Material$update, author$project$Data$Mdc, msg_, model);
-			default:
+			case 'Click':
 				var tab = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{current_tab: tab}),
 					elm$core$Platform$Cmd$none);
+			case 'Generate':
+				var msg_ = msg.a;
+				return A2(author$project$Data$updateGeneration, msg_, model);
+			default:
+				var entity = msg.a;
+				var tmsg = msg.b;
+				if (entity.$ === 'TimedCodingAnswer') {
+					var id = entity.a;
+					var new_coding_answers = A3(
+						Chadtech$elm_relational_database$Db$update,
+						id,
+						elm$core$Maybe$map(
+							author$project$Entities$Timestamp$updateTimestamp(tmsg)),
+						model.coding_answers);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{coding_answers: new_coding_answers}),
+						elm$core$Platform$Cmd$none);
+				} else {
+					var id = entity.a;
+					var new_coding_frames = A3(
+						Chadtech$elm_relational_database$Db$update,
+						id,
+						elm$core$Maybe$map(
+							author$project$Entities$Timestamp$updateTimestamp(tmsg)),
+						model.coding_frames);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{coding_frames: new_coding_frames}),
+						elm$core$Platform$Cmd$none);
+				}
+		}
+	});
+var author$project$Data$updateGeneration = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'GenerateCodingFrame':
+				var gentype = msg.a;
+				var coding = msg.b;
+				var questionary = msg.c;
+				var current_frame = A2(author$project$Data$getCurrentFrame, model, coding);
+				var _n1 = _Utils_Tuple2(gentype, current_frame);
+				if ((_n1.a.$ === 'Any') && (_n1.b.$ === 'Ok')) {
+					var _n2 = _n1.a;
+					var frame = _n1.b.a;
+					return A2(
+						author$project$Data$update,
+						author$project$Data$Generate(
+							author$project$Data$GenerateCodingAnswers(frame)),
+						model);
+				} else {
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
+			case 'GenerateCodingAnswer':
+				var coding_frame = msg.a;
+				var coding_question = msg.b;
+				return A3(author$project$Data$generateCodingAnswer, model, coding_frame, coding_question);
+			default:
+				var coding_frame = msg.a;
+				return A2(author$project$Data$generateCodingAnswers, model, coding_frame);
 		}
 	});
 var author$project$Main$GotDataMsg = function (a) {
@@ -8643,6 +9713,15 @@ var author$project$Main$GotDataMsg = function (a) {
 };
 var author$project$Page$UrlChanged = function (a) {
 	return {$: 'UrlChanged', a: a};
+};
+var author$project$Page$DataMsg = function (a) {
+	return {$: 'DataMsg', a: a};
+};
+var author$project$Page$GenerateFrame = function (a) {
+	return {$: 'GenerateFrame', a: a};
+};
+var author$project$Page$GotCodeMsg = function (a) {
+	return {$: 'GotCodeMsg', a: a};
 };
 var author$project$Page$GotDataMsg = function (a) {
 	return {$: 'GotDataMsg', a: a};
@@ -8659,6 +9738,39 @@ var author$project$Page$GotLoginMsg = function (a) {
 var author$project$Page$PageMsg = function (a) {
 	return {$: 'PageMsg', a: a};
 };
+var author$project$Page$Code$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
+};
+var author$project$Page$Code$update = F3(
+	function (lift, msg, model) {
+		switch (msg.$) {
+			case 'Mdc':
+				var msg_ = msg.a;
+				return A3(
+					author$project$Material$update,
+					A2(elm$core$Basics$composeL, lift, author$project$Page$Code$Mdc),
+					msg_,
+					model);
+			case 'ListMsg':
+				switch (msg.a.$) {
+					case 'Select':
+						var coding = msg.a.a;
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					case 'Mdc':
+						var msg_ = msg.a.a;
+						return A3(
+							author$project$Material$update,
+							A2(elm$core$Basics$composeL, lift, author$project$Page$Code$Mdc),
+							msg_,
+							model);
+					default:
+						var _n1 = msg.a;
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
+			default:
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		}
+	});
 var author$project$Page$Data$Mdc = function (a) {
 	return {$: 'Mdc', a: a};
 };
@@ -8692,16 +9804,37 @@ var author$project$Page$Home$Mdc = function (a) {
 };
 var author$project$Page$Home$update = F3(
 	function (lift, msg, model) {
-		if (msg.$ === 'Mdc') {
-			var msg_ = msg.a;
-			return A3(
-				author$project$Material$update,
-				A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
-				msg_,
-				model);
-		} else {
-			var index = msg.a;
-			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		switch (msg.$) {
+			case 'Mdc':
+				var msg_ = msg.a;
+				return A3(
+					author$project$Material$update,
+					A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
+					msg_,
+					model);
+			case 'ListMsg':
+				switch (msg.a.$) {
+					case 'Select':
+						var coding = msg.a.a;
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					case 'Mdc':
+						var msg_ = msg.a.a;
+						return A3(
+							author$project$Material$update,
+							A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
+							msg_,
+							model);
+					default:
+						var _n1 = msg.a;
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				}
+			default:
+				var msg_ = msg.a.a;
+				return A3(
+					author$project$Material$update,
+					A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
+					msg_,
+					model);
 		}
 	});
 var author$project$Page$Login$Mdc = function (a) {
@@ -8775,7 +9908,7 @@ var author$project$Page$updatePage = F3(
 						model,
 						{data: datam}),
 					effects);
-			default:
+			case 'GotHomeMsg':
 				var msg_ = msg.a;
 				var _n4 = A3(
 					author$project$Page$Home$update,
@@ -8789,25 +9922,21 @@ var author$project$Page$updatePage = F3(
 						model,
 						{home: homem}),
 					effects);
+			default:
+				var msg_ = msg.a;
+				var _n5 = A3(
+					author$project$Page$Code$update,
+					A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotCodeMsg),
+					msg_,
+					model.code);
+				var codem = _n5.a;
+				var effects = _n5.b;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{code: codem}),
+					effects);
 		}
-	});
-var Chadtech$elm_relational_database$Db$toList = function (_n0) {
-	var dict = _n0.a;
-	return A2(
-		elm$core$List$map,
-		elm$core$Tuple$mapFirst(Chadtech$elm_relational_database$Id$fromString),
-		elm$core$Dict$toList(dict));
-};
-var elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2(elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
 	});
 var elm$core$String$toLower = _String_toLower;
 var author$project$Page$Login$getFilteredList = F2(
@@ -8824,8 +9953,8 @@ var author$project$Page$Login$getFilteredList = F2(
 			},
 			Chadtech$elm_relational_database$Db$toList(db));
 	});
+var author$project$Page$Url$Code = {$: 'Code'};
 var author$project$Page$Url$Data = {$: 'Data'};
-var author$project$Page$Url$Error = {$: 'Error'};
 var author$project$Page$Url$Error404 = function (a) {
 	return {$: 'Error404', a: a};
 };
@@ -8839,6 +9968,8 @@ var author$project$Page$Url$fromString = function (url) {
 			return author$project$Page$Url$Error;
 		case 'home':
 			return author$project$Page$Url$Home;
+		case 'code':
+			return author$project$Page$Url$Code;
 		default:
 			return author$project$Page$Url$Error404(url);
 	}
@@ -8853,23 +9984,67 @@ var elm_community$list_extra$List$Extra$getAt = F2(
 			A2(elm$core$List$drop, idx, xs));
 	});
 var author$project$Page$update = F3(
-	function (msg, model, data) {
-		switch (msg.$) {
-			case 'Mdc':
-				var msg_ = msg.a;
-				return A3(author$project$Material$update, author$project$Page$Mdc, msg_, model);
-			case 'PageMsg':
-				var m = msg.a;
-				if ((m.$ === 'GotLoginMsg') && (m.a.$ === 'Select')) {
-					var index = m.a.a;
-					var list = A2(author$project$Page$Login$getFilteredList, data.coders, model.page.login.field);
-					var mb_row = A2(elm_community$list_extra$List$Extra$getAt, index, list);
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{user: mb_row}),
-						elm$core$Platform$Cmd$none);
-				} else {
+	function (msg, data, model) {
+		update:
+		while (true) {
+			switch (msg.$) {
+				case 'Mdc':
+					var msg_ = msg.a;
+					return A3(author$project$Material$update, author$project$Page$Mdc, msg_, model);
+				case 'PageMsg':
+					var m = msg.a;
+					_n1$3:
+					while (true) {
+						switch (m.$) {
+							case 'GotLoginMsg':
+								if (m.a.$ === 'Select') {
+									var index = m.a.a;
+									var list = A2(author$project$Page$Login$getFilteredList, data.coders, model.page.login.field);
+									var mb_row = A2(elm_community$list_extra$List$Extra$getAt, index, list);
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{user: mb_row}),
+										elm$core$Platform$Cmd$none);
+								} else {
+									break _n1$3;
+								}
+							case 'GotHomeMsg':
+								if ((m.a.$ === 'ListMsg') && (m.a.a.$ === 'Select')) {
+									var coding = m.a.a.a;
+									var new_model = _Utils_update(
+										model,
+										{
+											coding: elm$core$Maybe$Just(coding)
+										});
+									var new_model2 = _Utils_update(
+										new_model,
+										{url: author$project$Page$Url$Code});
+									return A3(
+										author$project$Page$update,
+										author$project$Page$GenerateFrame(coding),
+										data,
+										new_model2);
+								} else {
+									break _n1$3;
+								}
+							case 'GotCodeMsg':
+								if (m.a.$ === 'DataMsg') {
+									var msg_ = m.a.a;
+									var $temp$msg = author$project$Page$DataMsg(msg_),
+										$temp$data = data,
+										$temp$model = model;
+									msg = $temp$msg;
+									data = $temp$data;
+									model = $temp$model;
+									continue update;
+								} else {
+									break _n1$3;
+								}
+							default:
+								break _n1$3;
+						}
+					}
 					var _n2 = A3(author$project$Page$updatePage, m, model.page, data);
 					var page = _n2.a;
 					var effects = _n2.b;
@@ -8878,20 +10053,25 @@ var author$project$Page$update = F3(
 							model,
 							{page: page}),
 						effects);
-				}
-			case 'OpenDrawer':
-				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-			case 'OpenOverflow':
-				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-			default:
-				var url = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							url: author$project$Page$Url$fromUrl(url)
-						}),
-					elm$core$Platform$Cmd$none);
+				case 'OpenDrawer':
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				case 'OpenOverflow':
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				case 'UrlChanged':
+					var url = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								url: author$project$Page$Url$fromUrl(url)
+							}),
+						elm$core$Platform$Cmd$none);
+				case 'GenerateFrame':
+					var coding = msg.a;
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				default:
+					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+			}
 		}
 	});
 var elm$browser$Browser$Navigation$load = _Browser_load;
@@ -8944,22 +10124,34 @@ var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
 			case 'GotPageMsg':
-				var msg_ = msg.a;
-				var _n1 = A3(author$project$Page$update, msg_, model.page, model.data);
-				var page = _n1.a;
-				var effect = _n1.b;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{page: page}),
-					A2(elm$core$Platform$Cmd$map, author$project$Main$GotPageMsg, effect));
+				if (msg.a.$ === 'DataMsg') {
+					var msg_ = msg.a.a;
+					var _n1 = A2(author$project$Data$update, msg_, model.data);
+					var datam = _n1.a;
+					var effect = _n1.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{data: datam}),
+						A2(elm$core$Platform$Cmd$map, author$project$Main$GotDataMsg, effect));
+				} else {
+					var msg_ = msg.a;
+					var _n2 = A3(author$project$Page$update, msg_, model.data, model.page);
+					var page = _n2.a;
+					var effect = _n2.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{page: page}),
+						A2(elm$core$Platform$Cmd$map, author$project$Main$GotPageMsg, effect));
+				}
 			case 'Noop':
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 			case 'GotDataMsg':
 				var msg_ = msg.a;
-				var _n2 = A2(author$project$Data$update, msg_, model.data);
-				var data = _n2.a;
-				var effect = _n2.b;
+				var _n3 = A2(author$project$Data$update, msg_, model.data);
+				var data = _n3.a;
+				var effect = _n3.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -8983,13 +10175,13 @@ var author$project$Main$update = F2(
 				}
 			default:
 				var url = msg.a;
-				var _n4 = A3(
+				var _n5 = A3(
 					author$project$Page$update,
 					author$project$Page$UrlChanged(url),
-					model.page,
-					model.data);
-				var page = _n4.a;
-				var effect = _n4.b;
+					model.data,
+					model.page);
+				var page = _n5.a;
+				var effect = _n5.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -9195,379 +10387,6 @@ var author$project$Internal$Dispatch$defaultConfig = author$project$Internal$Dis
 var author$project$Internal$Options$Summary = F6(
 	function (classes, css, attrs, internal, dispatch, config) {
 		return {attrs: attrs, classes: classes, config: config, css: css, dispatch: dispatch, internal: internal};
-	});
-var elm$core$Dict$getMin = function (dict) {
-	getMin:
-	while (true) {
-		if ((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) {
-			var left = dict.d;
-			var $temp$dict = left;
-			dict = $temp$dict;
-			continue getMin;
-		} else {
-			return dict;
-		}
-	}
-};
-var elm$core$Dict$moveRedLeft = function (dict) {
-	if (((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) && (dict.e.$ === 'RBNode_elm_builtin')) {
-		if ((dict.e.d.$ === 'RBNode_elm_builtin') && (dict.e.d.a.$ === 'Red')) {
-			var clr = dict.a;
-			var k = dict.b;
-			var v = dict.c;
-			var _n1 = dict.d;
-			var lClr = _n1.a;
-			var lK = _n1.b;
-			var lV = _n1.c;
-			var lLeft = _n1.d;
-			var lRight = _n1.e;
-			var _n2 = dict.e;
-			var rClr = _n2.a;
-			var rK = _n2.b;
-			var rV = _n2.c;
-			var rLeft = _n2.d;
-			var _n3 = rLeft.a;
-			var rlK = rLeft.b;
-			var rlV = rLeft.c;
-			var rlL = rLeft.d;
-			var rlR = rLeft.e;
-			var rRight = _n2.e;
-			return A5(
-				elm$core$Dict$RBNode_elm_builtin,
-				elm$core$Dict$Red,
-				rlK,
-				rlV,
-				A5(
-					elm$core$Dict$RBNode_elm_builtin,
-					elm$core$Dict$Black,
-					k,
-					v,
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
-					rlL),
-				A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Black, rK, rV, rlR, rRight));
-		} else {
-			var clr = dict.a;
-			var k = dict.b;
-			var v = dict.c;
-			var _n4 = dict.d;
-			var lClr = _n4.a;
-			var lK = _n4.b;
-			var lV = _n4.c;
-			var lLeft = _n4.d;
-			var lRight = _n4.e;
-			var _n5 = dict.e;
-			var rClr = _n5.a;
-			var rK = _n5.b;
-			var rV = _n5.c;
-			var rLeft = _n5.d;
-			var rRight = _n5.e;
-			if (clr.$ === 'Black') {
-				return A5(
-					elm$core$Dict$RBNode_elm_builtin,
-					elm$core$Dict$Black,
-					k,
-					v,
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight));
-			} else {
-				return A5(
-					elm$core$Dict$RBNode_elm_builtin,
-					elm$core$Dict$Black,
-					k,
-					v,
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight));
-			}
-		}
-	} else {
-		return dict;
-	}
-};
-var elm$core$Dict$moveRedRight = function (dict) {
-	if (((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) && (dict.e.$ === 'RBNode_elm_builtin')) {
-		if ((dict.d.d.$ === 'RBNode_elm_builtin') && (dict.d.d.a.$ === 'Red')) {
-			var clr = dict.a;
-			var k = dict.b;
-			var v = dict.c;
-			var _n1 = dict.d;
-			var lClr = _n1.a;
-			var lK = _n1.b;
-			var lV = _n1.c;
-			var _n2 = _n1.d;
-			var _n3 = _n2.a;
-			var llK = _n2.b;
-			var llV = _n2.c;
-			var llLeft = _n2.d;
-			var llRight = _n2.e;
-			var lRight = _n1.e;
-			var _n4 = dict.e;
-			var rClr = _n4.a;
-			var rK = _n4.b;
-			var rV = _n4.c;
-			var rLeft = _n4.d;
-			var rRight = _n4.e;
-			return A5(
-				elm$core$Dict$RBNode_elm_builtin,
-				elm$core$Dict$Red,
-				lK,
-				lV,
-				A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Black, llK, llV, llLeft, llRight),
-				A5(
-					elm$core$Dict$RBNode_elm_builtin,
-					elm$core$Dict$Black,
-					k,
-					v,
-					lRight,
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight)));
-		} else {
-			var clr = dict.a;
-			var k = dict.b;
-			var v = dict.c;
-			var _n5 = dict.d;
-			var lClr = _n5.a;
-			var lK = _n5.b;
-			var lV = _n5.c;
-			var lLeft = _n5.d;
-			var lRight = _n5.e;
-			var _n6 = dict.e;
-			var rClr = _n6.a;
-			var rK = _n6.b;
-			var rV = _n6.c;
-			var rLeft = _n6.d;
-			var rRight = _n6.e;
-			if (clr.$ === 'Black') {
-				return A5(
-					elm$core$Dict$RBNode_elm_builtin,
-					elm$core$Dict$Black,
-					k,
-					v,
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight));
-			} else {
-				return A5(
-					elm$core$Dict$RBNode_elm_builtin,
-					elm$core$Dict$Black,
-					k,
-					v,
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, lK, lV, lLeft, lRight),
-					A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, rK, rV, rLeft, rRight));
-			}
-		}
-	} else {
-		return dict;
-	}
-};
-var elm$core$Dict$removeHelpPrepEQGT = F7(
-	function (targetKey, dict, color, key, value, left, right) {
-		if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
-			var _n1 = left.a;
-			var lK = left.b;
-			var lV = left.c;
-			var lLeft = left.d;
-			var lRight = left.e;
-			return A5(
-				elm$core$Dict$RBNode_elm_builtin,
-				color,
-				lK,
-				lV,
-				lLeft,
-				A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Red, key, value, lRight, right));
-		} else {
-			_n2$2:
-			while (true) {
-				if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Black')) {
-					if (right.d.$ === 'RBNode_elm_builtin') {
-						if (right.d.a.$ === 'Black') {
-							var _n3 = right.a;
-							var _n4 = right.d;
-							var _n5 = _n4.a;
-							return elm$core$Dict$moveRedRight(dict);
-						} else {
-							break _n2$2;
-						}
-					} else {
-						var _n6 = right.a;
-						var _n7 = right.d;
-						return elm$core$Dict$moveRedRight(dict);
-					}
-				} else {
-					break _n2$2;
-				}
-			}
-			return dict;
-		}
-	});
-var elm$core$Dict$removeMin = function (dict) {
-	if ((dict.$ === 'RBNode_elm_builtin') && (dict.d.$ === 'RBNode_elm_builtin')) {
-		var color = dict.a;
-		var key = dict.b;
-		var value = dict.c;
-		var left = dict.d;
-		var lColor = left.a;
-		var lLeft = left.d;
-		var right = dict.e;
-		if (lColor.$ === 'Black') {
-			if ((lLeft.$ === 'RBNode_elm_builtin') && (lLeft.a.$ === 'Red')) {
-				var _n3 = lLeft.a;
-				return A5(
-					elm$core$Dict$RBNode_elm_builtin,
-					color,
-					key,
-					value,
-					elm$core$Dict$removeMin(left),
-					right);
-			} else {
-				var _n4 = elm$core$Dict$moveRedLeft(dict);
-				if (_n4.$ === 'RBNode_elm_builtin') {
-					var nColor = _n4.a;
-					var nKey = _n4.b;
-					var nValue = _n4.c;
-					var nLeft = _n4.d;
-					var nRight = _n4.e;
-					return A5(
-						elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						elm$core$Dict$removeMin(nLeft),
-						nRight);
-				} else {
-					return elm$core$Dict$RBEmpty_elm_builtin;
-				}
-			}
-		} else {
-			return A5(
-				elm$core$Dict$RBNode_elm_builtin,
-				color,
-				key,
-				value,
-				elm$core$Dict$removeMin(left),
-				right);
-		}
-	} else {
-		return elm$core$Dict$RBEmpty_elm_builtin;
-	}
-};
-var elm$core$Dict$removeHelp = F2(
-	function (targetKey, dict) {
-		if (dict.$ === 'RBEmpty_elm_builtin') {
-			return elm$core$Dict$RBEmpty_elm_builtin;
-		} else {
-			var color = dict.a;
-			var key = dict.b;
-			var value = dict.c;
-			var left = dict.d;
-			var right = dict.e;
-			if (_Utils_cmp(targetKey, key) < 0) {
-				if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Black')) {
-					var _n4 = left.a;
-					var lLeft = left.d;
-					if ((lLeft.$ === 'RBNode_elm_builtin') && (lLeft.a.$ === 'Red')) {
-						var _n6 = lLeft.a;
-						return A5(
-							elm$core$Dict$RBNode_elm_builtin,
-							color,
-							key,
-							value,
-							A2(elm$core$Dict$removeHelp, targetKey, left),
-							right);
-					} else {
-						var _n7 = elm$core$Dict$moveRedLeft(dict);
-						if (_n7.$ === 'RBNode_elm_builtin') {
-							var nColor = _n7.a;
-							var nKey = _n7.b;
-							var nValue = _n7.c;
-							var nLeft = _n7.d;
-							var nRight = _n7.e;
-							return A5(
-								elm$core$Dict$balance,
-								nColor,
-								nKey,
-								nValue,
-								A2(elm$core$Dict$removeHelp, targetKey, nLeft),
-								nRight);
-						} else {
-							return elm$core$Dict$RBEmpty_elm_builtin;
-						}
-					}
-				} else {
-					return A5(
-						elm$core$Dict$RBNode_elm_builtin,
-						color,
-						key,
-						value,
-						A2(elm$core$Dict$removeHelp, targetKey, left),
-						right);
-				}
-			} else {
-				return A2(
-					elm$core$Dict$removeHelpEQGT,
-					targetKey,
-					A7(elm$core$Dict$removeHelpPrepEQGT, targetKey, dict, color, key, value, left, right));
-			}
-		}
-	});
-var elm$core$Dict$removeHelpEQGT = F2(
-	function (targetKey, dict) {
-		if (dict.$ === 'RBNode_elm_builtin') {
-			var color = dict.a;
-			var key = dict.b;
-			var value = dict.c;
-			var left = dict.d;
-			var right = dict.e;
-			if (_Utils_eq(targetKey, key)) {
-				var _n1 = elm$core$Dict$getMin(right);
-				if (_n1.$ === 'RBNode_elm_builtin') {
-					var minKey = _n1.b;
-					var minValue = _n1.c;
-					return A5(
-						elm$core$Dict$balance,
-						color,
-						minKey,
-						minValue,
-						left,
-						elm$core$Dict$removeMin(right));
-				} else {
-					return elm$core$Dict$RBEmpty_elm_builtin;
-				}
-			} else {
-				return A5(
-					elm$core$Dict$balance,
-					color,
-					key,
-					value,
-					left,
-					A2(elm$core$Dict$removeHelp, targetKey, right));
-			}
-		} else {
-			return elm$core$Dict$RBEmpty_elm_builtin;
-		}
-	});
-var elm$core$Dict$remove = F2(
-	function (key, dict) {
-		var _n0 = A2(elm$core$Dict$removeHelp, key, dict);
-		if ((_n0.$ === 'RBNode_elm_builtin') && (_n0.a.$ === 'Red')) {
-			var _n1 = _n0.a;
-			var k = _n0.b;
-			var v = _n0.c;
-			var l = _n0.d;
-			var r = _n0.e;
-			return A5(elm$core$Dict$RBNode_elm_builtin, elm$core$Dict$Black, k, v, l, r);
-		} else {
-			var x = _n0;
-			return x;
-		}
-	});
-var elm$core$Dict$update = F3(
-	function (targetKey, alter, dictionary) {
-		var _n0 = alter(
-			A2(elm$core$Dict$get, targetKey, dictionary));
-		if (_n0.$ === 'Just') {
-			var value = _n0.a;
-			return A3(elm$core$Dict$insert, targetKey, value, dictionary);
-		} else {
-			return A2(elm$core$Dict$remove, targetKey, dictionary);
-		}
 	});
 var author$project$Internal$Dispatch$add = F3(
 	function (event, decoder, _n0) {
@@ -9820,11 +10639,32 @@ var author$project$Page$viewBody = F3(
 						]))
 				]));
 	});
+var author$project$Page$Url$toString = function (url) {
+	switch (url.$) {
+		case 'StartPage':
+			return '#';
+		case 'Error404':
+			var requestedHash = url.a;
+			return requestedHash;
+		case 'Data':
+			return '#data';
+		case 'Error':
+			return '#error';
+		case 'Home':
+			return '#home';
+		default:
+			return '#code';
+	}
+};
+var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
+var author$project$Page$viewDebug = function (model) {
+	return elm$html$Html$text(
+		author$project$Page$Url$toString(model.url));
+};
 var elm$html$Html$a = _VirtualDom_node('a');
 var elm$html$Html$footer = _VirtualDom_node('footer');
 var elm$html$Html$span = _VirtualDom_node('span');
-var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
 var elm$html$Html$Attributes$href = function (url) {
 	return A2(
 		elm$html$Html$Attributes$stringProperty,
@@ -10584,27 +11424,6 @@ var author$project$Internal$TopAppBar$Model$Scroll = function (a) {
 	return {$: 'Scroll', a: a};
 };
 var author$project$Internal$TopAppBar$Model$defaultConfig = {collapsed: false, dense: false, fixed: false, prominent: false, _short: false};
-var elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
-	});
 var elm$html$Html$header = _VirtualDom_node('header');
 var author$project$Internal$TopAppBar$Implementation$topAppBar = F4(
 	function (lift, model, options, sections) {
@@ -10775,72 +11594,96 @@ var author$project$Page$viewUI = F2(
 					header,
 					elm$html$Html$text(title),
 					body),
-				_List_fromArray(
-					[
-						author$project$Page$viewFooter(model.mdc)
-					])),
+				A2(
+					elm$core$List$cons,
+					author$project$Page$viewDebug(model),
+					_List_fromArray(
+						[
+							author$project$Page$viewFooter(model.mdc)
+						]))),
 			title: title + ' - Conduit2'
 		};
 	});
-var author$project$Db$Extra$TooFew = F3(
-	function (a, b, c) {
-		return {$: 'TooFew', a: a, b: b, c: c};
-	});
-var author$project$Db$Extra$size = function (db) {
-	return elm$core$List$length(
-		Chadtech$elm_relational_database$Db$toList(db));
+var author$project$Page$Code$viewAnswer = elm$html$Html$text('Answer');
+var author$project$Page$Code$viewCodingQuestionForm = _List_fromArray(
+	[
+		elm$html$Html$text('Form')
+	]);
+var author$project$Page$Code$viewQuestion = elm$html$Html$text('Question');
+var author$project$Page$Code$viewCoding = A2(
+	elm$core$List$cons,
+	author$project$Page$Code$viewQuestion,
+	A2(elm$core$List$cons, author$project$Page$Code$viewAnswer, author$project$Page$Code$viewCodingQuestionForm));
+var author$project$Page$Code$viewNavigation = elm$html$Html$text('Navigation');
+var author$project$Page$Code$viewProgress = elm$html$Html$text('Progress');
+var author$project$Page$Code$viewBody = function (mb) {
+	return A2(
+		elm$core$List$cons,
+		author$project$Page$Code$viewProgress,
+		_Utils_ap(
+			author$project$Page$Code$viewCoding,
+			_List_fromArray(
+				[author$project$Page$Code$viewNavigation])));
 };
-var elm$core$Basics$ge = _Utils_ge;
-var author$project$Db$Extra$assertSizeGeq = F3(
-	function (target_size, error, db) {
-		return (_Utils_cmp(
-			author$project$Db$Extra$size(db),
-			target_size) > -1) ? elm$core$Result$Ok(db) : elm$core$Result$Err(
-			A3(
-				author$project$Db$Extra$TooFew,
-				author$project$Db$Extra$size(db),
-				target_size,
-				error));
+var author$project$Page$Code$view = F4(
+	function (lift, model, data, coding) {
+		var all_coding_frames = A3(
+			author$project$Db$Extra$selectFrom,
+			data.coding_frames,
+			function (c) {
+				return c.coding;
+			},
+			Chadtech$elm_relational_database$Db$fromList(
+				_List_fromArray(
+					[coding])));
+		var mb_current = A2(
+			elm_community$list_extra$List$Extra$maximumBy,
+			function (_n0) {
+				var id = _n0.a;
+				var m = _n0.b;
+				return m.timestamp.accessed;
+			},
+			Chadtech$elm_relational_database$Db$toList(all_coding_frames));
+		return {
+			body: author$project$Page$Code$viewBody(mb_current),
+			title: 'Coding'
+		};
 	});
-var author$project$Db$Extra$TooMuch = F3(
-	function (a, b, c) {
-		return {$: 'TooMuch', a: a, b: b, c: c};
+var author$project$Data$AnswerMsg = F2(
+	function (a, b) {
+		return {$: 'AnswerMsg', a: a, b: b};
 	});
-var author$project$Db$Extra$assertSizeLeq = F3(
-	function (target_size, error, db) {
-		return (_Utils_cmp(
-			author$project$Db$Extra$size(db),
-			target_size) < 1) ? elm$core$Result$Ok(db) : elm$core$Result$Err(
-			A3(
-				author$project$Db$Extra$TooMuch,
-				author$project$Db$Extra$size(db),
-				target_size,
-				error));
+var author$project$Data$Entity = function (a) {
+	return {$: 'Entity', a: a};
+};
+var elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
 	});
-var elm$core$Dict$filter = F2(
-	function (isGood, dict) {
-		return A3(
-			elm$core$Dict$foldl,
-			F3(
-				function (k, v, d) {
-					return A2(isGood, k, v) ? A3(elm$core$Dict$insert, k, v, d) : d;
-				}),
-			elm$core$Dict$empty,
-			dict);
+var Chadtech$elm_relational_database$Db$filterMissing = function (items) {
+	var onlyPresent = function (_n0) {
+		var id = _n0.a;
+		var maybeItem = _n0.b;
+		return A2(
+			elm$core$Maybe$map,
+			elm$core$Tuple$pair(id),
+			maybeItem);
+	};
+	return A2(
+		elm$core$List$filterMap,
+		elm$core$Basics$identity,
+		A2(elm$core$List$map, onlyPresent, items));
+};
+var Chadtech$elm_relational_database$Db$getWithId = F2(
+	function (db, thisId) {
+		return _Utils_Tuple2(
+			thisId,
+			A2(Chadtech$elm_relational_database$Db$get, db, thisId));
 	});
-var Chadtech$elm_relational_database$Db$filter = F2(
-	function (rowFilterFunction, _n0) {
-		var dict = _n0.a;
-		var uncurried = F2(
-			function (key, value) {
-				return rowFilterFunction(
-					_Utils_Tuple2(
-						Chadtech$elm_relational_database$Id$fromString(key),
-						value));
-			});
-		return Chadtech$elm_relational_database$Db$Db(
-			A2(elm$core$Dict$filter, uncurried, dict));
-	});
+var Chadtech$elm_relational_database$Db$getMany = function (db) {
+	return elm$core$List$map(
+		Chadtech$elm_relational_database$Db$getWithId(db));
+};
 var author$project$Db$Extra$NotFound = {$: 'NotFound'};
 var elm$core$List$isEmpty = function (xs) {
 	if (!xs.b) {
@@ -10868,56 +11711,66 @@ var author$project$Db$Extra$selectBy = F3(
 			return elm$core$Result$Ok(result);
 		}
 	});
-var elm$core$List$member = F2(
-	function (x, xs) {
+var author$project$Data$selectAllAnswers = F2(
+	function (model, questionary) {
 		return A2(
-			elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
-			},
-			xs);
+			elm$core$Result$map,
+			A2(
+				author$project$Db$Extra$selectFrom,
+				model.answers,
+				function (c) {
+					return c.question;
+				}),
+			A2(
+				elm$core$Result$map,
+				A2(
+					author$project$Db$Extra$selectFrom,
+					model.questions,
+					function (c) {
+						return c.questionary;
+					}),
+				A3(
+					author$project$Db$Extra$selectBy,
+					model.questionaries,
+					function (c) {
+						return c.name;
+					},
+					function (c) {
+						return _Utils_eq(c, questionary);
+					})));
 	});
-var author$project$Db$Extra$selectFrom = F3(
-	function (db, accessor, id_db) {
-		var id_list = A2(
-			elm$core$List$map,
-			function (_n1) {
-				var id = _n1.a;
-				return id;
-			},
-			Chadtech$elm_relational_database$Db$toList(id_db));
-		return A2(
-			Chadtech$elm_relational_database$Db$filter,
-			function (_n0) {
-				var id = _n0.a;
-				var value = _n0.b;
-				return A2(
-					elm$core$List$member,
-					accessor(value),
-					id_list);
-			},
-			db);
+var author$project$Db$Extra$TooFew = F2(
+	function (a, b) {
+		return {$: 'TooFew', a: a, b: b};
 	});
-var elm$core$Result$andThen = F2(
-	function (callback, result) {
-		if (result.$ === 'Ok') {
-			var value = result.a;
-			return callback(value);
-		} else {
-			var msg = result.a;
-			return elm$core$Result$Err(msg);
-		}
+var author$project$Db$Extra$size = function (db) {
+	return elm$core$List$length(
+		Chadtech$elm_relational_database$Db$toList(db));
+};
+var elm$core$Basics$ge = _Utils_ge;
+var author$project$Db$Extra$assertSizeGeq = F3(
+	function (target_size, error, db) {
+		return (_Utils_cmp(
+			author$project$Db$Extra$size(db),
+			target_size) > -1) ? elm$core$Result$Ok(db) : elm$core$Result$Err(
+			A2(
+				author$project$Db$Extra$TooFew,
+				author$project$Db$Extra$size(db),
+				target_size));
 	});
-var elm$core$Result$map = F2(
-	function (func, ra) {
-		if (ra.$ === 'Ok') {
-			var a = ra.a;
-			return elm$core$Result$Ok(
-				func(a));
-		} else {
-			var e = ra.a;
-			return elm$core$Result$Err(e);
-		}
+var author$project$Db$Extra$TooMuch = F2(
+	function (a, b) {
+		return {$: 'TooMuch', a: a, b: b};
+	});
+var author$project$Db$Extra$assertSizeLeq = F3(
+	function (target_size, error, db) {
+		return (_Utils_cmp(
+			author$project$Db$Extra$size(db),
+			target_size) < 1) ? elm$core$Result$Ok(db) : elm$core$Result$Err(
+			A2(
+				author$project$Db$Extra$TooMuch,
+				author$project$Db$Extra$size(db),
+				target_size));
 	});
 var author$project$Data$selectFramesFromCoderName = F2(
 	function (model, name) {
@@ -11029,77 +11882,6 @@ var author$project$Data$selectCodingFrames = F3(
 		var questionary_frames = A2(author$project$Data$selectFramesFromQuestionaryName, model, questionary);
 		var coder_frames = A2(author$project$Data$selectFramesFromCoderName, model, coder);
 		return A3(elm$core$Result$map2, author$project$Db$Extra$intersection, coder_frames, questionary_frames);
-	});
-var author$project$Data$unwrap = function (res) {
-	if (res.$ === 'Ok') {
-		var value = res.a;
-		return Chadtech$elm_relational_database$Db$toList(value);
-	} else {
-		return _List_Nil;
-	}
-};
-var author$project$Data$AnswerMsg = F2(
-	function (a, b) {
-		return {$: 'AnswerMsg', a: a, b: b};
-	});
-var author$project$Data$Entity = function (a) {
-	return {$: 'Entity', a: a};
-};
-var elm$core$Tuple$pair = F2(
-	function (a, b) {
-		return _Utils_Tuple2(a, b);
-	});
-var Chadtech$elm_relational_database$Db$filterMissing = function (items) {
-	var onlyPresent = function (_n0) {
-		var id = _n0.a;
-		var maybeItem = _n0.b;
-		return A2(
-			elm$core$Maybe$map,
-			elm$core$Tuple$pair(id),
-			maybeItem);
-	};
-	return A2(
-		elm$core$List$filterMap,
-		elm$core$Basics$identity,
-		A2(elm$core$List$map, onlyPresent, items));
-};
-var Chadtech$elm_relational_database$Db$getWithId = F2(
-	function (db, thisId) {
-		return _Utils_Tuple2(
-			thisId,
-			A2(Chadtech$elm_relational_database$Db$get, db, thisId));
-	});
-var Chadtech$elm_relational_database$Db$getMany = function (db) {
-	return elm$core$List$map(
-		Chadtech$elm_relational_database$Db$getWithId(db));
-};
-var author$project$Data$selectAllAnswers = F2(
-	function (model, questionary) {
-		return A2(
-			elm$core$Result$map,
-			A2(
-				author$project$Db$Extra$selectFrom,
-				model.answers,
-				function (c) {
-					return c.question;
-				}),
-			A2(
-				elm$core$Result$map,
-				A2(
-					author$project$Db$Extra$selectFrom,
-					model.questions,
-					function (c) {
-						return c.questionary;
-					}),
-				A3(
-					author$project$Db$Extra$selectBy,
-					model.questionaries,
-					function (c) {
-						return c.name;
-					},
-					function (c) {
-						return _Utils_eq(c, questionary);
-					})));
 	});
 var author$project$Db$Extra$difference = F2(
 	function (lhs, rhs) {
@@ -11407,201 +12189,6 @@ var author$project$Data$viewAnswers = F3(
 			return elm$html$Html$text('An error occured.');
 		}
 	});
-var author$project$Data$CodingQuestionMsg = F2(
-	function (a, b) {
-		return {$: 'CodingQuestionMsg', a: a, b: b};
-	});
-var author$project$Db$Extra$Absent = F2(
-	function (a, b) {
-		return {$: 'Absent', a: a, b: b};
-	});
-var author$project$Db$Extra$get = F3(
-	function (b, accessor, _n0) {
-		var ida = _n0.a;
-		var valuea = _n0.b;
-		var idb = accessor(valuea);
-		var _n1 = A2(Chadtech$elm_relational_database$Db$get, b, idb);
-		if (_n1.$ === 'Just') {
-			var valueb = _n1.a;
-			return elm$core$Result$Ok(
-				_Utils_Tuple2(idb, valueb));
-		} else {
-			return elm$core$Result$Err(
-				A2(
-					author$project$Db$Extra$Absent,
-					Chadtech$elm_relational_database$Id$toString(ida),
-					Chadtech$elm_relational_database$Id$toString(idb)));
-		}
-	});
-var author$project$Data$selectCodingQuestions = F2(
-	function (model, frame) {
-		return A2(
-			elm$core$Result$map,
-			A2(
-				author$project$Db$Extra$selectFrom,
-				model.coding_questions,
-				function (c) {
-					return c.coding_questionary;
-				}),
-			A2(
-				elm$core$Result$map,
-				A2(
-					author$project$Db$Extra$selectFrom,
-					model.coding_questionaries,
-					function (c) {
-						return c.question;
-					}),
-				A2(
-					elm$core$Result$map,
-					function (c) {
-						return A2(Chadtech$elm_relational_database$Db$insert, c, Chadtech$elm_relational_database$Db$empty);
-					},
-					A2(
-						elm$core$Result$andThen,
-						A2(
-							author$project$Db$Extra$get,
-							model.questions,
-							function (c) {
-								return c.question;
-							}),
-						A3(
-							author$project$Db$Extra$get,
-							model.answers,
-							function (c) {
-								return c.answer;
-							},
-							frame)))));
-	});
-var author$project$Entities$Coding$Question$toTableRow = function (_n0) {
-	var id = _n0.a;
-	var model = _n0.b;
-	return A2(
-		author$project$Material$DataTable$tr,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						Chadtech$elm_relational_database$Id$toString(id))
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						Chadtech$elm_relational_database$Id$toString(model.coding_questionary))
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(model.text)
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text('TODO')
-					]))
-			]));
-};
-var author$project$Entities$Coding$Question$viewTable = function (model) {
-	return A2(
-		elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$h3,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text('Coding Question')
-					])),
-				A2(
-				author$project$Material$DataTable$view,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						author$project$Material$DataTable$table,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								author$project$Material$DataTable$thead,
-								_List_Nil,
-								_List_fromArray(
-									[
-										A2(
-										author$project$Material$DataTable$trh,
-										_List_Nil,
-										_List_fromArray(
-											[
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('ID')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('Questionary')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('Text')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('Input Type')
-													]))
-											]))
-									])),
-								A2(
-								author$project$Material$DataTable$tbody,
-								_List_Nil,
-								A2(
-									elm$core$List$map,
-									author$project$Entities$Coding$Question$toTableRow,
-									Chadtech$elm_relational_database$Db$toList(model)))
-							]))
-					]))
-			]));
-};
-var author$project$Data$viewCodingQuestions = F2(
-	function (model, frame) {
-		var _n0 = A2(author$project$Data$selectCodingQuestions, model, frame);
-		if (_n0.$ === 'Ok') {
-			var value = _n0.a;
-			return A2(
-				elm$html$Html$map,
-				A2(
-					elm$core$Basics$composeL,
-					author$project$Data$Entity,
-					author$project$Data$CodingQuestionMsg(elm$core$Maybe$Nothing)),
-				author$project$Entities$Coding$Question$viewTable(value));
-		} else {
-			return elm$html$Html$text('An error occured.');
-		}
-	});
 var author$project$Data$CodingFrameMsg = F2(
 	function (a, b) {
 		return {$: 'CodingFrameMsg', a: a, b: b};
@@ -11644,7 +12231,7 @@ var author$project$Entities$Coding$Frame$toTableRow = function (_n0) {
 				_List_fromArray(
 					[
 						elm$html$Html$text(
-						elm$core$String$fromInt(model.created))
+						elm$core$String$fromInt(model.timestamp.created))
 					])),
 				A2(
 				author$project$Material$DataTable$td,
@@ -11652,7 +12239,7 @@ var author$project$Entities$Coding$Frame$toTableRow = function (_n0) {
 				_List_fromArray(
 					[
 						elm$html$Html$text(
-						elm$core$String$fromInt(model.modified))
+						elm$core$String$fromInt(model.timestamp.modified))
 					]))
 			]));
 };
@@ -12758,14 +13345,6 @@ var author$project$Data$view = function (model) {
 				A3(author$project$Data$viewAnswers, model, 'Jerome Bergmann', 'First Questionary'),
 				A3(author$project$Data$viewContent3, model, 'Jerome Bergmann', 'First Questionary'),
 				elm$html$Html$text('Before'),
-				A2(
-				elm$html$Html$div,
-				_List_Nil,
-				A2(
-					elm$core$List$map,
-					author$project$Data$viewCodingQuestions(model),
-					author$project$Data$unwrap(
-						A3(author$project$Data$selectCodingFrames, model, 'Jerome Bergmann', 'First Questionary')))),
 				elm$html$Html$text('After'),
 				author$project$Data$viewTabBar(model),
 				author$project$Data$viewTabContent(model)
@@ -12809,58 +13388,215 @@ var author$project$Page$Error$view = F4(
 			title: 'Error'
 		};
 	});
-var author$project$Data$selectQuestionaryFromCoding = F2(
-	function (model, coding) {
-		return A2(
-			elm$core$Maybe$withDefault,
-			_Utils_Tuple2(
-				Chadtech$elm_relational_database$Id$fromString('Nan'),
-				{name: 'Not Found'}),
-			elm$core$List$head(
-				A2(
-					elm$core$List$filterMap,
-					function (x) {
-						return x;
-					},
+var author$project$Internal$List$Implementation$avatarList = author$project$Internal$Options$cs('mdc-list--avatar-list');
+var author$project$Material$List$avatarList = author$project$Internal$List$Implementation$avatarList;
+var author$project$Internal$List$Implementation$onSelectListItem = function (handler) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{
+					onSelectListItem: elm$core$Maybe$Just(handler)
+				});
+		});
+};
+var author$project$Material$List$onSelectListItem = author$project$Internal$List$Implementation$onSelectListItem;
+var author$project$Internal$List$Implementation$twoLine = author$project$Internal$Options$cs('mdc-list--two-line');
+var author$project$Material$List$twoLine = author$project$Internal$List$Implementation$twoLine;
+var author$project$Internal$List$Implementation$defaultConfig = {activated: false, isRadioGroup: false, isSingleSelectionList: false, node: elm$core$Maybe$Nothing, onSelectListItem: elm$core$Maybe$Nothing, selected: false, selectedIndex: elm$core$Maybe$Nothing, useActivated: false};
+var author$project$Internal$List$Implementation$listItemDomId = F2(
+	function (domId, index) {
+		return domId + ('--' + elm$core$String$fromInt(index));
+	});
+var author$project$Internal$List$Implementation$doListItemDomId = F3(
+	function (domId, index, listItem) {
+		return listItem.focusable ? A2(author$project$Internal$List$Implementation$listItemDomId, domId, index) : '';
+	});
+var author$project$Internal$List$Implementation$findIndexHelp = F3(
+	function (index, predicate, list) {
+		findIndexHelp:
+		while (true) {
+			if (!list.b) {
+				return elm$core$Maybe$Nothing;
+			} else {
+				var first = list.a;
+				var rest = list.b;
+				if (predicate(first)) {
+					return elm$core$Maybe$Just(index);
+				} else {
+					var $temp$index = index + 1,
+						$temp$predicate = predicate,
+						$temp$list = rest;
+					index = $temp$index;
+					predicate = $temp$predicate;
+					list = $temp$list;
+					continue findIndexHelp;
+				}
+			}
+		}
+	});
+var author$project$Internal$List$Implementation$findIndex = author$project$Internal$List$Implementation$findIndexHelp(0);
+var author$project$Internal$List$Implementation$liIsSelectedOrActivated = function (li_) {
+	var li_summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, li_.options);
+	var li_config = li_summary.config;
+	return li_config.selected || li_config.activated;
+};
+var author$project$Internal$List$Implementation$listItemView = F8(
+	function (domId, lift, model, config, listItemsIds, focusedIndex, index, li_) {
+		return A9(li_.view, domId, lift, model, config, listItemsIds, focusedIndex, index, li_.options, li_.children);
+	});
+var author$project$Internal$List$Implementation$invertDecoder = function (decoder) {
+	return A2(
+		elm$json$Json$Decode$andThen,
+		function (maybe) {
+			return _Utils_eq(maybe, elm$core$Maybe$Nothing) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : elm$json$Json$Decode$fail('');
+		},
+		elm$json$Json$Decode$maybe(decoder));
+};
+var author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer = function (targetId) {
+	return A2(
+		elm$json$Json$Decode$andThen,
+		function (id) {
+			return _Utils_eq(id, targetId) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : A2(
+				elm$json$Json$Decode$field,
+				'parentNode',
+				author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId));
+		},
+		A2(elm$json$Json$Decode$field, 'id', elm$json$Json$Decode$string));
+};
+var author$project$Internal$List$Implementation$succeedIfLeavingList = function (targetId) {
+	return author$project$Internal$List$Implementation$invertDecoder(
+		A2(
+			elm$json$Json$Decode$field,
+			'relatedTarget',
+			author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId)));
+};
+var author$project$Internal$List$Model$ResetFocusedItem = {$: 'ResetFocusedItem'};
+var elm$core$Array$fromListHelp = F3(
+	function (list, nodeList, nodeListSize) {
+		fromListHelp:
+		while (true) {
+			var _n0 = A2(elm$core$Elm$JsArray$initializeFromList, elm$core$Array$branchFactor, list);
+			var jsArray = _n0.a;
+			var remainingItems = _n0.b;
+			if (_Utils_cmp(
+				elm$core$Elm$JsArray$length(jsArray),
+				elm$core$Array$branchFactor) < 0) {
+				return A2(
+					elm$core$Array$builderToArray,
+					true,
+					{nodeList: nodeList, nodeListSize: nodeListSize, tail: jsArray});
+			} else {
+				var $temp$list = remainingItems,
+					$temp$nodeList = A2(
+					elm$core$List$cons,
+					elm$core$Array$Leaf(jsArray),
+					nodeList),
+					$temp$nodeListSize = nodeListSize + 1;
+				list = $temp$list;
+				nodeList = $temp$nodeList;
+				nodeListSize = $temp$nodeListSize;
+				continue fromListHelp;
+			}
+		}
+	});
+var elm$core$Array$fromList = function (list) {
+	if (!list.b) {
+		return elm$core$Array$empty;
+	} else {
+		return A3(elm$core$Array$fromListHelp, list, _List_Nil, 0);
+	}
+};
+var elm$html$Html$ul = _VirtualDom_node('ul');
+var author$project$Internal$List$Implementation$ul = F5(
+	function (domId, lift, model, options, items) {
+		var listItemIds = elm$core$Array$fromList(
+			A2(
+				elm$core$List$indexedMap,
+				author$project$Internal$List$Implementation$doListItemDomId(domId),
+				items));
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
+		var config = summary.config;
+		var focusedIndex = function () {
+			var _n0 = model.focused;
+			if (_n0.$ === 'Just') {
+				var focused = _n0.a;
+				return focused;
+			} else {
+				var _n1 = config.selectedIndex;
+				if (_n1.$ === 'Just') {
+					var index = _n1.a;
+					return index;
+				} else {
+					var _n2 = A2(author$project$Internal$List$Implementation$findIndex, author$project$Internal$List$Implementation$liIsSelectedOrActivated, items);
+					if (_n2.$ === 'Just') {
+						var i = _n2.a;
+						return i;
+					} else {
+						return 0;
+					}
+				}
+			}
+		}();
+		var list_nodes = A2(
+			elm$core$List$indexedMap,
+			A6(author$project$Internal$List$Implementation$listItemView, domId, lift, model, config, listItemIds, focusedIndex),
+			items);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			A2(elm$core$Maybe$withDefault, elm$html$Html$ul, config.node),
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-list'),
 					A2(
-						elm$core$List$map,
-						elm$core$Result$toMaybe,
-						A2(
-							elm$core$List$map,
-							elm$core$Result$andThen(
-								A2(
-									author$project$Db$Extra$get,
-									model.questionaries,
-									function (c) {
-										return c.questionary;
-									})),
-							A2(
-								elm$core$List$map,
-								elm$core$Result$andThen(
-									A2(
-										author$project$Db$Extra$get,
-										model.questions,
-										function (c) {
-											return c.question;
-										})),
-								A2(
-									elm$core$List$map,
-									A2(
-										author$project$Db$Extra$get,
-										model.answers,
-										function (c) {
-											return c.answer;
-										}),
-									Chadtech$elm_relational_database$Db$toList(
-										A3(
-											author$project$Db$Extra$selectFrom,
-											model.coding_frames,
-											function (c) {
-												return c.coding;
-											},
-											Chadtech$elm_relational_database$Db$fromList(
-												_List_fromArray(
-													[coding])))))))))));
+					author$project$Internal$Options$when,
+					config.isSingleSelectionList,
+					author$project$Internal$Options$role('listbox')),
+					A2(
+					author$project$Internal$Options$when,
+					config.isRadioGroup,
+					author$project$Internal$Options$role('radiogroup')),
+					author$project$Internal$Options$id(domId),
+					A2(
+					author$project$Internal$Options$on,
+					'focusout',
+					A2(
+						elm$json$Json$Decode$map,
+						elm$core$Basics$always(
+							lift(author$project$Internal$List$Model$ResetFocusedItem)),
+						author$project$Internal$List$Implementation$succeedIfLeavingList(domId)))
+				]),
+			_List_Nil,
+			list_nodes);
+	});
+var author$project$Internal$List$Implementation$view = F2(
+	function (lift, domId) {
+		return A5(
+			author$project$Internal$Component$render,
+			author$project$Internal$List$Implementation$getSet.get,
+			author$project$Internal$List$Implementation$ul(domId),
+			author$project$Internal$Msg$ListMsg,
+			lift,
+			domId);
+	});
+var author$project$Material$List$ul = author$project$Internal$List$Implementation$view;
+var author$project$Material$SimplifiedList$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
+};
+var author$project$Material$SimplifiedList$Noop = {$: 'Noop'};
+var author$project$Material$SimplifiedList$Select = function (a) {
+	return {$: 'Select', a: a};
+};
+var author$project$Material$SimplifiedList$onSelect = F2(
+	function (objects, index) {
+		var _n0 = A2(elm_community$list_extra$List$Extra$getAt, index, objects);
+		if (_n0.$ === 'Just') {
+			var object = _n0.a;
+			return author$project$Material$SimplifiedList$Select(object);
+		} else {
+			return author$project$Material$SimplifiedList$Noop;
+		}
 	});
 var author$project$Internal$List$Implementation$graphicClass = author$project$Internal$Options$cs('mdc-list-item__graphic');
 var author$project$Internal$List$Implementation$graphicIcon = function (options) {
@@ -12868,7 +13604,6 @@ var author$project$Internal$List$Implementation$graphicIcon = function (options)
 		A2(elm$core$List$cons, author$project$Internal$List$Implementation$graphicClass, options));
 };
 var author$project$Material$List$graphicIcon = author$project$Internal$List$Implementation$graphicIcon;
-var author$project$Internal$List$Implementation$defaultConfig = {activated: false, isRadioGroup: false, isSingleSelectionList: false, node: elm$core$Maybe$Nothing, onSelectListItem: elm$core$Maybe$Nothing, selected: false, selectedIndex: elm$core$Maybe$Nothing, useActivated: false};
 var author$project$Internal$List$Implementation$find = F2(
 	function (predicate, list) {
 		find:
@@ -12981,7 +13716,6 @@ var elm$core$Array$sliceLeft = F2(
 		}
 	});
 var elm$core$Array$bitMask = 4294967295 >>> (32 - elm$core$Array$shiftStep);
-var elm$core$Bitwise$and = _Bitwise_and;
 var elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
 var elm$core$Array$fetchNewTail = F4(
 	function (shift, end, treeEnd, tree) {
@@ -13162,10 +13896,6 @@ var author$project$Internal$List$Implementation$lastNonEmptyId = F2(
 		return non_empty_id;
 	});
 var author$project$Internal$List$Implementation$listItemClass = author$project$Internal$Options$cs('mdc-list-item');
-var author$project$Internal$List$Implementation$listItemDomId = F2(
-	function (domId, index) {
-		return domId + ('--' + elm$core$String$fromInt(index));
-	});
 var author$project$Internal$List$Model$FocusItem = F2(
 	function (a, b) {
 		return {$: 'FocusItem', a: a, b: b};
@@ -13236,7 +13966,7 @@ var author$project$Internal$List$Implementation$liView = F9(
 				var i = _n8.a;
 				return _Utils_eq(i, index);
 			} else {
-				return li_config.selected;
+				return li_config.selected || li_config.activated;
 			}
 		}();
 		return A5(
@@ -13441,7 +14171,115 @@ var author$project$Internal$List$Implementation$text = function (options) {
 			options));
 };
 var author$project$Material$List$text = author$project$Internal$List$Implementation$text;
-var author$project$Page$Home$viewCoding = F2(
+var author$project$Material$SimplifiedList$viewModel = function (item) {
+	return A2(
+		author$project$Material$List$li,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(author$project$Material$List$graphicIcon, _List_Nil, item.icon),
+				A2(
+				author$project$Material$List$text,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						author$project$Material$List$primaryText,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text(item.primary)
+							])),
+						A2(
+						author$project$Material$List$secondaryText,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text(item.secondary)
+							]))
+					])),
+				A2(author$project$Material$List$metaIcon, _List_Nil, 'info')
+			]));
+};
+var author$project$Material$SimplifiedList$view = F4(
+	function (lift, mdc, mapper, objects) {
+		return A5(
+			author$project$Material$List$ul,
+			A2(elm$core$Basics$composeL, lift, author$project$Material$SimplifiedList$Mdc),
+			'my-list',
+			mdc,
+			_List_fromArray(
+				[
+					author$project$Material$List$twoLine,
+					author$project$Material$List$avatarList,
+					author$project$Material$List$onSelectListItem(
+					A2(
+						elm$core$Basics$composeL,
+						lift,
+						author$project$Material$SimplifiedList$onSelect(objects)))
+				]),
+			A2(
+				elm$core$List$map,
+				author$project$Material$SimplifiedList$viewModel,
+				A2(elm$core$List$map, mapper, objects)));
+	});
+var author$project$Page$Home$ListMsg = function (a) {
+	return {$: 'ListMsg', a: a};
+};
+var author$project$Data$selectQuestionaryFromCoding = F2(
+	function (model, coding) {
+		return A2(
+			elm$core$Maybe$withDefault,
+			_Utils_Tuple2(
+				Chadtech$elm_relational_database$Id$fromString('Nan'),
+				{name: 'Not Found'}),
+			elm$core$List$head(
+				A2(
+					elm$core$List$filterMap,
+					function (x) {
+						return x;
+					},
+					A2(
+						elm$core$List$map,
+						elm$core$Result$toMaybe,
+						A2(
+							elm$core$List$map,
+							elm$core$Result$andThen(
+								A2(
+									author$project$Db$Extra$get,
+									model.questionaries,
+									function (c) {
+										return c.questionary;
+									})),
+							A2(
+								elm$core$List$map,
+								elm$core$Result$andThen(
+									A2(
+										author$project$Db$Extra$get,
+										model.questions,
+										function (c) {
+											return c.question;
+										})),
+								A2(
+									elm$core$List$map,
+									A2(
+										author$project$Db$Extra$get,
+										model.answers,
+										function (c) {
+											return c.answer;
+										}),
+									Chadtech$elm_relational_database$Db$toList(
+										A3(
+											author$project$Db$Extra$selectFrom,
+											model.coding_frames,
+											function (c) {
+												return c.coding;
+											},
+											Chadtech$elm_relational_database$Db$fromList(
+												_List_fromArray(
+													[coding])))))))))));
+	});
+var author$project$Page$Home$codingRowToListItem = F2(
 	function (data, _n0) {
 		var id = _n0.a;
 		var model = _n0.b;
@@ -13451,262 +14289,29 @@ var author$project$Page$Home$viewCoding = F2(
 			_Utils_Tuple2(id, model));
 		var qid = _n1.a;
 		var questionary = _n1.b;
-		return A2(
-			author$project$Material$List$li,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(author$project$Material$List$graphicIcon, _List_Nil, 'person'),
-					A2(
-					author$project$Material$List$text,
-					_List_Nil,
-					_List_fromArray(
-						[
-							A2(
-							author$project$Material$List$primaryText,
-							_List_Nil,
-							_List_fromArray(
-								[
-									elm$html$Html$text(questionary.name)
-								])),
-							A2(
-							author$project$Material$List$secondaryText,
-							_List_Nil,
-							_List_fromArray(
-								[
-									elm$html$Html$text(
-									Chadtech$elm_relational_database$Id$toString(id))
-								]))
-						])),
-					A2(author$project$Material$List$metaIcon, _List_Nil, 'info')
-				]));
-	});
-var author$project$Internal$List$Implementation$avatarList = author$project$Internal$Options$cs('mdc-list--avatar-list');
-var author$project$Material$List$avatarList = author$project$Internal$List$Implementation$avatarList;
-var author$project$Internal$List$Implementation$onSelectListItem = function (handler) {
-	return author$project$Internal$Options$option(
-		function (config) {
-			return _Utils_update(
-				config,
-				{
-					onSelectListItem: elm$core$Maybe$Just(handler)
-				});
-		});
-};
-var author$project$Material$List$onSelectListItem = author$project$Internal$List$Implementation$onSelectListItem;
-var author$project$Internal$List$Implementation$twoLine = author$project$Internal$Options$cs('mdc-list--two-line');
-var author$project$Material$List$twoLine = author$project$Internal$List$Implementation$twoLine;
-var author$project$Internal$List$Implementation$doListItemDomId = F3(
-	function (domId, index, listItem) {
-		return listItem.focusable ? A2(author$project$Internal$List$Implementation$listItemDomId, domId, index) : '';
-	});
-var author$project$Internal$List$Implementation$findIndexHelp = F3(
-	function (index, predicate, list) {
-		findIndexHelp:
-		while (true) {
-			if (!list.b) {
-				return elm$core$Maybe$Nothing;
-			} else {
-				var first = list.a;
-				var rest = list.b;
-				if (predicate(first)) {
-					return elm$core$Maybe$Just(index);
-				} else {
-					var $temp$index = index + 1,
-						$temp$predicate = predicate,
-						$temp$list = rest;
-					index = $temp$index;
-					predicate = $temp$predicate;
-					list = $temp$list;
-					continue findIndexHelp;
-				}
-			}
-		}
-	});
-var author$project$Internal$List$Implementation$findIndex = author$project$Internal$List$Implementation$findIndexHelp(0);
-var author$project$Internal$List$Implementation$liIsSelectedOrActivated = function (li_) {
-	var li_summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, li_.options);
-	var li_config = li_summary.config;
-	return li_config.selected || li_config.activated;
-};
-var author$project$Internal$List$Implementation$listItemView = F8(
-	function (domId, lift, model, config, listItemsIds, focusedIndex, index, li_) {
-		return A9(li_.view, domId, lift, model, config, listItemsIds, focusedIndex, index, li_.options, li_.children);
-	});
-var author$project$Internal$List$Implementation$invertDecoder = function (decoder) {
-	return A2(
-		elm$json$Json$Decode$andThen,
-		function (maybe) {
-			return _Utils_eq(maybe, elm$core$Maybe$Nothing) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : elm$json$Json$Decode$fail('');
-		},
-		elm$json$Json$Decode$maybe(decoder));
-};
-var author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer = function (targetId) {
-	return A2(
-		elm$json$Json$Decode$andThen,
-		function (id) {
-			return _Utils_eq(id, targetId) ? elm$json$Json$Decode$succeed(_Utils_Tuple0) : A2(
-				elm$json$Json$Decode$field,
-				'parentNode',
-				author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId));
-		},
-		A2(elm$json$Json$Decode$field, 'id', elm$json$Json$Decode$string));
-};
-var author$project$Internal$List$Implementation$succeedIfLeavingList = function (targetId) {
-	return author$project$Internal$List$Implementation$invertDecoder(
-		A2(
-			elm$json$Json$Decode$field,
-			'relatedTarget',
-			author$project$Internal$List$Implementation$succeedIfContainerOrChildOfContainer(targetId)));
-};
-var author$project$Internal$List$Model$ResetFocusedItem = {$: 'ResetFocusedItem'};
-var elm$core$Array$fromListHelp = F3(
-	function (list, nodeList, nodeListSize) {
-		fromListHelp:
-		while (true) {
-			var _n0 = A2(elm$core$Elm$JsArray$initializeFromList, elm$core$Array$branchFactor, list);
-			var jsArray = _n0.a;
-			var remainingItems = _n0.b;
-			if (_Utils_cmp(
-				elm$core$Elm$JsArray$length(jsArray),
-				elm$core$Array$branchFactor) < 0) {
-				return A2(
-					elm$core$Array$builderToArray,
-					true,
-					{nodeList: nodeList, nodeListSize: nodeListSize, tail: jsArray});
-			} else {
-				var $temp$list = remainingItems,
-					$temp$nodeList = A2(
-					elm$core$List$cons,
-					elm$core$Array$Leaf(jsArray),
-					nodeList),
-					$temp$nodeListSize = nodeListSize + 1;
-				list = $temp$list;
-				nodeList = $temp$nodeList;
-				nodeListSize = $temp$nodeListSize;
-				continue fromListHelp;
-			}
-		}
-	});
-var elm$core$Array$fromList = function (list) {
-	if (!list.b) {
-		return elm$core$Array$empty;
-	} else {
-		return A3(elm$core$Array$fromListHelp, list, _List_Nil, 0);
-	}
-};
-var elm$html$Html$ul = _VirtualDom_node('ul');
-var author$project$Internal$List$Implementation$ul = F5(
-	function (domId, lift, model, options, items) {
-		var listItemIds = elm$core$Array$fromList(
-			A2(
-				elm$core$List$indexedMap,
-				author$project$Internal$List$Implementation$doListItemDomId(domId),
-				items));
-		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
-		var config = summary.config;
-		var focusedIndex = function () {
-			var _n0 = model.focused;
-			if (_n0.$ === 'Just') {
-				var focused = _n0.a;
-				return focused;
-			} else {
-				var _n1 = config.selectedIndex;
-				if (_n1.$ === 'Just') {
-					var index = _n1.a;
-					return index;
-				} else {
-					var _n2 = A2(author$project$Internal$List$Implementation$findIndex, author$project$Internal$List$Implementation$liIsSelectedOrActivated, items);
-					if (_n2.$ === 'Just') {
-						var i = _n2.a;
-						return i;
-					} else {
-						return 0;
-					}
-				}
-			}
-		}();
-		var list_nodes = A2(
-			elm$core$List$indexedMap,
-			A6(author$project$Internal$List$Implementation$listItemView, domId, lift, model, config, listItemIds, focusedIndex),
-			items);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			A2(elm$core$Maybe$withDefault, elm$html$Html$ul, config.node),
-			_List_fromArray(
-				[
-					author$project$Internal$Options$cs('mdc-list'),
-					A2(
-					author$project$Internal$Options$when,
-					config.isSingleSelectionList,
-					author$project$Internal$Options$role('listbox')),
-					A2(
-					author$project$Internal$Options$when,
-					config.isRadioGroup,
-					author$project$Internal$Options$role('radiogroup')),
-					author$project$Internal$Options$id(domId),
-					A2(
-					author$project$Internal$Options$on,
-					'focusout',
-					A2(
-						elm$json$Json$Decode$map,
-						elm$core$Basics$always(
-							lift(author$project$Internal$List$Model$ResetFocusedItem)),
-						author$project$Internal$List$Implementation$succeedIfLeavingList(domId)))
-				]),
-			_List_Nil,
-			list_nodes);
-	});
-var author$project$Internal$List$Implementation$view = F2(
-	function (lift, domId) {
-		return A5(
-			author$project$Internal$Component$render,
-			author$project$Internal$List$Implementation$getSet.get,
-			author$project$Internal$List$Implementation$ul(domId),
-			author$project$Internal$Msg$ListMsg,
-			lift,
-			domId);
-	});
-var author$project$Material$List$ul = author$project$Internal$List$Implementation$view;
-var author$project$Page$Home$Select = function (a) {
-	return {$: 'Select', a: a};
-};
-var author$project$Page$Home$viewCodingList = F3(
-	function (lift, model, codings) {
-		return A5(
-			author$project$Material$List$ul,
-			A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
-			'my-list',
-			model.mdc,
-			_List_fromArray(
-				[
-					author$project$Material$List$twoLine,
-					author$project$Material$List$avatarList,
-					author$project$Material$List$onSelectListItem(
-					A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Select))
-				]),
-			codings);
+		return {
+			icon: 'person',
+			primary: questionary.name,
+			secondary: Chadtech$elm_relational_database$Id$toString(id)
+		};
 	});
 var author$project$Page$Home$viewCodings = F4(
 	function (lift, model, data, coder) {
-		return A3(
-			author$project$Page$Home$viewCodingList,
-			lift,
-			model,
-			A2(
-				elm$core$List$map,
-				author$project$Page$Home$viewCoding(data),
-				Chadtech$elm_relational_database$Db$toList(
-					A3(
-						author$project$Db$Extra$selectFrom,
-						data.codings,
-						function (c) {
-							return c.coder;
-						},
-						Chadtech$elm_relational_database$Db$fromList(
-							_List_fromArray(
-								[coder]))))));
+		return A4(
+			author$project$Material$SimplifiedList$view,
+			A2(elm$core$Basics$composeL, lift, author$project$Page$Home$ListMsg),
+			model.mdc,
+			author$project$Page$Home$codingRowToListItem(data),
+			Chadtech$elm_relational_database$Db$toList(
+				A3(
+					author$project$Db$Extra$selectFrom,
+					data.codings,
+					function (c) {
+						return c.coder;
+					},
+					Chadtech$elm_relational_database$Db$fromList(
+						_List_fromArray(
+							[coder])))));
 	});
 var author$project$Page$Home$view = F4(
 	function (lift, model, data, user) {
@@ -14294,9 +14899,9 @@ var author$project$Page$view = F2(
 	function (model, data) {
 		var viewLoggedIn = F3(
 			function (viewf, msg, page) {
-				var _n1 = model.user;
-				if (_n1.$ === 'Just') {
-					var user = _n1.a;
+				var _n2 = model.user;
+				if (_n2.$ === 'Just') {
+					var user = _n2.a;
 					return A2(
 						author$project$Page$viewUI,
 						model,
@@ -14328,8 +14933,24 @@ var author$project$Page$view = F2(
 				return A3(viewLoggedIn, author$project$Page$Home$view, author$project$Page$GotHomeMsg, model.page.home);
 			case 'Error404':
 				return A3(viewLoggedIn, author$project$Page$Error$view, author$project$Page$GotErrorMsg, model.page.error);
-			default:
+			case 'Home':
 				return A3(viewLoggedIn, author$project$Page$Home$view, author$project$Page$GotHomeMsg, model.page.home);
+			default:
+				var _n1 = model.coding;
+				if (_n1.$ === 'Just') {
+					var coding = _n1.a;
+					return A2(
+						author$project$Page$viewUI,
+						model,
+						A4(
+							author$project$Page$Code$view,
+							A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotCodeMsg),
+							model.page.code,
+							data,
+							coding));
+				} else {
+					return A3(viewLoggedIn, author$project$Page$Home$view, author$project$Page$GotHomeMsg, model.page.home);
+				}
 		}
 	});
 var author$project$Main$view = function (model) {

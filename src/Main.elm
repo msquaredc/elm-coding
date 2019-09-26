@@ -13,6 +13,7 @@ import Page
 import Page.Data
 import Page.Error
 import Page.Login
+import Page.Url
 import Research
 import Url
 
@@ -92,7 +93,17 @@ init flags url key =
             )
 
         Err error ->
-            ( { page = Page.defaultModel
+            let
+                page_model_new = Page.defaultModel
+                page_new1 = {page_model_new | url = Page.Url.Error}
+                page_error = page_new1.page.error
+                page_error_new = {page_error | error = [Page.Error.DecodeError error]}
+                page = page_new1.page
+                page_new = {page | error = page_error_new}
+                res_page = {page_new1|page  =page_new}
+            in
+            
+            ( { page = res_page
               , data = Data.empty
               , key = key
               }
@@ -103,10 +114,17 @@ init flags url key =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GotPageMsg (Page.DataMsg msg_)->
+            let
+                (datam, effect) = 
+                    Data.update msg_ model.data
+            in
+                ({model | data = datam}, Cmd.map GotDataMsg effect)
+
         GotPageMsg msg_ ->
             let
                 ( page, effect ) =
-                    Page.update msg_ model.page model.data
+                    Page.update msg_ model.data model.page 
             in
             ( { model | page = page }, Cmd.map GotPageMsg effect )
 
@@ -131,7 +149,7 @@ update msg model =
         UrlChanged url ->
             let
                 ( page, effect ) =
-                    Page.update (Page.UrlChanged url) model.page model.data
+                    Page.update (Page.UrlChanged url) model.data model.page
             in
                 ( { model | page = page }, Cmd.map GotPageMsg effect )
             
