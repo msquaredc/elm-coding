@@ -1,4 +1,4 @@
-module Form exposing (InputType(..), Model, Msg, decode, error, update, view)
+module Form exposing (InputType(..), Model, Msg, decoder, error, inputTypeDecoder, update, view)
 
 import Dict exposing (..)
 import Html exposing (..)
@@ -29,8 +29,8 @@ error =
     Model "Error" InputString "Error"
 
 
-decode : Decode.Decoder Model
-decode =
+decoder : Decode.Decoder Model
+decoder =
     Decode.map3 Model
         (Decode.field "label" Decode.string)
         (Decode.field "formtype" inputTypeDecoder)

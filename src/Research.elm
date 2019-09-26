@@ -1,60 +1,80 @@
-module Research exposing (Model, Msg, decode, error, update, view)
+module Research exposing (Model, Msg, init, decode, empty, update, view, Flags)
 
+import Html exposing (text)
+import Browser exposing (Document)
+import Material
+import Material.List as Lists
 import Array exposing (..)
+import Coding exposing (..)
+import Data exposing (..)
+import Entities.Coder as Coder
+import Db exposing (Db)
 import Dict exposing (..)
 import Html exposing (..)
-import Json.Decode as Decode exposing (..)
+import Id exposing (Id)
+import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Questionary exposing (..)
 import ResultTable exposing (..)
 import Table exposing (..)
 
 
 type Msg
-    = QuestionaryMsg Int Questionary.Msg
-    | TableMsg Table.Msg
+    = DataMsg Data.Msg
+    | Mdc (Material.Msg Msg)
 
 
 type alias Model =
-    { name : String
-    , users : User
-    , data : Table.Model
-    , questionaries : Array Questionary.Model
-    , result : ResultTable.Model
+    { database : Data.Model,
+    coder : String,
+    questionary : String,
+    mdc : Material.Model Msg
     }
 
-type alias RawJsonModel =
+
+type alias Flags =
     { name : String
-    , data : List (Dict String String)
-    , questionaries : Array Questionary.Model
+    , data : Data.Flags
+    , coder : String
+    , questionary : String
     }
 
-error : String -> Model
-error err =
-    Model err Table.error (Array.fromList [ Questionary.error ]) ResultTable.error
+init : Flags -> (Model, Cmd Msg)
+init flags = 
+    let
+        (database, db_cmd) = Data.init flags.data
+    in
+        ({database = database,
+          mdc = Material.defaultModel,
+          coder = flags.coder,
+          questionary = flags.questionary}, Cmd.none)
 
-
-decodeRawJson : Decode.Decoder RawJsonModel
+{-decodeRawJson : Decode.Decoder Flags
 decodeRawJson =
-    Decode.map3 RawJsonModel
+    Decode.succeed Flags
+        |> required "name" Decode.string
+        |> required "data" (Decode.list (Decode.dict Decode.string))
+        |> required "questionaries" (Decode.array Questionary.decode)
+{-   Decode.map3 RawJsonModel
         (Decode.field "name" Decode.string)
         (Decode.field "data" (Decode.list (Decode.dict Decode.string)))
         (Decode.field "questionaries"
             (Decode.array Questionary.decode)
         )
+-}-}
 
-
-decode : Decode.Decoder Model
+decode : Decode.Decoder Flags
 decode =
-    Decode.map rawToDivided decodeRawJson
-
-
-rawToDivided : RawJsonModel -> Model
-rawToDivided rjmodel =
-    let
-        tableRows = 
-            List.map (splitDict (questions rjmodel)) rjmodel.data
-    in
-    Model rjmodel.name (Table.Model tableRows) rjmodel.questionaries (ResultTable.new tableRows rjmodel.questionaries)
+ {-   Decode.map3 Model
+        (Decode.map (\( a, b ) -> a) (Decode.map Data.init Data.decoder))
+        (Decode.string)
+        (Decode.string)
+-}  
+    Decode.succeed Flags
+    |> required "name" Decode.string
+    |> required "data" Data.decoder
+    |> optional "coder" Decode.string ""
+    |> optional "questionary" Decode.string ""
 
 
 splitDict : List String -> Dict String String -> Table.TableRow
@@ -66,55 +86,85 @@ splitDict q row =
     Table.TableRow userData researchData
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-    div []
-        [ h1 [] [ text model.name ]
-        , div [] (Array.toList (Array.indexedMap viewQuestionary model.questionaries))
-        , Html.map TableMsg (Table.view model.data)
+    {title = "Research",body=
+    
+        [ Html.h2 [] [text "Research:"]]
+
+--        ,   Html.map DataMsg (Data.view model.database)
+        
+    }
+viewCoder : Db Coder.Model -> Material.Model Msg -> Html Msg
+viewCoder coder mdc = 
+    
+    Lists.ul Mdc "my-list" mdc
+        [ Lists.twoLine
+        , Lists.avatarList
         ]
-
-
-viewQuestionary index element =
-    Html.map (QuestionaryMsg index) <| div [] [ Questionary.view element ]
+        [ Lists.li []
+              [ Lists.graphicIcon [] "folder"
+              , Lists.text []
+                    [ Lists.primaryText []
+                          [ text "Photos"
+                          ]
+                    , Lists.secondaryText []
+                          [ text "Jan 9, 2014"
+                          ]
+                    ]
+              , Lists.metaIcon [] "info"
+              ]
+        , Lists.li []
+              [ Lists.graphicIcon [] "folder"
+              , Lists.text []
+                    [ Lists.primaryText []
+                          [ text "Recipes"
+                          ]
+                    , Lists.secondaryText []
+                          [ text "Jan 17, 2014"
+                          ]
+                    ]
+              , Lists.metaIcon [] "info"
+              ]
+        , Lists.li []
+              [ Lists.graphicIcon [] "folder"
+              , Lists.text []
+                    [ Lists.primaryText []
+                          [ text "Work"
+                          ]
+                    , Lists.secondaryText []
+                          [ text "Jan 28, 2014"
+                          ]
+                    ]
+              , Lists.metaIcon [] "info"
+              ]
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        QuestionaryMsg index fmsg ->
+        DataMsg dmsg ->
             let
-                ( questionaryNew, questionaryCmd ) =
-                    updateQuestionary model index fmsg
+                ( dataNew, dataCmd ) =
+                    Data.update dmsg model.database
             in
-            ( { model | questionaries = questionaryNew }
-            , Cmd.map (QuestionaryMsg index) questionaryCmd
+            ( { model | database = dataNew }
+            , Cmd.map DataMsg dataCmd
             )
-
-        TableMsg tmsg ->
-            let
-                ( tableNew, tableCmd ) =
-                    Table.update tmsg model.data
-            in
-            ( { model | data = tableNew }
-            , Cmd.map TableMsg tableCmd
-            )
+        Mdc msg_ ->
+            Material.update Mdc msg_ model
 
 
-updateQuestionary : Model -> Int -> Questionary.Msg -> ( Array Questionary.Model, Cmd Questionary.Msg )
-updateQuestionary model index msg =
-    case Array.get index model.questionaries of
-        Just questionary ->
-            let
-                ( newValue, questionaryCmd ) =
-                    Questionary.update msg questionary
-            in
-            ( Array.set index newValue model.questionaries, questionaryCmd )
-
-        Nothing ->
-            ( model.questionaries, Cmd.none )
-
-
-questions : RawJsonModel -> List String
+{-questions : Flags -> List String
 questions model =
     List.map .question (Array.toList model.questionaries)
+-}
+
+empty : String -> Model
+empty str =
+    { database = Data.empty,
+    coder = "",
+    questionary = "",
+    mdc = Material.defaultModel
+    }

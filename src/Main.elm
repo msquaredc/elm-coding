@@ -1,72 +1,227 @@
 port module Main exposing (Msg(..), activeUsers)
 
-import Browser exposing (..)
-import Dict exposing (..)
-import Html exposing (..)
-import Json.Decode as Decode exposing (..)
+import Browser
+import Browser.Navigation as Nav
+import Data
+import Dict
+import Html
+import Json.Decode as Decode exposing (Decoder, Value, decodeString, float, int, nullable, string)
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as E
-import Research exposing (..)
+import Material
+import Page
+import Page.Data
+import Page.Error
+import Page.Login
+import Page.Url
+import Research
+import Url
 
 
 type Msg
-    = Searched String
-    | Changed E.Value
-    | ResearchMsg Research.Msg
+    = GotPageMsg Page.Msg
+    | GotDataMsg Data.Msg
+    | LinkClicked Browser.UrlRequest
+    | UrlChanged Url.Url
+    | Noop
 
 
 type alias Model =
-    { research : Research.Model
+    { data : Data.Model
+    , page : Page.Model
+    , key : Nav.Key
     }
 
 
+type alias Flags =
+    { research : Research.Flags }
+
+
+main : Program Value Model Msg
 main =
-    Browser.element
+    Browser.application
         { init = init
+        , onUrlChange = UrlChanged
+        , onUrlRequest = LinkClicked
         , update = update
         , subscriptions = subscriptions
         , view = view
         }
 
 
-init : Value -> ( Model, Cmd msg )
-init flags =
-    case Decode.decodeValue Research.decode flags of
-        Ok model ->
-            ( Model model, Cmd.none )
+onUrlChange : Url.Url -> Msg
+onUrlChange url =
+    Noop
 
-        Err err ->
-            ( Model (Research.error (Debug.toString err)), Cmd.none )
+
+onUrlRequest : Browser.UrlRequest -> Msg
+onUrlRequest a =
+    case a of
+        Browser.Internal i ->
+            Noop
+
+        Browser.External e ->
+            Noop
+
+
+
+{-
+   decode : Decoder Flags
+   decode =
+       Decode.succeed Flags
+       |> required "research" Research.decode
+-}
+
+
+init : Value -> Url.Url -> Nav.Key -> ( Model, Cmd msg )
+init flags url key =
+    let
+        result_flags =
+            Decode.decodeValue Data.decoder flags
+    in
+    case result_flags of
+        Ok flag_value ->
+            let
+                ( data, rcmd ) =
+                    Data.init flag_value
+            in
+            ( { data = data
+              , page = Page.defaultModel
+              , key = key
+              }
+            , Cmd.none
+            )
+
+        Err error ->
+            let
+                page_model_new = Page.defaultModel
+                page_new1 = {page_model_new | url = Page.Url.Error}
+                page_error = page_new1.page.error
+                page_error_new = {page_error | error = [Page.Error.DecodeError error]}
+                page = page_new1.page
+                page_new = {page | error = page_error_new}
+                res_page = {page_new1|page  =page_new}
+            in
+            
+            ( { page = res_page
+              , data = Data.empty
+              , key = key
+              }
+            , Cmd.none
+            )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Searched str ->
-            ( model, Cmd.none )
-
-        Changed v ->
-            ( model, Cmd.none )
-
-        ResearchMsg fmsg ->
+        GotPageMsg (Page.DataMsg msg_)->
             let
-                ( researchModel, researchCmd ) =
-                    Research.update fmsg model.research
+                (datam, effect) = 
+                    Data.update msg_ model.data
             in
-            ( { model | research = researchModel }
-            , Cmd.map ResearchMsg researchCmd
-            )
+                ({model | data = datam}, Cmd.map GotDataMsg effect)
+
+        GotPageMsg msg_ ->
+            let
+                ( page, effect ) =
+                    Page.update msg_ model.data model.page 
+            in
+            ( { model | page = page }, Cmd.map GotPageMsg effect )
+
+        Noop ->
+            ( model, Cmd.none )
+
+        GotDataMsg msg_ ->
+            let
+                ( data, effect ) =
+                    Data.update msg_ model.data
+            in
+            ( { model | data = data }, Cmd.map GotDataMsg effect )
+
+        LinkClicked urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Nav.pushUrl model.key (Url.toString url) )
+
+                Browser.External href ->
+                    ( model, Nav.load href )
+
+        UrlChanged url ->
+            let
+                ( page, effect ) =
+                    Page.update (Page.UrlChanged url) model.data model.page
+            in
+                ( { model | page = page }, Cmd.map GotPageMsg effect )
+            
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Sub.map GotPageMsg (Page.subscriptions model.page)
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
-    Html.div []
-        [ Html.map ResearchMsg (Research.view model.research)
-        ]
+    let
+        { title, body } =
+            Page.view model.page model.data
+    in
+    { title = title
+    , body = List.map (Html.map GotPageMsg) body
+    }
+
+
+
+{- let
+       viewPage page mapper viewer page_model =
+           let
+               { title, body } =
+                   Page.view model.mdc page (viewer page_model model.mdc Mdc model.data)
+           in
+           { title = title
+           , body = List.map (Html.map mapper) body
+           }
+   in
+   case model.page of
+       Page.Data data ->
+           viewPage Page.Data GotDataMsg Page.Data.view data
+
+       Page.Error err ->
+           { title = "None"
+           , body = [Html.text "nothing"]
+           }
+-}
+--            viewPage Page.Error GotErrorMsg Page.Error.view err
+{- Redirect _ ->
+       Page.view viewer Page.Other Blank.view
+
+   NotFound _ ->
+       Page.view viewer Page.Other NotFound.view
+
+   Settings settings ->
+       viewPage Page.Other GotSettingsMsg (Settings.view settings)
+
+   Home home ->
+       viewPage Page.Home GotHomeMsg (Home.view home)
+
+   Login login ->
+       viewPage Page.Other GotLoginMsg (Login.view login)
+
+   Register register ->
+       viewPage Page.Other GotRegisterMsg (Register.view register)
+
+   Profile username profile ->
+       viewPage (Page.Profile username) GotProfileMsg (Profile.view profile)
+
+   Article article ->
+       viewPage Page.Other GotArticleMsg (Article.view article)
+
+   Editor Nothing editor ->
+       viewPage Page.NewArticle GotEditorMsg (Editor.view editor)
+
+   Editor (Just _) editor ->
+       viewPage Page.Other GotEditorMsg (Editor.view editor)
+-}
 
 
 port activeUsers : (E.Value -> msg) -> Sub msg

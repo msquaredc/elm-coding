@@ -1,4 +1,4 @@
-module ResultTable exposing (Model, error, new)
+module ResultTable exposing (Model, error)
 
 import Array exposing (..)
 import Dict exposing (..)
@@ -34,8 +34,6 @@ type alias Cell =
     , coding_answer : CodingAnswer
     }
 
-getByQuestion : Model -> List Cell
-getByQuestion model 
 
 getQuestions : Questionary.Model -> List ( Question, CodingQuestion )
 getQuestions questionary =
