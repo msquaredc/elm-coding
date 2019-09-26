@@ -11,6 +11,7 @@ import Material.Options as Options
 import Material.TopAppBar as TopAppBar
 import Material.Typography as Typography
 import Material.SimplifiedList as SL
+import Material.LinearProgress as LinearProgress
 import Page.Data
 import Page.Error
 import Page.Login
@@ -223,15 +224,15 @@ viewUI model { title, body } =
             viewHeader model title
     in
     { title = title ++ " - Conduit2"
-    , body = viewBody header (text title) body :: viewDebug model :: [ viewFooter model.mdc ]
+    , body = viewBody header (Just 0.5) (text title) body :: viewDebug model :: [ viewFooter model.mdc ]
     }
 
 viewDebug : Model -> Html msg
 viewDebug model =
     text (Page.Url.toString model.url)
 
-viewBody : Html msg -> Html msg -> List (Html msg) -> Html msg
-viewBody bar title content =
+viewBody : Html msg -> Maybe Float -> Html msg -> List (Html msg) -> Html msg
+viewBody bar progress title content =
     Options.styled div
         [ Options.css "display" "flex"
         , Options.css "flex-flow" "column"
@@ -266,11 +267,23 @@ viewBody bar title content =
                     , Options.css "width" "100%"
                     , Options.css "max-width" "1200px"
                     ]
-                    [ viewLayout Nothing content Nothing ]
+                    [viewProgress progress, viewLayout Nothing content Nothing ]
                 ]
             ]
         ]
 
+viewProgress : Maybe Float -> Html msg 
+viewProgress progress =
+    case progress of
+        Just value ->
+            LinearProgress.view
+                [ LinearProgress.determinate value
+                ]
+                []
+    
+        Nothing ->
+            div [][]
+    
 
 viewLayout : Maybe (List (Html msg)) -> List (Html msg) -> Maybe (List (Html msg)) -> Html msg
 viewLayout left middle right =

@@ -7,12 +7,15 @@ import Db.Extra
 import Entities.Coder as Coder
 import Entities.Coding as Coding
 import Entities.Coding.Frame as CodingFrame
-import Html exposing (Html, div, h2, text)
+import Entities.Question as Question
+import Entities.Answer as Answer
+import Html exposing (Html, div, h2, text,p)
 import Id exposing (Id)
 import Json.Decode as Decode
 import Material
 import Material.List as Lists
 import Material.SimplifiedList as SL
+import Material.LinearProgress as LinearProgress
 import List.Extra
 
 type alias Model m =
@@ -55,33 +58,55 @@ view lift model data coding =
     let
         all_coding_frames = Db.Extra.selectFrom data.coding_frames (\c -> c.coding) (Db.fromList [coding])
         mb_current = Db.toList all_coding_frames
-                                |> List.Extra.maximumBy (\(id,m) -> m.timestamp.accessed)
+                     |> List.Extra.maximumBy (\(id,m) -> m.timestamp.accessed)
     in
         { title = "Coding"
         , body =
-            viewBody mb_current
+            viewBody data mb_current
         }
                 
         
-viewBody : Maybe (Id CodingFrame.Model, CodingFrame.Model) -> List(Html m)
-viewBody mb = 
-    viewProgress :: viewCoding ++ [viewNavigation]
+viewBody : Data.Model -> Maybe (Id CodingFrame.Model, CodingFrame.Model) -> List(Html m)
+viewBody data mb_current = 
+    case mb_current of
+        Just current ->
+            viewProgress :: viewCoding data current ++ [viewNavigation]
+    
+        Nothing ->
+            [text "An Error occured while loadeng your Coding Frame"]
+    
 
-viewCoding : List (Html m)
-viewCoding = 
-    viewQuestion :: viewAnswer :: viewCodingQuestionForm
+viewCoding : Data.Model -> Row CodingFrame.Model -> List (Html m)
+viewCoding data current = 
+    let
+        answer = Db.Extra.get data.answers (\x -> x.answer) current
+        question = Result.andThen (Db.Extra.get data.questions (\x -> x.question)) answer
+    in
+        viewQuestion question :: viewAnswer answer :: viewCodingQuestionForm
 
-viewQuestion : Html m
-viewQuestion = 
-    text "Question"
+viewQuestion : Result x (Row Question.Model) -> Html m
+viewQuestion question = 
+    case question of
+        Ok (id,value) ->
+            p[][text value.text]
+    
+        Err error ->
+            p [][text "error"]
+            
 
-viewAnswer : Html m
-viewAnswer = 
-    text "Answer"
+viewAnswer : Result x (Row Answer.Model) -> Html m
+viewAnswer answer = 
+    case answer of
+        Ok (id,value) ->
+            p[][text value.value]
+    
+        Err error ->
+            p [][text "error"]
 
 viewProgress : Html m
 viewProgress = 
     text "Progress"
+
 
 viewNavigation : Html m
 viewNavigation = 

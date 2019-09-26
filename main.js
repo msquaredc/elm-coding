@@ -10581,8 +10581,208 @@ var author$project$Page$viewLayout = F3(
 					A2(elm$core$Maybe$withDefault, _List_Nil, right))
 				]));
 	});
-var author$project$Page$viewBody = F3(
-	function (bar, title, content) {
+var author$project$Internal$Options$Set = function (a) {
+	return {$: 'Set', a: a};
+};
+var author$project$Internal$Options$option = author$project$Internal$Options$Set;
+var author$project$Internal$LinearProgress$Implementation$determinate = function (value) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{determinate: true, value: value});
+		});
+};
+var author$project$Material$LinearProgress$determinate = author$project$Internal$LinearProgress$Implementation$determinate;
+var author$project$Internal$LinearProgress$Implementation$defaultConfig = {buffer: 0, buffered: false, determinate: false, indeterminate: false, reversed: false, value: 0};
+var author$project$Internal$Options$collect1 = F2(
+	function (opt, acc) {
+		switch (opt.$) {
+			case 'Class':
+				var x = opt.a;
+				return _Utils_update(
+					acc,
+					{
+						classes: A2(elm$core$List$cons, x, acc.classes)
+					});
+			case 'CSS':
+				var x = opt.a;
+				return _Utils_update(
+					acc,
+					{
+						css: A2(elm$core$List$cons, x, acc.css)
+					});
+			case 'Attribute':
+				var x = opt.a;
+				return _Utils_update(
+					acc,
+					{
+						attrs: A2(elm$core$List$cons, x, acc.attrs)
+					});
+			case 'Internal':
+				var x = opt.a;
+				return _Utils_update(
+					acc,
+					{
+						internal: A2(elm$core$List$cons, x, acc.internal)
+					});
+			case 'Many':
+				var opts = opt.a;
+				return A3(elm$core$List$foldl, author$project$Internal$Options$collect1, acc, opts);
+			case 'Set':
+				var g = opt.a;
+				return _Utils_update(
+					acc,
+					{
+						config: g(acc.config)
+					});
+			case 'Listener':
+				var event = opt.a;
+				var decoder = opt.b;
+				return _Utils_update(
+					acc,
+					{
+						dispatch: A3(author$project$Internal$Dispatch$add, event, decoder, acc.dispatch)
+					});
+			case 'Lift':
+				var lift = opt.a;
+				return _Utils_update(
+					acc,
+					{
+						dispatch: A2(author$project$Internal$Dispatch$setLift, lift, acc.dispatch)
+					});
+			default:
+				return acc;
+		}
+	});
+var author$project$Internal$Options$recollect = elm$core$List$foldl(author$project$Internal$Options$collect1);
+var author$project$Internal$Options$apply = F4(
+	function (summary, ctor, options, attrs) {
+		return ctor(
+			A2(
+				author$project$Internal$Options$addAttributes,
+				A2(author$project$Internal$Options$recollect, summary, options),
+				attrs));
+	});
+var author$project$Internal$Options$collect = A2(
+	elm$core$Basics$composeR,
+	A5(author$project$Internal$Options$Summary, _List_Nil, _List_Nil, _List_Nil, _List_Nil, author$project$Internal$Dispatch$defaultConfig),
+	author$project$Internal$Options$recollect);
+var author$project$Internal$Options$None = {$: 'None'};
+var author$project$Internal$Options$nop = author$project$Internal$Options$None;
+var author$project$Internal$Options$when = F2(
+	function (guard, prop) {
+		return guard ? prop : author$project$Internal$Options$nop;
+	});
+var elm$html$Html$span = _VirtualDom_node('span');
+var author$project$Internal$LinearProgress$Implementation$view = F2(
+	function (options, _n0) {
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$LinearProgress$Implementation$defaultConfig, options);
+		var config = summary.config;
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$div,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-linear-progress'),
+					A2(
+					author$project$Internal$Options$when,
+					config.indeterminate,
+					author$project$Internal$Options$cs('mdc-linear-progress--indeterminate')),
+					A2(
+					author$project$Internal$Options$when,
+					config.reversed,
+					author$project$Internal$Options$cs('mdc-linear-progress--reversed'))
+				]),
+			_List_Nil,
+			_List_fromArray(
+				[
+					A3(
+					author$project$Internal$Options$styled,
+					elm$html$Html$div,
+					_List_fromArray(
+						[
+							author$project$Internal$Options$cs('mdc-linear-progress__buffering-dots')
+						]),
+					_List_Nil),
+					A3(
+					author$project$Internal$Options$styled,
+					elm$html$Html$div,
+					_List_fromArray(
+						[
+							author$project$Internal$Options$cs('mdc-linear-progress__buffer'),
+							A2(
+							author$project$Internal$Options$when,
+							config.buffered,
+							A2(
+								author$project$Internal$Options$css,
+								'transform',
+								'scaleX(' + (elm$core$String$fromFloat(config.buffer) + ')')))
+						]),
+					_List_Nil),
+					A3(
+					author$project$Internal$Options$styled,
+					elm$html$Html$div,
+					_List_fromArray(
+						[
+							author$project$Internal$Options$cs('mdc-linear-progress__bar mdc-linear-progress__primary-bar'),
+							A2(
+							author$project$Internal$Options$when,
+							!config.indeterminate,
+							A2(
+								author$project$Internal$Options$css,
+								'transform',
+								'scaleX(' + (elm$core$String$fromFloat(config.value) + ')')))
+						]),
+					_List_fromArray(
+						[
+							A3(
+							author$project$Internal$Options$styled,
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									author$project$Internal$Options$cs('mdc-linear-progress__bar-inner')
+								]),
+							_List_Nil)
+						])),
+					A3(
+					author$project$Internal$Options$styled,
+					elm$html$Html$div,
+					_List_fromArray(
+						[
+							author$project$Internal$Options$cs('mdc-linear-progress__bar mdc-linear-progress__secondary-bar')
+						]),
+					_List_fromArray(
+						[
+							A3(
+							author$project$Internal$Options$styled,
+							elm$html$Html$span,
+							_List_fromArray(
+								[
+									author$project$Internal$Options$cs('mdc-linear-progress__bar-inner')
+								]),
+							_List_Nil)
+						]))
+				]));
+	});
+var author$project$Material$LinearProgress$view = author$project$Internal$LinearProgress$Implementation$view;
+var author$project$Page$viewProgress = function (progress) {
+	if (progress.$ === 'Just') {
+		var value = progress.a;
+		return A2(
+			author$project$Material$LinearProgress$view,
+			_List_fromArray(
+				[
+					author$project$Material$LinearProgress$determinate(value)
+				]),
+			_List_Nil);
+	} else {
+		return A2(elm$html$Html$div, _List_Nil, _List_Nil);
+	}
+};
+var author$project$Page$viewBody = F4(
+	function (bar, progress, title, content) {
 		return A3(
 			author$project$Material$Options$styled,
 			elm$html$Html$div,
@@ -10633,6 +10833,7 @@ var author$project$Page$viewBody = F3(
 										]),
 									_List_fromArray(
 										[
+											author$project$Page$viewProgress(progress),
 											A3(author$project$Page$viewLayout, elm$core$Maybe$Nothing, content, elm$core$Maybe$Nothing)
 										]))
 								]))
@@ -10664,7 +10865,6 @@ var author$project$Page$viewDebug = function (model) {
 };
 var elm$html$Html$a = _VirtualDom_node('a');
 var elm$html$Html$footer = _VirtualDom_node('footer');
-var elm$html$Html$span = _VirtualDom_node('span');
 var elm$html$Html$Attributes$href = function (url) {
 	return A2(
 		elm$html$Html$Attributes$stringProperty,
@@ -10801,10 +11001,6 @@ var author$project$Internal$Component$render = F3(
 						options));
 			});
 	});
-var author$project$Internal$Options$Set = function (a) {
-	return {$: 'Set', a: a};
-};
-var author$project$Internal$Options$option = author$project$Internal$Options$Set;
 var author$project$Internal$Icon$Implementation$node = function (ctor) {
 	return author$project$Internal$Options$option(
 		function (config) {
@@ -10815,75 +11011,6 @@ var author$project$Internal$Icon$Implementation$node = function (ctor) {
 };
 var author$project$Internal$Icon$Implementation$button = author$project$Internal$Icon$Implementation$node('button');
 var author$project$Internal$Icon$Implementation$defaultConfig = {node: 'i'};
-var author$project$Internal$Options$collect1 = F2(
-	function (opt, acc) {
-		switch (opt.$) {
-			case 'Class':
-				var x = opt.a;
-				return _Utils_update(
-					acc,
-					{
-						classes: A2(elm$core$List$cons, x, acc.classes)
-					});
-			case 'CSS':
-				var x = opt.a;
-				return _Utils_update(
-					acc,
-					{
-						css: A2(elm$core$List$cons, x, acc.css)
-					});
-			case 'Attribute':
-				var x = opt.a;
-				return _Utils_update(
-					acc,
-					{
-						attrs: A2(elm$core$List$cons, x, acc.attrs)
-					});
-			case 'Internal':
-				var x = opt.a;
-				return _Utils_update(
-					acc,
-					{
-						internal: A2(elm$core$List$cons, x, acc.internal)
-					});
-			case 'Many':
-				var opts = opt.a;
-				return A3(elm$core$List$foldl, author$project$Internal$Options$collect1, acc, opts);
-			case 'Set':
-				var g = opt.a;
-				return _Utils_update(
-					acc,
-					{
-						config: g(acc.config)
-					});
-			case 'Listener':
-				var event = opt.a;
-				var decoder = opt.b;
-				return _Utils_update(
-					acc,
-					{
-						dispatch: A3(author$project$Internal$Dispatch$add, event, decoder, acc.dispatch)
-					});
-			case 'Lift':
-				var lift = opt.a;
-				return _Utils_update(
-					acc,
-					{
-						dispatch: A2(author$project$Internal$Dispatch$setLift, lift, acc.dispatch)
-					});
-			default:
-				return acc;
-		}
-	});
-var author$project$Internal$Options$recollect = elm$core$List$foldl(author$project$Internal$Options$collect1);
-var author$project$Internal$Options$apply = F4(
-	function (summary, ctor, options, attrs) {
-		return ctor(
-			A2(
-				author$project$Internal$Options$addAttributes,
-				A2(author$project$Internal$Options$recollect, summary, options),
-				attrs));
-	});
 var author$project$Internal$Options$Attribute = function (a) {
 	return {$: 'Attribute', a: a};
 };
@@ -10892,10 +11019,6 @@ var author$project$Internal$Options$aria = F2(
 		return author$project$Internal$Options$Attribute(
 			A2(elm$html$Html$Attributes$attribute, 'aria-' + key, val));
 	});
-var author$project$Internal$Options$collect = A2(
-	elm$core$Basics$composeR,
-	A5(author$project$Internal$Options$Summary, _List_Nil, _List_Nil, _List_Nil, _List_Nil, author$project$Internal$Dispatch$defaultConfig),
-	author$project$Internal$Options$recollect);
 var elm$virtual_dom$VirtualDom$node = function (tag) {
 	return _VirtualDom_node(
 		_VirtualDom_noScript(tag));
@@ -10947,12 +11070,6 @@ var author$project$Internal$GlobalEvents$onTick = author$project$Internal$Global
 var author$project$Internal$GlobalEvents$onTouchEnd = author$project$Internal$GlobalEvents$listener('globaltouchend');
 var elm$html$Html$Attributes$id = elm$html$Html$Attributes$stringProperty('id');
 var author$project$Internal$Options$id = A2(elm$core$Basics$composeL, author$project$Internal$Options$Attribute, elm$html$Html$Attributes$id);
-var author$project$Internal$Options$None = {$: 'None'};
-var author$project$Internal$Options$nop = author$project$Internal$Options$None;
-var author$project$Internal$Options$when = F2(
-	function (guard, prop) {
-		return guard ? prop : author$project$Internal$Options$nop;
-	});
 var author$project$Internal$Ripple$Model$strings = {varFgScale: '--mdc-ripple-fg-scale', varFgSize: '--mdc-ripple-fg-size', varFgTranslateEnd: '--mdc-ripple-fg-translate-end', varFgTranslateStart: '--mdc-ripple-fg-translate-start', varLeft: '--mdc-ripple-left', varTop: '--mdc-ripple-top'};
 var elm$core$Basics$round = _Basics_round;
 var author$project$Internal$Ripple$Implementation$cssVariables = F2(
@@ -11589,9 +11706,10 @@ var author$project$Page$viewUI = F2(
 		return {
 			body: A2(
 				elm$core$List$cons,
-				A3(
+				A4(
 					author$project$Page$viewBody,
 					header,
+					elm$core$Maybe$Just(0.5),
 					elm$html$Html$text(title),
 					body),
 				A2(
@@ -11604,27 +11722,103 @@ var author$project$Page$viewUI = F2(
 			title: title + ' - Conduit2'
 		};
 	});
-var author$project$Page$Code$viewAnswer = elm$html$Html$text('Answer');
+var elm$html$Html$p = _VirtualDom_node('p');
+var author$project$Page$Code$viewAnswer = function (answer) {
+	if (answer.$ === 'Ok') {
+		var _n1 = answer.a;
+		var id = _n1.a;
+		var value = _n1.b;
+		return A2(
+			elm$html$Html$p,
+			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$text(value.value)
+				]));
+	} else {
+		var error = answer.a;
+		return A2(
+			elm$html$Html$p,
+			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$text('error')
+				]));
+	}
+};
 var author$project$Page$Code$viewCodingQuestionForm = _List_fromArray(
 	[
 		elm$html$Html$text('Form')
 	]);
-var author$project$Page$Code$viewQuestion = elm$html$Html$text('Question');
-var author$project$Page$Code$viewCoding = A2(
-	elm$core$List$cons,
-	author$project$Page$Code$viewQuestion,
-	A2(elm$core$List$cons, author$project$Page$Code$viewAnswer, author$project$Page$Code$viewCodingQuestionForm));
+var author$project$Page$Code$viewQuestion = function (question) {
+	if (question.$ === 'Ok') {
+		var _n1 = question.a;
+		var id = _n1.a;
+		var value = _n1.b;
+		return A2(
+			elm$html$Html$p,
+			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$text(value.text)
+				]));
+	} else {
+		var error = question.a;
+		return A2(
+			elm$html$Html$p,
+			_List_Nil,
+			_List_fromArray(
+				[
+					elm$html$Html$text('error')
+				]));
+	}
+};
+var author$project$Page$Code$viewCoding = F2(
+	function (data, current) {
+		var answer = A3(
+			author$project$Db$Extra$get,
+			data.answers,
+			function (x) {
+				return x.answer;
+			},
+			current);
+		var question = A2(
+			elm$core$Result$andThen,
+			A2(
+				author$project$Db$Extra$get,
+				data.questions,
+				function (x) {
+					return x.question;
+				}),
+			answer);
+		return A2(
+			elm$core$List$cons,
+			author$project$Page$Code$viewQuestion(question),
+			A2(
+				elm$core$List$cons,
+				author$project$Page$Code$viewAnswer(answer),
+				author$project$Page$Code$viewCodingQuestionForm));
+	});
 var author$project$Page$Code$viewNavigation = elm$html$Html$text('Navigation');
 var author$project$Page$Code$viewProgress = elm$html$Html$text('Progress');
-var author$project$Page$Code$viewBody = function (mb) {
-	return A2(
-		elm$core$List$cons,
-		author$project$Page$Code$viewProgress,
-		_Utils_ap(
-			author$project$Page$Code$viewCoding,
-			_List_fromArray(
-				[author$project$Page$Code$viewNavigation])));
-};
+var author$project$Page$Code$viewBody = F2(
+	function (data, mb_current) {
+		if (mb_current.$ === 'Just') {
+			var current = mb_current.a;
+			return A2(
+				elm$core$List$cons,
+				author$project$Page$Code$viewProgress,
+				_Utils_ap(
+					A2(author$project$Page$Code$viewCoding, data, current),
+					_List_fromArray(
+						[author$project$Page$Code$viewNavigation])));
+		} else {
+			return _List_fromArray(
+				[
+					elm$html$Html$text('An Error occured while loadeng your Coding Frame')
+				]);
+		}
+	});
 var author$project$Page$Code$view = F4(
 	function (lift, model, data, coding) {
 		var all_coding_frames = A3(
@@ -11645,7 +11839,7 @@ var author$project$Page$Code$view = F4(
 			},
 			Chadtech$elm_relational_database$Db$toList(all_coding_frames));
 		return {
-			body: author$project$Page$Code$viewBody(mb_current),
+			body: A2(author$project$Page$Code$viewBody, data, mb_current),
 			title: 'Coding'
 		};
 	});
@@ -14855,7 +15049,6 @@ var author$project$Page$Login$showResults = F4(
 			model,
 			A2(author$project$Page$Login$getFilteredList, db, name));
 	});
-var elm$html$Html$p = _VirtualDom_node('p');
 var author$project$Page$Login$viewSearch = F3(
 	function (lift, model, data) {
 		return {
