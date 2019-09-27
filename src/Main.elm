@@ -123,11 +123,19 @@ update msg model =
 
         GotPageMsg msg_ ->
             let
-                ( page, effect ) =
+                ( page, effect, mbpmsg ) =
                     Page.update msg_ model.data model.page 
+                newmodel = { model | page = page }
             in
-            ( { model | page = page }, Cmd.map GotPageMsg effect )
-
+                case mbpmsg of
+                    Nothing ->
+                        ( newmodel, Cmd.map GotPageMsg effect )
+                
+                    Just pmsg->
+                        case pmsg of
+                            Page.GenerateFrame frame ->
+                                update (GotDataMsg (Data.Generate (Data.GenerateCodingFrame Data.Any frame Nothing))) model
+                                
         Noop ->
             ( model, Cmd.none )
 
@@ -148,7 +156,7 @@ update msg model =
 
         UrlChanged url ->
             let
-                ( page, effect ) =
+                ( page, effect, _) =
                     Page.update (Page.UrlChanged url) model.data model.page
             in
                 ( { model | page = page }, Cmd.map GotPageMsg effect )

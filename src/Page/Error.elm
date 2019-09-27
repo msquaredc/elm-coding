@@ -1,12 +1,13 @@
 module Page.Error exposing (Error(..), Model, Msg(..), defaultModel, update, view)
 
-import Browser exposing (Document)
+--import Browser exposing (Document)
 import Data
 import Html exposing (Html, div, h2, text)
 import Json.Decode as Decode
 import Material
 import Db exposing (Row)
 import Entities.Coder as Coder
+import Page.Internal exposing (Document)
 
 
 type Msg m
@@ -42,6 +43,8 @@ view lift model _ user =
     { title = "Error"
     , body =
         Html.h2 [] [ text "Error:" ] :: List.map viewError model.error
+    , progress = Page.Internal.Indeterminate
+    , navigation = Page.Internal.HideNavigation
     }
 
 

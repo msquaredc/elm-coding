@@ -1,4 +1,4 @@
-module Form exposing (InputType(..), Model, Msg, decoder, error, inputTypeDecoder, update, view)
+module Form exposing (InputType(..), Model, Msg, decoder,inputTypeToComparable, error, inputTypeDecoder, update, view)
 
 import Dict exposing (..)
 import Html exposing (..)
@@ -51,6 +51,18 @@ inputTypeDecoder =
                     somethingElse ->
                         Decode.fail <| "Unknown Type: " ++ somethingElse
             )
+
+inputTypeToComparable : InputType -> String
+inputTypeToComparable input_type = 
+    case input_type of
+        InputString ->
+            "String"
+    
+        InputNumber _ ->
+            "Number"
+
+        InputChoice ->
+            "Choice"
 
 
 view : Model -> Html Msg

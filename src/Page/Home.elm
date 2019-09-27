@@ -1,6 +1,6 @@
 module Page.Home exposing (..)
 
-import Browser exposing (Document)
+import Page.Internal exposing (Document)
 import Data
 import Db exposing (Db, Row)
 import Db.Extra
@@ -60,6 +60,8 @@ view lift model data user =
     { title = "Home"
     , body =
         text "My codings in Process:" :: viewCodings lift model data user :: []
+    , progress = Page.Internal.HideProgress
+    , navigation = Page.Internal.HideNavigation
     }
 
 

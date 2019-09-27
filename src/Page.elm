@@ -1,4 +1,4 @@
-module Page exposing (Model, Msg(..), Page, defaultModel, subscriptions, update, view, viewHeader)
+module Page exposing (Model, Msg(..),OutMsg(..), Page, defaultModel, subscriptions, update, view)
 
 import Browser exposing (Document)
 import Data
@@ -12,6 +12,7 @@ import Material.TopAppBar as TopAppBar
 import Material.Typography as Typography
 import Material.SimplifiedList as SL
 import Material.LinearProgress as LinearProgress
+import Page.Internal
 import Page.Data
 import Page.Error
 import Page.Login
@@ -43,14 +44,14 @@ type GotPageMsg
 
 
 type Msg
-    = OpenDrawer
-    | Mdc (Material.Msg Msg)
+    = Mdc (Material.Msg Msg)
     | PageMsg GotPageMsg
-    | OpenOverflow
     | UrlChanged Url.Url
     | DataMsg (Data.Msg)
-    | GenerateFrame (Row Entities.Coding.Model)
+    | Internal (Page.Internal.Msg Msg)
 
+type OutMsg
+    = GenerateFrame (Row Entities.Coding.Model)
 
 type alias Model =
     { mdc : Material.Model Msg
@@ -58,6 +59,7 @@ type alias Model =
     , url : Page.Url.Url
     , user : Maybe (Row Entities.Coder.Model)
     , coding : Maybe (Row Entities.Coding.Model)
+    , internal : Page.Internal.Model Msg
     }
 
 
@@ -68,6 +70,7 @@ init url dc =
     , url = Page.Url.fromUrl url
     , user = Nothing
     , coding = Nothing
+    , internal = Page.Internal.defaultModel
     }
 
 
@@ -78,6 +81,7 @@ defaultModel =
     , url = Page.Url.defaultUrl
     , user = Nothing
     , coding = Nothing
+    , internal = Page.Internal.defaultModel
     }
 
 
@@ -91,11 +95,14 @@ defaultPage =
     }
 
 
-update : Msg -> Data.Model -> Model  -> ( Model, Cmd Msg )
+update : Msg -> Data.Model -> Model  -> ( Model, Cmd Msg, Maybe OutMsg )
 update msg data model =
     case msg of
         Mdc msg_ ->
-            Material.update Mdc msg_ model
+            let
+                (mdc, effect) = Material.update Mdc msg_ model
+            in
+                (mdc, effect, Nothing)
 
         PageMsg m ->
             case m of 
@@ -104,14 +111,13 @@ update msg data model =
                         list = Page.Login.getFilteredList data.coders model.page.login.field
                         mb_row = List.Extra.getAt index list
                     in
-                        ({model | user = mb_row},Cmd.none)
+                        ({model | user = mb_row},Cmd.none,Nothing)
                 GotHomeMsg (Page.Home.ListMsg (SL.Select coding)) -> 
                     let 
                         new_model = {model | coding = Just coding}
                         new_model2 = {new_model | url = Page.Url.Code}
                     in
-                        new_model2
-                        |> update (GenerateFrame coding) data
+                        (new_model2, Cmd.none, Just (GenerateFrame coding))
                 GotCodeMsg (Page.Code.DataMsg msg_) -> 
                     update (DataMsg msg_) data model
                 _ ->
@@ -119,17 +125,18 @@ update msg data model =
                         ( page, effects ) =
                             updatePage m model.page data
                     in
-                        ( { model | page = page }, effects )
-        OpenDrawer -> 
-            (model, Cmd.none)
-        OpenOverflow -> 
-            (model, Cmd.none)
+                        ( { model | page = page }, effects, Nothing)
         UrlChanged url -> 
-            ({model | url = Page.Url.fromUrl url}, Cmd.none)
-        GenerateFrame coding -> 
-            (model, Cmd.none)
+            ({model | url = Page.Url.fromUrl url}, Cmd.none, Nothing)
         DataMsg _ -> 
-            (model, Cmd.none)
+            Debug.log "DataMsg got Called"
+            (model, Cmd.none, Nothing)
+        Internal msg_ ->
+            let
+                (internal, effects ) =
+                    Page.Internal.update Internal msg_ model.internal
+            in 
+                ({model | internal = internal},effects, Nothing)
 
 
 
@@ -176,9 +183,9 @@ view model data =
         viewLoggedIn viewf msg page = 
             case model.user of
                 Just user ->
-                    viewUI model (viewf (PageMsg << msg) page data user)
+                    Page.Internal.view Internal model.internal (viewf (PageMsg << msg) page data user)
                 Nothing ->
-                    viewUI model (Page.Login.view (PageMsg << GotLoginMsg) model.page.login data model.user)
+                    Page.Internal.view Internal model.internal (Page.Login.view (PageMsg << GotLoginMsg) model.page.login data model.user)
     in
         case model.url of
             Page.Url.Data ->
@@ -199,7 +206,7 @@ view model data =
             Page.Url.Code ->
                 case model.coding of
                     Just coding ->
-                        viewUI model (Page.Code.view (PageMsg << GotCodeMsg) model.page.code data coding)
+                        Page.Internal.view Internal model.internal (Page.Code.view (PageMsg << GotCodeMsg) model.page.code data coding)
                 
                     Nothing ->
                         viewLoggedIn Page.Home.view GotHomeMsg model.page.home
@@ -208,7 +215,6 @@ view model data =
 
                         
                 
-            
 
 
 subscriptions : Model -> Sub Msg
@@ -217,140 +223,3 @@ subscriptions model =
 
             
 
-viewUI : Model -> { title : String, body : List (Html Msg) } -> Document Msg
-viewUI model { title, body } =
-    let
-        header =
-            viewHeader model title
-    in
-    { title = title ++ " - Conduit2"
-    , body = viewBody header (Just 0.5) (text title) body :: viewDebug model :: [ viewFooter model.mdc ]
-    }
-
-viewDebug : Model -> Html msg
-viewDebug model =
-    text (Page.Url.toString model.url)
-
-viewBody : Html msg -> Maybe Float -> Html msg -> List (Html msg) -> Html msg
-viewBody bar progress title content =
-    Options.styled div
-        [ Options.css "display" "flex"
-        , Options.css "flex-flow" "column"
-        , Options.css "height" "100%"
-        , Typography.typography
-        ]
-        [ bar
-        , Options.styled div
-            [ Options.cs "demo-panel"
-            , Options.css "display" "flex"
-            ]
-            [ div
-                []
-                {- }                                 [ Page.drawer Mdc "page-drawer" model.mdc CloseDrawer SelectDrawerItem model.url model.is_drawer_open
-                   , Drawer.scrim [ Options.onClick CloseDrawer ] []
-                   ]
-                -}
-                []
-            , Options.styled div
-                [ Options.cs "demo-content"
-
-                --                                  , DismissibleDrawer.appContent
-                , TopAppBar.fixedAdjust
-                , Options.css "width" "100%"
-                , Options.css "display" "flex"
-                , Options.css "justify-content" "flex-start"
-                , Options.css "flex-direction" "column"
-                , Options.css "align-items" "center"
-                ]
-                [ Options.styled div
-                    [ Options.cs "demo-content-transition"
-                    , Options.css "width" "100%"
-                    , Options.css "max-width" "1200px"
-                    ]
-                    [viewProgress progress, viewLayout Nothing content Nothing ]
-                ]
-            ]
-        ]
-
-viewProgress : Maybe Float -> Html msg 
-viewProgress progress =
-    case progress of
-        Just value ->
-            LinearProgress.view
-                [ LinearProgress.determinate value
-                ]
-                []
-    
-        Nothing ->
-            div [][]
-    
-
-viewLayout : Maybe (List (Html msg)) -> List (Html msg) -> Maybe (List (Html msg)) -> Html msg
-viewLayout left middle right =
-    LayoutGrid.view []
-        [ LayoutGrid.cell
-            [ LayoutGrid.span2
-            , LayoutGrid.span4Phone
-            ]
-            (Maybe.withDefault [] left)
-        , LayoutGrid.cell
-            [ LayoutGrid.span8
-            , LayoutGrid.span6Tablet
-            ]
-            middle
-        , LayoutGrid.cell
-            [ LayoutGrid.span2
-            , LayoutGrid.span4Phone
-            ]
-            (Maybe.withDefault [] right)
-        ]
-
-
-viewHeader : Model -> String -> Html Msg
-viewHeader model title =
-    TopAppBar.view Mdc
-        "my-top-app-bar"
-        model.mdc
-        [ TopAppBar.fixed ]
-        [ TopAppBar.section [ TopAppBar.alignStart ]
-            [ TopAppBar.navigationIcon Mdc
-                "my-menu"
-                model.mdc
-                [ Options.onClick OpenDrawer ]
-                "menu"
-            , TopAppBar.title [] [ text title ]
-            ]
-        , TopAppBar.section [ TopAppBar.alignEnd ]
-            {- [ TopAppBar.actionItem [] "file_download"
-               , TopAppBar.actionItem [] "print"
-               , TopAppBar.actionItem [] "bookmark"
-               ]
-            -}
-            [ TopAppBar.actionItem Mdc "options" model.mdc [ Options.onClick OpenOverflow ] "more_vert" ]
-        ]
-
-
-viewFooter : Material.Model msg -> Html msg
-viewFooter mdc =
-    Options.styled div
-        [ Typography.typography
-        , Options.css "position" "fixed"
-        , Options.css "left" "0"
-        , Options.css "bottom" "0"
-        , Options.css "width" "100%"
-        , Options.css "text-align" "center"
-        , Options.css "background-color" "LightGrey"
-        , --        Options.css "color" "white",
-          Options.css "padding" "16px"
-        ]
-        [ footer [ class "footer" ]
-            [ div [ class "footer__content" ]
-                [ a [ class "footer__logo", href "/" ] [ text "M²C" ]
-                , span [ class "attribution" ]
-                    [ text " Hosted with Love at "
-                    , a [ href "https://github.com" ] [ text "GitHub" ]
-                    , text ". Code & design licensed under MIT."
-                    ]
-                ]
-            ]
-        ]

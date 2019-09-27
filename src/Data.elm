@@ -1,6 +1,6 @@
 module Data exposing
     ( Model
-    , Msg
+    , Msg(..)
     , decoder
     , empty
     , init
@@ -8,6 +8,9 @@ module Data exposing
     , view
     , Flags
     , selectQuestionaryFromCoding
+    , getCodingAnswers
+    , GenerateMsg(..)
+    , GenerationType(..)
     )
 
 import Db exposing (Db, Row)
@@ -181,7 +184,7 @@ type TimedEntity
 type GenerateMsg 
     = GenerateCodingFrame GenerationType (Row Coding.Model) (Maybe (Row Questionary.Model))
     | GenerateCodingAnswers (Row CodingFrame.Model)
-    | GenerateCodingAnswer (Row CodingFrame.Model) (Row CodingQuestion.Model)
+--    | GenerateCodingAnswer (Row CodingFrame.Model) (Row CodingQuestion.Model)
 
 type GenerationType
     = New
@@ -236,12 +239,12 @@ update msg model =
                     let
                         new_coding_answers = Db.update id (Maybe.map (Timestamp.updateTimestamp tmsg)) model.coding_answers
                     in 
-                       ({model | coding_answers = new_coding_answers}, Cmd.none)   
+                    ({model | coding_answers = new_coding_answers}, Cmd.none)   
                 TimedCodingFrame id ->
                     let
                         new_coding_frames = Db.update id (Maybe.map (Timestamp.updateTimestamp tmsg)) model.coding_frames
                     in 
-                       ({model | coding_frames = new_coding_frames}, Cmd.none)
+                    ({model | coding_frames = new_coding_frames}, Cmd.none)
 
 
 updateGeneration : GenerateMsg -> Model -> (Model, Cmd Msg)
@@ -257,8 +260,6 @@ updateGeneration msg model =
                 
                     _ ->
                         (model,Cmd.none)
-        GenerateCodingAnswer coding_frame coding_question -> 
-            generateCodingAnswer model coding_frame coding_question
                         
         GenerateCodingAnswers coding_frame ->
             generateCodingAnswers model coding_frame
@@ -293,10 +294,42 @@ generateCodingAnswer model coding_frame coding_question =
 generateCodingAnswers : Model -> Row CodingFrame.Model -> (Model, Cmd Msg)
 generateCodingAnswers model coding_frame =
     let
-        coding_questions = getCodingQuestionsViaAnswer model coding_frame
-        missing_questions = Debug.todo "implement missing questions"
+        missing_questions = getMissingQuestions model coding_frame
+                            
     in
-        Debug.todo "Implement codingAnswers Return"
+        case missing_questions of
+            Ok missing_db ->
+                Db.toList missing_db
+                |> List.map (\y -> (\x->(generateCodingAnswer x coding_frame y)))
+                |> updateFolder model
+        
+            Err error ->
+                (model, Cmd.none)
+                
+        
+
+updateFolder : Model -> List (Model -> (Model, Cmd Msg)) -> (Model, Cmd Msg)
+updateFolder model updaters = 
+    case List.head updaters of
+        Nothing ->
+            (model,Cmd.none)
+    
+        Just update_f ->
+            let
+                (newmodel,neweffect) =
+                    update_f model       
+            in
+                case List.tail updaters of
+                    Nothing ->
+                        (newmodel,neweffect)
+                
+                    Just tail ->
+                        let 
+                            (restmodel, resteffect)=
+                                updateFolder newmodel tail
+                        in
+                            (restmodel,Cmd.batch [neweffect,resteffect])
+
 
 updateEntity : EntityMsg -> Model -> ( Model, Cmd Msg )
 updateEntity umsg model =
@@ -534,6 +567,10 @@ getCodingAnswer model (fid,frame) (qid,question) =
     |> List.Extra.maximumBy (\(id,m) -> m.timestamp.modified)
     |> Result.fromMaybe NoResult
 
+getCodingAnswers : Db CodingAnswer.Model -> Row CodingFrame.Model -> List (Row CodingAnswer.Model)
+getCodingAnswers answers frame = 
+    Debug.todo "Implement getCodingAnswers"
+
 getCodingQuestionsViaAnswer : Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
 getCodingQuestionsViaAnswer model frame =
     frame
@@ -545,15 +582,30 @@ getCodingQuestionsViaAnswer model frame =
 
 getCodingQuestionsViaCodingAnswer : Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
 getCodingQuestionsViaCodingAnswer model coding_frame =
-    Debug.todo "Implement getCodingQuestionsViaCodingAnswer"
+    let 
+        all =
+            coding_frame
+            |> Db.Extra.selectFromRow model.coding_answers (\c -> c.coding_frame)
+    in
+        all
+        |> Db.toList
+        |> List.map (\(id,answer) -> answer.coding_question)
+        |> List.map Id.toString
+        |> List.Extra.unique
+        |> List.map Id.fromString
+        |> Db.getMany model.coding_questions
+        |> Db.filterMissing
+        |> Db.fromList
+        |> Ok
+                
 
 getMissingQuestions : Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
 getMissingQuestions model frame =
     let
         all = getCodingQuestionsViaAnswer model frame 
-        present = Debug.todo "Implement present"
+        present = getCodingQuestionsViaCodingAnswer model frame
     in
-        Debug.todo "Implement missing Question"
+        Result.map2 (Db.Extra.difference) all present
 
 hasValidFrameQuestionPath : Model -> Row (CodingFrame.Model) -> Bool
 hasValidFrameQuestionPath model frame = 

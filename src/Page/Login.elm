@@ -1,6 +1,6 @@
 module Page.Login exposing (Model, Msg(..), defaultModel, update, view, getFilteredList)
 
-import Browser exposing (Document)
+--import Browser exposing (Document)
 import Data
 import Db exposing (Db, Row)
 import Id exposing (Id)
@@ -15,6 +15,7 @@ import Material.List as Lists
 import StringDistance
 import List.Extra
 import Page.Url exposing (..)
+import Page.Internal exposing (Document)
 import Entities.Coder as Coder
 
 type alias Model m =
@@ -79,6 +80,8 @@ view lift model data user =
         Just row ->
             { title = "Already logged in as"
             , body = [ text "You're already logged in as" ]
+            , progress = Page.Internal.Progress 1.0
+            , navigation = Page.Internal.HideNavigation
             }
 
 viewSearch :  (Msg m -> m) -> Model m -> Data.Model -> Document m
@@ -87,7 +90,8 @@ viewSearch lift model data =
     , body = [ text "You're not logged in yet."
              , p[][ask lift model data]
              , p[][showResults lift model.field data.coders model]]
-            }
+    , progress = Page.Internal.HideProgress
+    , navigation = Page.Internal.HideNavigation}
 
 ask : (Msg m -> m) -> Model m -> Data.Model -> Html m
 ask lift model data =
