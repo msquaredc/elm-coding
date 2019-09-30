@@ -1,4 +1,4 @@
-module Form exposing (InputType(..), Model, Msg, decoder,inputTypeToComparable, error, inputTypeDecoder, update, view)
+module Form exposing (InputType(..), Model, Msg(..), decoder,inputTypeToComparable, error, inputTypeDecoder, update, view)
 
 import Dict exposing (..)
 import Html exposing (..)
@@ -65,62 +65,57 @@ inputTypeToComparable input_type =
             "Choice"
 
 
-view : Model -> Html Msg
-view model =
-    case model.formtype of
+view : InputType -> String -> Html Msg
+view formtype value =
+    case formtype of
         InputString ->
-            viewInputString model
+            viewInputString value
 
         InputNumber n ->
-            viewInputNumber model n
+            viewInputNumber value n
 
         InputChoice ->
-            viewInputChoice model
+            viewInputChoice value
 
 
-viewInputString : Model -> Html Msg
-viewInputString model =
+viewInputString : String -> Html Msg
+viewInputString value =
     Html.div
         []
-        [ text model.label
-        , Html.input
+        [ Html.input
             [ Html.Attributes.placeholder "Your answer"
-            , Html.Attributes.value model.content
+            , Html.Attributes.value value
             , Html.Events.onInput Change
             ]
             []
-        , text model.content
+        , text value
         ]
 
-
-viewInputNumber : Model -> Maybe (Bounded Int) -> Html Msg
-viewInputNumber model bounds =
+viewInputNumber : String -> Maybe (Bounded Int) -> Html Msg
+viewInputNumber value bounds =
     Html.div
         []
-        [ text model.label
-        , Html.input
+        [ Html.input
             [ Html.Attributes.placeholder "Your answer"
-            , Html.Attributes.value model.content
+            , Html.Attributes.value value
             , Html.Events.onInput Change
             ]
             []
-        , text model.content
+        , text value
         ]
 
 
-viewInputChoice : Model -> Html Msg
-viewInputChoice model =
+viewInputChoice : String -> Html Msg
+viewInputChoice value =
     Html.div
         []
-        [ text model.label
-        , Html.input
+        [ Html.input
             [ Html.Attributes.placeholder "Your answer"
-            , Html.Attributes.value model.content
+            , Html.Attributes.value value
             , Html.Events.onInput Change
             ]
             []
-        , text model.content
-        ]
+        , text value]
 
 
 

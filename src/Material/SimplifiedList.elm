@@ -36,7 +36,7 @@ view lift mdc mapper objects =
         mdc
         [ Lists.twoLine
         , Lists.avatarList
-        , Lists.onSelectListItem (lift << onSelect objects)
+        , Lists.onSelectListItem (lift << (onSelect objects))
         ]
         (objects
             |> List.map mapper

@@ -16,6 +16,7 @@ import Page.Login
 import Page.Url
 import Research
 import Url
+import Db
 
 
 type Msg
@@ -114,13 +115,6 @@ init flags url key =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotPageMsg (Page.DataMsg msg_)->
-            let
-                (datam, effect) = 
-                    Data.update msg_ model.data
-            in
-                ({model | data = datam}, Cmd.map GotDataMsg effect)
-
         GotPageMsg msg_ ->
             let
                 ( page, effect, mbpmsg ) =
@@ -135,6 +129,20 @@ update msg model =
                         case pmsg of
                             Page.GenerateFrame frame ->
                                 update (GotDataMsg (Data.Generate (Data.GenerateCodingFrame Data.Any frame Nothing))) model
+                            Page.SelectCoding coding -> 
+                                let
+                                    old_page = model.page
+                                    new_page = {old_page | coding = Just coding}
+                                    newer_page = {new_page | url = Page.Url.Code}
+                                in
+                                    ({model|page = newer_page},Cmd.none)
+                            Page.Change caid value ->
+                                let
+                                    old_data = model.data
+                                    new_data = {old_data | coding_answers = Db.update caid (Maybe.map (\c -> {c|value = value})) old_data.coding_answers}
+                                in
+                                    Debug.log "got changed" ({model|data = new_data}, Cmd.none)
+                                
                                 
         Noop ->
             ( model, Cmd.none )

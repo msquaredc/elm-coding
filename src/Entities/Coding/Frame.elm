@@ -15,6 +15,7 @@ import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullab
 import Json.Decode.Pipeline exposing (hardcoded, optional, required,custom)
 import Material.DataTable as DataTable exposing (numeric, table, tbody, td, th, thead, tr, trh)
 import Time
+import List.Extra
 
 
 type alias Model =
@@ -116,3 +117,4 @@ lastFrame : Db Model -> Row Model
 lastFrame frames =
     Db.toList frames
     |> List.foldl (\(idf,first) -> (\(ids,second) -> if first.timestamp.modified > second.timestamp.modified then (idf,first) else (ids,second))) (Id.fromString "empty", empty)
+

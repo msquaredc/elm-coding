@@ -103,12 +103,13 @@ viewBody lift bar progress title content =
                 , Options.css "flex-direction" "column"
                 , Options.css "align-items" "center"
                 ]
-                [ Options.styled div
+                [ viewProgress progress,
+                    Options.styled div
                     [ Options.cs "demo-content-transition"
                     , Options.css "width" "100%"
                     , Options.css "max-width" "1200px"
                     ]
-                    [viewProgress progress, viewLayout Nothing content Nothing ]
+                    [viewLayout Nothing content Nothing ]
                 ]
             ]
         ]

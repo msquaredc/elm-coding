@@ -7,10 +7,11 @@ module Data exposing
     , update
     , view
     , Flags
-    , selectQuestionaryFromCoding
+    , coding2questionary
     , getCodingAnswers
     , GenerateMsg(..)
     , GenerationType(..)
+    , maxCodingFrameIndex
     )
 
 import Db exposing (Db, Row)
@@ -232,6 +233,7 @@ update msg model =
         Click tab ->
             ( { model | current_tab = tab }, Cmd.none )
         Generate msg_ -> 
+            Debug.todo "Look at me. I'm the generator now"
             updateGeneration msg_ model
         SetTime entity tmsg ->
             case entity of
@@ -546,6 +548,7 @@ viewTabContent model =
             text "Tab not Found!"
 
 -- Getters
+-- Coding.Frame
 getCurrentFrames : Model -> Row Coding.Model -> List(Row CodingFrame.Model)
 getCurrentFrames model coding = 
     Db.Extra.selectFromRow model.coding_frames (\(value)-> value.coding) coding
@@ -558,6 +561,7 @@ getCurrentFrame model coding =
     |> List.Extra.maximumBy (\(id,m) -> m.timestamp.accessed)
     |> Result.fromMaybe NoResult
 
+-- Coding.Answer
 getCodingAnswer : Model -> Row CodingFrame.Model -> Row CodingQuestion.Model -> Result Error (Row CodingAnswer.Model)
 getCodingAnswer model (fid,frame) (qid,question) = 
     model.coding_answers
@@ -569,7 +573,10 @@ getCodingAnswer model (fid,frame) (qid,question) =
 
 getCodingAnswers : Db CodingAnswer.Model -> Row CodingFrame.Model -> List (Row CodingAnswer.Model)
 getCodingAnswers answers frame = 
-    Debug.todo "Implement getCodingAnswers"
+   
+        frame
+        |> Db.Extra.selectFromRow answers (\c -> c.coding_frame)
+        |> Db.toList
 
 getCodingQuestionsViaAnswer : Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
 getCodingQuestionsViaAnswer model frame =
@@ -623,17 +630,22 @@ selectFramesFromCoderName model name =
         |> Result.map (Db.Extra.selectFrom model.codings (\c -> c.coder))
         |> Result.map (Db.Extra.selectFrom model.coding_frames (\c -> c.coding))
 
-selectQuestionaryFromCoding : Model -> Row Coding.Model -> Row Questionary.Model
-selectQuestionaryFromCoding model coding =
+
+coding2questionary : Model -> Row Coding.Model -> Maybe(Row Questionary.Model)
+coding2questionary model coding =
             Db.Extra.selectFrom model.coding_frames (\c -> c.coding) (Db.fromList [coding])
             |> Db.toList
-            |> List.map (Db.Extra.get model.answers (\c -> c.answer))
-            |> List.map (Result.andThen (Db.Extra.get model.questions (\c -> c.question)))
-            |> List.map (Result.andThen (Db.Extra.get model.questionaries (\c -> c.questionary)))
-            |> List.map (Result.toMaybe)
-            |> List.filterMap (\x->x)
+            |> List.filterMap (coding_frame2questionary model)
             |> List.head
-            |> Maybe.withDefault (Id.fromString "Nan",{name = "Not Found"})
+
+
+coding_frame2questionary : Model -> Row CodingFrame.Model -> Maybe (Row Questionary.Model)
+coding_frame2questionary model coding_frame =
+    coding_frame
+    |> Db.Extra.get model.answers (\c -> c.answer)
+    |> Result.andThen (Db.Extra.get model.questions (\c -> c.question))
+    |> Result.andThen (Db.Extra.get model.questionaries (\c -> c.questionary))
+    |> Result.toMaybe
                 
 
 selectFramesFromQuestionaryName : Model -> String -> Result Db.Extra.Error (Db CodingFrame.Model)
@@ -644,7 +656,6 @@ selectFramesFromQuestionaryName model name =
         |> Result.map (Db.Extra.selectFrom model.questions (\c -> c.questionary))
         |> Result.map (Db.Extra.selectFrom model.answers (\c -> c.question))
         |> Result.map (Db.Extra.selectFrom model.coding_frames (\c -> c.answer))
-
 
 selectCodingFrames : Model -> String -> String -> Result Db.Extra.Error (Db CodingFrame.Model)
 selectCodingFrames model coder questionary =
@@ -682,8 +693,29 @@ selectMissingAnswers model coder questionary =
     in
     result_answers
 
+maxCodingFrameIndex : Model -> Row Coding.Model -> Int
+maxCodingFrameIndex model coding = 
+    let
+        questionary = coding2questionary model coding
+        answers = Maybe.map (\x -> questionary2answers x model.questions model.answers) questionary
+    in
+        case answers of
+            Nothing ->
+                0
+        
+            Just db ->
+                db 
+                |> Db.toList
+                |> List.length
 
 
+                
+    
+questionary2answers : Row Questionary.Model -> Db Question.Model -> Db Answer.Model -> Db Answer.Model
+questionary2answers questionary questions answers =
+    questionary
+    |> Db.Extra.selectFromRow questions (\c -> c.questionary)
+    |> Db.Extra.selectFrom answers (\c-> c.question)
 
 {-selectCurrentCodingQuestions : Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
 selectCurrentCodingQuestions model (id,frame) =

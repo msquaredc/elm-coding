@@ -1,4 +1,4 @@
-module Questionary exposing (Model, Msg, decode, error, update, view)
+module Questionary exposing (Model, Msg, decode, error, update)
 
 import Array exposing (..)
 import Form exposing (..)
@@ -31,13 +31,13 @@ decode =
         )
 
 
-view : Model -> Html Msg
+{- view : Model -> Html Msg
 view model =
     div [] [ text model.question, div [] (Array.toList (Array.indexedMap viewForm model.coding_questions)) ]
+ -}
 
-
-viewForm index element =
-    Html.map (FormMsg index) <| div [] [ Form.view element ]
+{- viewForm index element =
+    Html.map (FormMsg index) <| div [] [ Form.view element ] -}
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

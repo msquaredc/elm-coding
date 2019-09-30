@@ -6270,14 +6270,6 @@ var author$project$Main$subscriptions = function (model) {
 		author$project$Main$GotPageMsg,
 		author$project$Page$subscriptions(model.page));
 };
-var author$project$Data$Any = {$: 'Any'};
-var author$project$Data$Generate = function (a) {
-	return {$: 'Generate', a: a};
-};
-var author$project$Data$GenerateCodingFrame = F3(
-	function (a, b, c) {
-		return {$: 'GenerateCodingFrame', a: a, b: b, c: c};
-	});
 var elm$core$Dict$get = F2(
 	function (targetKey, dict) {
 		get:
@@ -6691,6 +6683,14 @@ var Chadtech$elm_relational_database$Db$update = F3(
 				Chadtech$elm_relational_database$Id$toString(id),
 				f,
 				dict));
+	});
+var author$project$Data$Any = {$: 'Any'};
+var author$project$Data$Generate = function (a) {
+	return {$: 'Generate', a: a};
+};
+var author$project$Data$GenerateCodingFrame = F3(
+	function (a, b, c) {
+		return {$: 'GenerateCodingFrame', a: a, b: b, c: c};
 	});
 var author$project$Data$GenerateCodingAnswers = function (a) {
 	return {$: 'GenerateCodingAnswers', a: a};
@@ -9828,6 +9828,7 @@ var author$project$Material$update = F3(
 						return $.mdc;
 					}(container))));
 	});
+var elm$core$Debug$todo = _Debug_todo;
 var author$project$Data$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -9846,7 +9847,17 @@ var author$project$Data$update = F2(
 					elm$core$Platform$Cmd$none);
 			case 'Generate':
 				var msg_ = msg.a;
-				return A2(author$project$Data$updateGeneration, msg_, model);
+				return A4(
+					_Debug_todo(
+						'Data',
+						{
+							start: {line: 236, column: 13},
+							end: {line: 236, column: 23}
+						}),
+					'Look at me. I\'m the generator now',
+					author$project$Data$updateGeneration,
+					msg_,
+					model);
 			default:
 				var entity = msg.a;
 				var tmsg = msg.b;
@@ -9909,15 +9920,13 @@ var author$project$Main$GotDataMsg = function (a) {
 var author$project$Page$UrlChanged = function (a) {
 	return {$: 'UrlChanged', a: a};
 };
-var author$project$Page$DataMsg = function (a) {
-	return {$: 'DataMsg', a: a};
-};
-var author$project$Page$GenerateFrame = function (a) {
-	return {$: 'GenerateFrame', a: a};
-};
 var author$project$Page$Internal = function (a) {
 	return {$: 'Internal', a: a};
 };
+var author$project$Page$Change = F2(
+	function (a, b) {
+		return {$: 'Change', a: a, b: b};
+	});
 var author$project$Page$GotCodeMsg = function (a) {
 	return {$: 'GotCodeMsg', a: a};
 };
@@ -9936,37 +9945,40 @@ var author$project$Page$GotLoginMsg = function (a) {
 var author$project$Page$PageMsg = function (a) {
 	return {$: 'PageMsg', a: a};
 };
+var author$project$Page$SelectCoding = function (a) {
+	return {$: 'SelectCoding', a: a};
+};
+var author$project$Page$Code$ChangedAnswer = F2(
+	function (a, b) {
+		return {$: 'ChangedAnswer', a: a, b: b};
+	});
 var author$project$Page$Code$Mdc = function (a) {
 	return {$: 'Mdc', a: a};
 };
+var elm$core$Debug$log = _Debug_log;
 var author$project$Page$Code$update = F3(
 	function (lift, msg, model) {
-		switch (msg.$) {
-			case 'Mdc':
-				var msg_ = msg.a;
-				return A3(
-					author$project$Material$update,
-					A2(elm$core$Basics$composeL, lift, author$project$Page$Code$Mdc),
-					msg_,
-					model);
-			case 'ListMsg':
-				switch (msg.a.$) {
-					case 'Select':
-						var coding = msg.a.a;
-						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-					case 'Mdc':
-						var msg_ = msg.a.a;
-						return A3(
-							author$project$Material$update,
-							A2(elm$core$Basics$composeL, lift, author$project$Page$Code$Mdc),
-							msg_,
-							model);
-					default:
-						var _n1 = msg.a;
-						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-				}
-			default:
-				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		if (msg.$ === 'Mdc') {
+			var msg_ = msg.a;
+			var _n1 = A3(
+				author$project$Material$update,
+				A2(elm$core$Basics$composeL, lift, author$project$Page$Code$Mdc),
+				msg_,
+				model);
+			var mdcmodel = _n1.a;
+			var mdccmd = _n1.b;
+			return _Utils_Tuple3(mdcmodel, mdccmd, elm$core$Maybe$Nothing);
+		} else {
+			var caid = msg.a;
+			var value = msg.b;
+			return A2(
+				elm$core$Debug$log,
+				'Change triggered',
+				_Utils_Tuple3(
+					model,
+					elm$core$Platform$Cmd$none,
+					elm$core$Maybe$Just(
+						A2(author$project$Page$Code$ChangedAnswer, caid, value))));
 		}
 	});
 var author$project$Page$Data$Mdc = function (a) {
@@ -9997,42 +10009,59 @@ var author$project$Page$Error$update = F3(
 			msg_,
 			model);
 	});
+var author$project$Page$Home$GotSelection = function (a) {
+	return {$: 'GotSelection', a: a};
+};
 var author$project$Page$Home$Mdc = function (a) {
 	return {$: 'Mdc', a: a};
 };
 var author$project$Page$Home$update = F3(
 	function (lift, msg, model) {
-		switch (msg.$) {
-			case 'Mdc':
-				var msg_ = msg.a;
-				return A3(
-					author$project$Material$update,
-					A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
-					msg_,
-					model);
-			case 'ListMsg':
-				switch (msg.a.$) {
-					case 'Select':
-						var coding = msg.a.a;
-						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-					case 'Mdc':
-						var msg_ = msg.a.a;
-						return A3(
-							author$project$Material$update,
-							A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
-							msg_,
-							model);
-					default:
-						var _n1 = msg.a;
-						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-				}
-			default:
-				var msg_ = msg.a.a;
-				return A3(
-					author$project$Material$update,
-					A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
-					msg_,
-					model);
+		update:
+		while (true) {
+			switch (msg.$) {
+				case 'Mdc':
+					var msg_ = msg.a;
+					var _n1 = A3(
+						author$project$Material$update,
+						A2(elm$core$Basics$composeL, lift, author$project$Page$Home$Mdc),
+						msg_,
+						model);
+					var md = _n1.a;
+					var effect = _n1.b;
+					return _Utils_Tuple3(md, effect, elm$core$Maybe$Nothing);
+				case 'ListMsg':
+					var lmsg_ = msg.a;
+					switch (lmsg_.$) {
+						case 'Select':
+							var coding = lmsg_.a;
+							return _Utils_Tuple3(
+								model,
+								elm$core$Platform$Cmd$none,
+								elm$core$Maybe$Just(
+									author$project$Page$Home$GotSelection(coding)));
+						case 'Mdc':
+							var mdcmsg_ = lmsg_.a;
+							var $temp$lift = lift,
+								$temp$msg = author$project$Page$Home$Mdc(mdcmsg_),
+								$temp$model = model;
+							lift = $temp$lift;
+							msg = $temp$msg;
+							model = $temp$model;
+							continue update;
+						default:
+							return _Utils_Tuple3(model, elm$core$Platform$Cmd$none, elm$core$Maybe$Nothing);
+					}
+				default:
+					var msg_ = msg.a.a;
+					var $temp$lift = lift,
+						$temp$msg = author$project$Page$Home$Mdc(msg_),
+						$temp$model = model;
+					lift = $temp$lift;
+					msg = $temp$msg;
+					model = $temp$model;
+					continue update;
+			}
 		}
 	});
 var author$project$Page$Login$Mdc = function (a) {
@@ -10073,11 +10102,12 @@ var author$project$Page$updatePage = F3(
 					data);
 				var login = _n1.a;
 				var effects = _n1.b;
-				return _Utils_Tuple2(
+				return _Utils_Tuple3(
 					_Utils_update(
 						model,
 						{login: login}),
-					effects);
+					effects,
+					elm$core$Maybe$Nothing);
 			case 'GotErrorMsg':
 				var msg_ = msg.a;
 				var _n2 = A3(
@@ -10087,11 +10117,12 @@ var author$project$Page$updatePage = F3(
 					model.error);
 				var error = _n2.a;
 				var effects = _n2.b;
-				return _Utils_Tuple2(
+				return _Utils_Tuple3(
 					_Utils_update(
 						model,
 						{error: error}),
-					effects);
+					effects,
+					elm$core$Maybe$Nothing);
 			case 'GotDataMsg':
 				var msg_ = msg.a;
 				var _n3 = A3(
@@ -10101,11 +10132,12 @@ var author$project$Page$updatePage = F3(
 					model.data);
 				var datam = _n3.a;
 				var effects = _n3.b;
-				return _Utils_Tuple2(
+				return _Utils_Tuple3(
 					_Utils_update(
 						model,
 						{data: datam}),
-					effects);
+					effects,
+					elm$core$Maybe$Nothing);
 			case 'GotHomeMsg':
 				var msg_ = msg.a;
 				var _n4 = A3(
@@ -10115,25 +10147,54 @@ var author$project$Page$updatePage = F3(
 					model.home);
 				var homem = _n4.a;
 				var effects = _n4.b;
-				return _Utils_Tuple2(
+				var mb = _n4.c;
+				var outmessage = function () {
+					if (mb.$ === 'Nothing') {
+						return elm$core$Maybe$Nothing;
+					} else {
+						var om = mb.a;
+						return elm$core$Maybe$Just(
+							function () {
+								var coding = om.a;
+								return author$project$Page$SelectCoding(coding);
+							}());
+					}
+				}();
+				return _Utils_Tuple3(
 					_Utils_update(
 						model,
 						{home: homem}),
-					effects);
+					effects,
+					outmessage);
 			default:
 				var msg_ = msg.a;
-				var _n5 = A3(
+				var _n7 = A3(
 					author$project$Page$Code$update,
 					A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotCodeMsg),
 					msg_,
 					model.code);
-				var codem = _n5.a;
-				var effects = _n5.b;
-				return _Utils_Tuple2(
+				var codem = _n7.a;
+				var effects = _n7.b;
+				var mb = _n7.c;
+				var outmessage = function () {
+					if (mb.$ === 'Nothing') {
+						return elm$core$Maybe$Nothing;
+					} else {
+						var om = mb.a;
+						return elm$core$Maybe$Just(
+							function () {
+								var caid = om.a;
+								var value = om.b;
+								return A2(author$project$Page$Change, caid, value);
+							}());
+					}
+				}();
+				return _Utils_Tuple3(
 					_Utils_update(
 						model,
 						{code: codem}),
-					effects);
+					effects,
+					outmessage);
 		}
 	});
 var author$project$Page$Internal$Mdc = function (a) {
@@ -10203,7 +10264,6 @@ var author$project$Page$Url$fromUrl = function (url) {
 	return author$project$Page$Url$fromString(
 		A2(elm$core$Maybe$withDefault, '', url.fragment));
 };
-var elm$core$Debug$log = _Debug_log;
 var elm_community$list_extra$List$Extra$getAt = F2(
 	function (idx, xs) {
 		return (idx < 0) ? elm$core$Maybe$Nothing : elm$core$List$head(
@@ -10211,106 +10271,58 @@ var elm_community$list_extra$List$Extra$getAt = F2(
 	});
 var author$project$Page$update = F3(
 	function (msg, data, model) {
-		update:
-		while (true) {
-			switch (msg.$) {
-				case 'Mdc':
-					var msg_ = msg.a;
-					var _n1 = A3(author$project$Material$update, author$project$Page$Mdc, msg_, model);
-					var mdc = _n1.a;
-					var effect = _n1.b;
-					return _Utils_Tuple3(mdc, effect, elm$core$Maybe$Nothing);
-				case 'PageMsg':
-					var m = msg.a;
-					_n2$3:
-					while (true) {
-						switch (m.$) {
-							case 'GotLoginMsg':
-								if (m.a.$ === 'Select') {
-									var index = m.a.a;
-									var list = A2(author$project$Page$Login$getFilteredList, data.coders, model.page.login.field);
-									var mb_row = A2(elm_community$list_extra$List$Extra$getAt, index, list);
-									return _Utils_Tuple3(
-										_Utils_update(
-											model,
-											{user: mb_row}),
-										elm$core$Platform$Cmd$none,
-										elm$core$Maybe$Nothing);
-								} else {
-									break _n2$3;
-								}
-							case 'GotHomeMsg':
-								if ((m.a.$ === 'ListMsg') && (m.a.a.$ === 'Select')) {
-									var coding = m.a.a.a;
-									var new_model = _Utils_update(
-										model,
-										{
-											coding: elm$core$Maybe$Just(coding)
-										});
-									var new_model2 = _Utils_update(
-										new_model,
-										{url: author$project$Page$Url$Code});
-									return _Utils_Tuple3(
-										new_model2,
-										elm$core$Platform$Cmd$none,
-										elm$core$Maybe$Just(
-											author$project$Page$GenerateFrame(coding)));
-								} else {
-									break _n2$3;
-								}
-							case 'GotCodeMsg':
-								if (m.a.$ === 'DataMsg') {
-									var msg_ = m.a.a;
-									var $temp$msg = author$project$Page$DataMsg(msg_),
-										$temp$data = data,
-										$temp$model = model;
-									msg = $temp$msg;
-									data = $temp$data;
-									model = $temp$model;
-									continue update;
-								} else {
-									break _n2$3;
-								}
-							default:
-								break _n2$3;
-						}
-					}
+		switch (msg.$) {
+			case 'Mdc':
+				var msg_ = msg.a;
+				var _n1 = A3(author$project$Material$update, author$project$Page$Mdc, msg_, model);
+				var mdc = _n1.a;
+				var effect = _n1.b;
+				return _Utils_Tuple3(mdc, effect, elm$core$Maybe$Nothing);
+			case 'PageMsg':
+				var m = msg.a;
+				if ((m.$ === 'GotLoginMsg') && (m.a.$ === 'Select')) {
+					var index = m.a.a;
+					var list = A2(author$project$Page$Login$getFilteredList, data.coders, model.page.login.field);
+					var mb_row = A2(elm_community$list_extra$List$Extra$getAt, index, list);
+					return _Utils_Tuple3(
+						_Utils_update(
+							model,
+							{user: mb_row}),
+						elm$core$Platform$Cmd$none,
+						elm$core$Maybe$Nothing);
+				} else {
 					var _n3 = A3(author$project$Page$updatePage, m, model.page, data);
 					var page = _n3.a;
 					var effects = _n3.b;
+					var pmsg = _n3.c;
 					return _Utils_Tuple3(
 						_Utils_update(
 							model,
 							{page: page}),
 						effects,
-						elm$core$Maybe$Nothing);
-				case 'UrlChanged':
-					var url = msg.a;
-					return _Utils_Tuple3(
-						_Utils_update(
-							model,
-							{
-								url: author$project$Page$Url$fromUrl(url)
-							}),
-						elm$core$Platform$Cmd$none,
-						elm$core$Maybe$Nothing);
-				case 'DataMsg':
-					return A2(
-						elm$core$Debug$log,
-						'DataMsg got Called',
-						_Utils_Tuple3(model, elm$core$Platform$Cmd$none, elm$core$Maybe$Nothing));
-				default:
-					var msg_ = msg.a;
-					var _n4 = A3(author$project$Page$Internal$update, author$project$Page$Internal, msg_, model.internal);
-					var internal = _n4.a;
-					var effects = _n4.b;
-					return _Utils_Tuple3(
-						_Utils_update(
-							model,
-							{internal: internal}),
-						effects,
-						elm$core$Maybe$Nothing);
-			}
+						pmsg);
+				}
+			case 'UrlChanged':
+				var url = msg.a;
+				return _Utils_Tuple3(
+					_Utils_update(
+						model,
+						{
+							url: author$project$Page$Url$fromUrl(url)
+						}),
+					elm$core$Platform$Cmd$none,
+					elm$core$Maybe$Nothing);
+			default:
+				var msg_ = msg.a;
+				var _n4 = A3(author$project$Page$Internal$update, author$project$Page$Internal, msg_, model.internal);
+				var internal = _n4.a;
+				var effects = _n4.b;
+				return _Utils_Tuple3(
+					_Utils_update(
+						model,
+						{internal: internal}),
+					effects,
+					elm$core$Maybe$Nothing);
 		}
 	});
 var elm$browser$Browser$Navigation$load = _Browser_load;
@@ -10365,48 +10377,81 @@ var author$project$Main$update = F2(
 		while (true) {
 			switch (msg.$) {
 				case 'GotPageMsg':
-					if (msg.a.$ === 'DataMsg') {
-						var msg_ = msg.a.a;
-						var _n1 = A2(author$project$Data$update, msg_, model.data);
-						var datam = _n1.a;
-						var effect = _n1.b;
+					var msg_ = msg.a;
+					var _n1 = A3(author$project$Page$update, msg_, model.data, model.page);
+					var page = _n1.a;
+					var effect = _n1.b;
+					var mbpmsg = _n1.c;
+					var newmodel = _Utils_update(
+						model,
+						{page: page});
+					if (mbpmsg.$ === 'Nothing') {
 						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{data: datam}),
-							A2(elm$core$Platform$Cmd$map, author$project$Main$GotDataMsg, effect));
+							newmodel,
+							A2(elm$core$Platform$Cmd$map, author$project$Main$GotPageMsg, effect));
 					} else {
-						var msg_ = msg.a;
-						var _n2 = A3(author$project$Page$update, msg_, model.data, model.page);
-						var page = _n2.a;
-						var effect = _n2.b;
-						var mbpmsg = _n2.c;
-						var newmodel = _Utils_update(
-							model,
-							{page: page});
-						if (mbpmsg.$ === 'Nothing') {
-							return _Utils_Tuple2(
-								newmodel,
-								A2(elm$core$Platform$Cmd$map, author$project$Main$GotPageMsg, effect));
-						} else {
-							var pmsg = mbpmsg.a;
-							var frame = pmsg.a;
-							var $temp$msg = author$project$Main$GotDataMsg(
-								author$project$Data$Generate(
-									A3(author$project$Data$GenerateCodingFrame, author$project$Data$Any, frame, elm$core$Maybe$Nothing))),
-								$temp$model = model;
-							msg = $temp$msg;
-							model = $temp$model;
-							continue update;
+						var pmsg = mbpmsg.a;
+						switch (pmsg.$) {
+							case 'GenerateFrame':
+								var frame = pmsg.a;
+								var $temp$msg = author$project$Main$GotDataMsg(
+									author$project$Data$Generate(
+										A3(author$project$Data$GenerateCodingFrame, author$project$Data$Any, frame, elm$core$Maybe$Nothing))),
+									$temp$model = model;
+								msg = $temp$msg;
+								model = $temp$model;
+								continue update;
+							case 'SelectCoding':
+								var coding = pmsg.a;
+								var old_page = model.page;
+								var new_page = _Utils_update(
+									old_page,
+									{
+										coding: elm$core$Maybe$Just(coding)
+									});
+								var newer_page = _Utils_update(
+									new_page,
+									{url: author$project$Page$Url$Code});
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{page: newer_page}),
+									elm$core$Platform$Cmd$none);
+							default:
+								var caid = pmsg.a;
+								var value = pmsg.b;
+								var old_data = model.data;
+								var new_data = _Utils_update(
+									old_data,
+									{
+										coding_answers: A3(
+											Chadtech$elm_relational_database$Db$update,
+											caid,
+											elm$core$Maybe$map(
+												function (c) {
+													return _Utils_update(
+														c,
+														{value: value});
+												}),
+											old_data.coding_answers)
+									});
+								return A2(
+									elm$core$Debug$log,
+									'got changed',
+									_Utils_Tuple2(
+										_Utils_update(
+											model,
+											{data: new_data}),
+										elm$core$Platform$Cmd$none));
 						}
 					}
 				case 'Noop':
 					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				case 'GotDataMsg':
 					var msg_ = msg.a;
-					var _n5 = A2(author$project$Data$update, msg_, model.data);
-					var data = _n5.a;
-					var effect = _n5.b;
+					var _n4 = A2(author$project$Data$update, msg_, model.data);
+					var data = _n4.a;
+					var effect = _n4.b;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -10430,13 +10475,13 @@ var author$project$Main$update = F2(
 					}
 				default:
 					var url = msg.a;
-					var _n7 = A3(
+					var _n6 = A3(
 						author$project$Page$update,
 						author$project$Page$UrlChanged(url),
 						model.data,
 						model.page);
-					var page = _n7.a;
-					var effect = _n7.b;
+					var page = _n6.a;
+					var effect = _n6.b;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -10445,22 +10490,6 @@ var author$project$Main$update = F2(
 			}
 		}
 	});
-var elm$core$Debug$todo = _Debug_todo;
-var author$project$Data$getCodingAnswers = F2(
-	function (answers, frame) {
-		return _Debug_todo(
-			'Data',
-			{
-				start: {line: 572, column: 5},
-				end: {line: 572, column: 15}
-			})('Implement getCodingAnswers');
-	});
-var author$project$Internal$Options$Class = function (a) {
-	return {$: 'Class', a: a};
-};
-var author$project$Internal$Options$cs = function (c) {
-	return author$project$Internal$Options$Class(c);
-};
 var elm$core$Result$toMaybe = function (result) {
 	if (result.$ === 'Ok') {
 		var v = result.a;
@@ -10468,6 +10497,100 @@ var elm$core$Result$toMaybe = function (result) {
 	} else {
 		return elm$core$Maybe$Nothing;
 	}
+};
+var author$project$Data$coding_frame2questionary = F2(
+	function (model, coding_frame) {
+		return elm$core$Result$toMaybe(
+			A2(
+				elm$core$Result$andThen,
+				A2(
+					author$project$Db$Extra$get,
+					model.questionaries,
+					function (c) {
+						return c.questionary;
+					}),
+				A2(
+					elm$core$Result$andThen,
+					A2(
+						author$project$Db$Extra$get,
+						model.questions,
+						function (c) {
+							return c.question;
+						}),
+					A3(
+						author$project$Db$Extra$get,
+						model.answers,
+						function (c) {
+							return c.answer;
+						},
+						coding_frame))));
+	});
+var author$project$Data$coding2questionary = F2(
+	function (model, coding) {
+		return elm$core$List$head(
+			A2(
+				elm$core$List$filterMap,
+				author$project$Data$coding_frame2questionary(model),
+				Chadtech$elm_relational_database$Db$toList(
+					A3(
+						author$project$Db$Extra$selectFrom,
+						model.coding_frames,
+						function (c) {
+							return c.coding;
+						},
+						Chadtech$elm_relational_database$Db$fromList(
+							_List_fromArray(
+								[coding]))))));
+	});
+var author$project$Data$questionary2answers = F3(
+	function (questionary, questions, answers) {
+		return A3(
+			author$project$Db$Extra$selectFrom,
+			answers,
+			function (c) {
+				return c.question;
+			},
+			A3(
+				author$project$Db$Extra$selectFromRow,
+				questions,
+				function (c) {
+					return c.questionary;
+				},
+				questionary));
+	});
+var author$project$Data$maxCodingFrameIndex = F2(
+	function (model, coding) {
+		var questionary = A2(author$project$Data$coding2questionary, model, coding);
+		var answers = A2(
+			elm$core$Maybe$map,
+			function (x) {
+				return A3(author$project$Data$questionary2answers, x, model.questions, model.answers);
+			},
+			questionary);
+		if (answers.$ === 'Nothing') {
+			return 0;
+		} else {
+			var db = answers.a;
+			return elm$core$List$length(
+				Chadtech$elm_relational_database$Db$toList(db));
+		}
+	});
+var author$project$Data$getCodingAnswers = F2(
+	function (answers, frame) {
+		return Chadtech$elm_relational_database$Db$toList(
+			A3(
+				author$project$Db$Extra$selectFromRow,
+				answers,
+				function (c) {
+					return c.coding_frame;
+				},
+				frame));
+	});
+var author$project$Internal$Options$Class = function (a) {
+	return {$: 'Class', a: a};
+};
+var author$project$Internal$Options$cs = function (c) {
+	return author$project$Internal$Options$Class(c);
 };
 var author$project$Internal$Dispatch$flatten = function (decoders) {
 	var tryMergeStep = F3(
@@ -10868,19 +10991,185 @@ var author$project$Form$inputTypeToComparable = function (input_type) {
 			return 'Choice';
 	}
 };
-var author$project$Page$Code$viewFormElements = function (list) {
+var author$project$Form$Change = function (a) {
+	return {$: 'Change', a: a};
+};
+var elm$html$Html$input = _VirtualDom_node('input');
+var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
+var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
+var elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			elm$virtual_dom$VirtualDom$on,
+			event,
+			elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
+	});
+var elm$html$Html$Events$targetValue = A2(
+	elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	elm$json$Json$Decode$string);
+var elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			elm$json$Json$Decode$map,
+			elm$html$Html$Events$alwaysStop,
+			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
+};
+var author$project$Form$viewInputChoice = function (value) {
 	return A2(
 		elm$html$Html$div,
 		_List_Nil,
-		A2(
-			elm$core$List$map,
-			function (_n0) {
-				var _n1 = _n0.b;
-				var value = _n1.b;
-				return elm$html$Html$text(value.value);
-			},
-			list));
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$input,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$placeholder('Your answer'),
+						elm$html$Html$Attributes$value(value),
+						elm$html$Html$Events$onInput(author$project$Form$Change)
+					]),
+				_List_Nil),
+				elm$html$Html$text(value)
+			]));
 };
+var author$project$Form$viewInputNumber = F2(
+	function (value, bounds) {
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$input,
+					_List_fromArray(
+						[
+							elm$html$Html$Attributes$placeholder('Your answer'),
+							elm$html$Html$Attributes$value(value),
+							elm$html$Html$Events$onInput(author$project$Form$Change)
+						]),
+					_List_Nil),
+					elm$html$Html$text(value)
+				]));
+	});
+var author$project$Form$viewInputString = function (value) {
+	return A2(
+		elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				elm$html$Html$input,
+				_List_fromArray(
+					[
+						elm$html$Html$Attributes$placeholder('Your answer'),
+						elm$html$Html$Attributes$value(value),
+						elm$html$Html$Events$onInput(author$project$Form$Change)
+					]),
+				_List_Nil),
+				elm$html$Html$text(value)
+			]));
+};
+var author$project$Form$view = F2(
+	function (formtype, value) {
+		switch (formtype.$) {
+			case 'InputString':
+				return author$project$Form$viewInputString(value);
+			case 'InputNumber':
+				var n = formtype.a;
+				return A2(author$project$Form$viewInputNumber, value, n);
+			default:
+				return author$project$Form$viewInputChoice(value);
+		}
+	});
+var author$project$Internal$LayoutGrid$Implementation$span2Phone = A2(
+	author$project$Internal$LayoutGrid$Implementation$span,
+	elm$core$Maybe$Just('phone'),
+	2);
+var author$project$Material$LayoutGrid$span2Phone = author$project$Internal$LayoutGrid$Implementation$span2Phone;
+var author$project$Internal$LayoutGrid$Implementation$span4Tablet = A2(
+	author$project$Internal$LayoutGrid$Implementation$span,
+	elm$core$Maybe$Just('tablet'),
+	4);
+var author$project$Material$LayoutGrid$span4Tablet = author$project$Internal$LayoutGrid$Implementation$span4Tablet;
+var author$project$Internal$LayoutGrid$Implementation$span6Desktop = A2(
+	author$project$Internal$LayoutGrid$Implementation$span,
+	elm$core$Maybe$Just('desktop'),
+	6);
+var author$project$Material$LayoutGrid$span6Desktop = author$project$Internal$LayoutGrid$Implementation$span6Desktop;
+var author$project$Page$Code$Change = F2(
+	function (a, b) {
+		return {$: 'Change', a: a, b: b};
+	});
+var author$project$Page$Code$msgAdapt = F2(
+	function (aid, msg) {
+		var str = msg.a;
+		return A2(author$project$Page$Code$Change, aid, str);
+	});
+var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
+var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
+var author$project$Page$Code$viewFormElement = F3(
+	function (lift, _n0, _n1) {
+		var qid = _n0.a;
+		var question = _n0.b;
+		var aid = _n1.a;
+		var answer = _n1.b;
+		return A2(
+			author$project$Material$LayoutGrid$view,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					author$project$Material$LayoutGrid$cell,
+					_List_fromArray(
+						[author$project$Material$LayoutGrid$span2Phone, author$project$Material$LayoutGrid$span4Tablet, author$project$Material$LayoutGrid$span6Desktop]),
+					_List_fromArray(
+						[
+							elm$html$Html$text(question.text)
+						])),
+					A2(
+					author$project$Material$LayoutGrid$cell,
+					_List_fromArray(
+						[author$project$Material$LayoutGrid$span2Phone, author$project$Material$LayoutGrid$span4Tablet, author$project$Material$LayoutGrid$span6Desktop]),
+					_List_fromArray(
+						[
+							A2(
+							elm$html$Html$map,
+							A2(
+								elm$core$Basics$composeL,
+								lift,
+								author$project$Page$Code$msgAdapt(aid)),
+							A2(author$project$Form$view, question.input_type, answer.value))
+						]))
+				]));
+	});
+var author$project$Page$Code$viewFormElements = F2(
+	function (lift, list) {
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			A2(
+				elm$core$List$map,
+				function (_n0) {
+					var a = _n0.a;
+					var b = _n0.b;
+					return A3(author$project$Page$Code$viewFormElement, lift, a, b);
+				},
+				list));
+	});
 var elm_community$maybe_extra$Maybe$Extra$foldrValues = F2(
 	function (item, list) {
 		if (item.$ === 'Nothing') {
@@ -10891,11 +11180,11 @@ var elm_community$maybe_extra$Maybe$Extra$foldrValues = F2(
 		}
 	});
 var elm_community$maybe_extra$Maybe$Extra$values = A2(elm$core$List$foldr, elm_community$maybe_extra$Maybe$Extra$foldrValues, _List_Nil);
-var author$project$Page$Code$viewCodingForm = F2(
-	function (answers, questions) {
-		var f = function (_n6) {
-			var a = _n6.a;
-			var b = _n6.b;
+var author$project$Page$Code$viewCodingForm = F3(
+	function (lift, answers, questions) {
+		var f = function (_n7) {
+			var a = _n7.a;
+			var b = _n7.b;
 			if (a.$ === 'Just') {
 				var value = a.a;
 				return elm$core$Maybe$Just(
@@ -10904,62 +11193,65 @@ var author$project$Page$Code$viewCodingForm = F2(
 				return elm$core$Maybe$Nothing;
 			}
 		};
-		var res = A2(
-			elm$core$List$map,
-			function (_n3) {
-				var _n4 = _n3.a;
-				var id = _n4.a;
-				var a = _n4.b;
-				var b = _n3.b;
-				return _Utils_Tuple2(a.input_type, b);
-			},
-			elm_community$maybe_extra$Maybe$Extra$values(
+		var res = elm_community$maybe_extra$Maybe$Extra$values(
+			A2(
+				elm$core$List$map,
+				f,
 				A2(
 					elm$core$List$map,
-					f,
+					function (_n5) {
+						var a = _n5.a;
+						var b = _n5.b;
+						return _Utils_Tuple2(
+							elm$core$Result$toMaybe(a),
+							b);
+					},
 					A2(
 						elm$core$List$map,
-						function (_n2) {
-							var a = _n2.a;
-							var b = _n2.b;
+						function (d) {
 							return _Utils_Tuple2(
-								elm$core$Result$toMaybe(a),
-								b);
+								A3(
+									author$project$Db$Extra$get,
+									questions,
+									function (c) {
+										return c.coding_question;
+									},
+									d),
+								d);
 						},
-						A2(
-							elm$core$List$map,
-							function (d) {
-								return _Utils_Tuple2(
-									A2(
-										author$project$Db$Extra$get(questions),
-										function (c) {
-											return c.coding_question;
-										},
-										d),
-									d);
-							},
-							answers)))));
+						answers))));
 		var types = elm_community$list_extra$List$Extra$unique(
 			A2(
 				elm$core$List$map,
-				function (_n1) {
-					var a = _n1.a;
-					var b = _n1.b;
+				function (_n2) {
+					var a = _n2.a;
+					var b = _n2.b;
 					return author$project$Form$inputTypeToComparable(a);
 				},
-				res));
+				A2(
+					elm$core$List$map,
+					function (_n3) {
+						var _n4 = _n3.a;
+						var id = _n4.a;
+						var a = _n4.b;
+						var b = _n3.b;
+						return _Utils_Tuple2(a.input_type, b);
+					},
+					res)));
 		return A2(
 			elm$core$List$map,
-			author$project$Page$Code$viewFormElements,
+			author$project$Page$Code$viewFormElements(lift),
 			A2(
 				elm$core$List$map,
 				function (x) {
 					return A2(
 						elm$core$List$filter,
 						function (_n0) {
-							var a = _n0.a;
+							var _n1 = _n0.a;
+							var id = _n1.a;
+							var a = _n1.b;
 							return _Utils_eq(
-								author$project$Form$inputTypeToComparable(a),
+								author$project$Form$inputTypeToComparable(a.input_type),
 								x);
 						},
 						res);
@@ -11001,8 +11293,8 @@ var author$project$Page$Code$viewQuestion = function (question) {
 					]))
 			]));
 };
-var author$project$Page$Code$viewCoding = F2(
-	function (data, current) {
+var author$project$Page$Code$viewCoding = F3(
+	function (lift, data, current) {
 		var answer = A3(
 			author$project$Db$Extra$get,
 			data.answers,
@@ -11044,19 +11336,20 @@ var author$project$Page$Code$viewCoding = F2(
 					author$project$Material$LayoutGrid$cell,
 					_List_fromArray(
 						[author$project$Material$LayoutGrid$span4Phone, author$project$Material$LayoutGrid$span8Tablet, author$project$Material$LayoutGrid$span12Desktop]),
-					A2(
+					A3(
 						author$project$Page$Code$viewCodingForm,
+						lift,
 						A2(author$project$Data$getCodingAnswers, data.coding_answers, current),
 						data.coding_questions))
 				]));
 	});
-var author$project$Page$Code$viewBody = F2(
-	function (data, mb_current) {
+var author$project$Page$Code$viewBody = F3(
+	function (lift, data, mb_current) {
 		if (mb_current.$ === 'Just') {
 			var current = mb_current.a;
 			return A2(
 				elm$core$List$cons,
-				A2(author$project$Page$Code$viewCoding, data, current),
+				A3(author$project$Page$Code$viewCoding, lift, data, current),
 				_List_Nil);
 		} else {
 			return _List_fromArray(
@@ -11092,8 +11385,11 @@ var author$project$Page$Code$view = F4(
 			},
 			Chadtech$elm_relational_database$Db$toList(all_coding_frames));
 		return {
-			body: A2(author$project$Page$Code$viewBody, data, mb_current),
-			navigation: A2(author$project$Page$Internal$Paginate, 0, 10),
+			body: A3(author$project$Page$Code$viewBody, lift, data, mb_current),
+			navigation: A2(
+				author$project$Page$Internal$Paginate,
+				0,
+				A2(author$project$Data$maxCodingFrameIndex, data, coding)),
 			progress: author$project$Page$Internal$Progress(0.78),
 			title: 'Coding'
 		};
@@ -11638,8 +11934,6 @@ var author$project$Entities$Answer$viewTable = function (model) {
 					]))
 			]));
 };
-var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
-var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
 var author$project$Data$viewAnswers = F3(
 	function (model, coder, questionary) {
 		var _n0 = A3(author$project$Data$selectMissingAnswers, model, coder, questionary);
@@ -11918,10 +12212,6 @@ var author$project$Internal$Options$nop = author$project$Internal$Options$None;
 var author$project$Internal$Options$when = F2(
 	function (guard, prop) {
 		return guard ? prop : author$project$Internal$Options$nop;
-	});
-var elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3(elm$core$List$foldr, elm$json$Json$Decode$field, decoder, fields);
 	});
 var debois$elm_dom$DOM$childNode = function (idx) {
 	return elm$json$Json$Decode$at(
@@ -14172,74 +14462,30 @@ var author$project$Material$SimplifiedList$view = F4(
 var author$project$Page$Home$ListMsg = function (a) {
 	return {$: 'ListMsg', a: a};
 };
-var author$project$Data$selectQuestionaryFromCoding = F2(
-	function (model, coding) {
-		return A2(
-			elm$core$Maybe$withDefault,
-			_Utils_Tuple2(
-				Chadtech$elm_relational_database$Id$fromString('Nan'),
-				{name: 'Not Found'}),
-			elm$core$List$head(
-				A2(
-					elm$core$List$filterMap,
-					function (x) {
-						return x;
-					},
-					A2(
-						elm$core$List$map,
-						elm$core$Result$toMaybe,
-						A2(
-							elm$core$List$map,
-							elm$core$Result$andThen(
-								A2(
-									author$project$Db$Extra$get,
-									model.questionaries,
-									function (c) {
-										return c.questionary;
-									})),
-							A2(
-								elm$core$List$map,
-								elm$core$Result$andThen(
-									A2(
-										author$project$Db$Extra$get,
-										model.questions,
-										function (c) {
-											return c.question;
-										})),
-								A2(
-									elm$core$List$map,
-									A2(
-										author$project$Db$Extra$get,
-										model.answers,
-										function (c) {
-											return c.answer;
-										}),
-									Chadtech$elm_relational_database$Db$toList(
-										A3(
-											author$project$Db$Extra$selectFrom,
-											model.coding_frames,
-											function (c) {
-												return c.coding;
-											},
-											Chadtech$elm_relational_database$Db$fromList(
-												_List_fromArray(
-													[coding])))))))))));
-	});
 var author$project$Page$Home$codingRowToListItem = F2(
 	function (data, _n0) {
 		var id = _n0.a;
 		var model = _n0.b;
 		var _n1 = A2(
-			author$project$Data$selectQuestionaryFromCoding,
+			author$project$Data$coding2questionary,
 			data,
 			_Utils_Tuple2(id, model));
-		var qid = _n1.a;
-		var questionary = _n1.b;
-		return {
-			icon: 'person',
-			primary: questionary.name,
-			secondary: Chadtech$elm_relational_database$Id$toString(id)
-		};
+		if (_n1.$ === 'Just') {
+			var _n2 = _n1.a;
+			var qid = _n2.a;
+			var questionary = _n2.b;
+			return {
+				icon: 'person',
+				primary: questionary.name,
+				secondary: Chadtech$elm_relational_database$Id$toString(id)
+			};
+		} else {
+			return {
+				icon: 'error',
+				primary: 'Invalid Questionary',
+				secondary: Chadtech$elm_relational_database$Id$toString(id)
+			};
+		}
 	});
 var author$project$Page$Home$viewCodings = F4(
 	function (lift, model, data, coder) {
@@ -14259,8 +14505,20 @@ var author$project$Page$Home$viewCodings = F4(
 						_List_fromArray(
 							[coder])))));
 	});
-var author$project$Page$Home$view = F4(
-	function (lift, model, data, user) {
+var author$project$Page$Home$viewMaybe = function (coding) {
+	if (coding.$ === 'Just') {
+		var _n1 = coding.a;
+		var id = _n1.a;
+		var value = _n1.b;
+		return elm$html$Html$text(
+			Chadtech$elm_relational_database$Id$toString(id));
+	} else {
+		var option2 = coding;
+		return elm$html$Html$text('NoCoding');
+	}
+};
+var author$project$Page$Home$view = F5(
+	function (coding, lift, model, data, user) {
 		return {
 			body: A2(
 				elm$core$List$cons,
@@ -14268,7 +14526,10 @@ var author$project$Page$Home$view = F4(
 				A2(
 					elm$core$List$cons,
 					A4(author$project$Page$Home$viewCodings, lift, model, data, user),
-					_List_Nil)),
+					_List_fromArray(
+						[
+							author$project$Page$Home$viewMaybe(coding)
+						]))),
 			navigation: author$project$Page$Internal$HideNavigation,
 			progress: author$project$Page$Internal$HideProgress,
 			title: 'Home'
@@ -14462,6 +14723,7 @@ var author$project$Page$Internal$viewBody = F5(
 								]),
 							_List_fromArray(
 								[
+									author$project$Page$Internal$viewProgress(progress),
 									A3(
 									author$project$Material$Options$styled,
 									elm$html$Html$div,
@@ -14473,7 +14735,6 @@ var author$project$Page$Internal$viewBody = F5(
 										]),
 									_List_fromArray(
 										[
-											author$project$Page$Internal$viewProgress(progress),
 											A3(author$project$Page$Internal$viewLayout, elm$core$Maybe$Nothing, content, elm$core$Maybe$Nothing)
 										]))
 								]))
@@ -15043,11 +15304,6 @@ var author$project$Page$Internal$view = F3(
 			title: title + ' - Conduit2'
 		};
 	});
-var elm$html$Html$Events$targetValue = A2(
-	elm$json$Json$Decode$at,
-	_List_fromArray(
-		['target', 'value']),
-	elm$json$Json$Decode$string);
 var author$project$Internal$Options$onInput = function (f) {
 	return A2(
 		author$project$Internal$Options$on,
@@ -15190,7 +15446,6 @@ var author$project$Internal$TextField$Model$Input = function (a) {
 	return {$: 'Input', a: a};
 };
 var author$project$Internal$TextField$Model$defaultGeometry = {height: 0, labelWidth: 0, width: 0};
-var elm$html$Html$input = _VirtualDom_node('input');
 var elm$html$Html$label = _VirtualDom_node('label');
 var elm$html$Html$textarea = _VirtualDom_node('textarea');
 var elm$html$Html$Attributes$cols = function (n) {
@@ -15199,7 +15454,6 @@ var elm$html$Html$Attributes$cols = function (n) {
 		'cols',
 		elm$core$String$fromInt(n));
 };
-var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
 var elm$virtual_dom$VirtualDom$property = F2(
 	function (key, value) {
 		return A2(
@@ -15215,7 +15469,6 @@ var elm$html$Html$Attributes$rows = function (n) {
 		elm$core$String$fromInt(n));
 };
 var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
-var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
 var elm$regex$Regex$Match = F4(
 	function (match, index, number, submatches) {
 		return {index: index, match: match, number: number, submatches: submatches};
@@ -15638,11 +15891,19 @@ var author$project$Page$view = F2(
 			case 'Error':
 				return A3(viewLoggedIn, author$project$Page$Error$view, author$project$Page$GotErrorMsg, model.page.error);
 			case 'StartPage':
-				return A3(viewLoggedIn, author$project$Page$Home$view, author$project$Page$GotHomeMsg, model.page.home);
+				return A3(
+					viewLoggedIn,
+					author$project$Page$Home$view(model.coding),
+					author$project$Page$GotHomeMsg,
+					model.page.home);
 			case 'Error404':
 				return A3(viewLoggedIn, author$project$Page$Error$view, author$project$Page$GotErrorMsg, model.page.error);
 			case 'Home':
-				return A3(viewLoggedIn, author$project$Page$Home$view, author$project$Page$GotHomeMsg, model.page.home);
+				return A3(
+					viewLoggedIn,
+					author$project$Page$Home$view(model.coding),
+					author$project$Page$GotHomeMsg,
+					model.page.home);
 			default:
 				var _n1 = model.coding;
 				if (_n1.$ === 'Just') {
@@ -15658,7 +15919,11 @@ var author$project$Page$view = F2(
 							data,
 							coding));
 				} else {
-					return A3(viewLoggedIn, author$project$Page$Home$view, author$project$Page$GotHomeMsg, model.page.home);
+					return A3(
+						viewLoggedIn,
+						author$project$Page$Home$view(model.coding),
+						author$project$Page$GotHomeMsg,
+						model.page.home);
 				}
 		}
 	});

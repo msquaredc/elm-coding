@@ -22,8 +22,11 @@ import Page.Code
 import Url
 import Entities.Coder
 import Entities.Coding
+import Entities.Coding.Answer as CodingAnswer
+import Entities.Coding.Question as CodingQuestion
 import Db exposing (Db, Row)
 import List.Extra
+import Id exposing (Id)
 
 
 type alias Page =
@@ -47,11 +50,12 @@ type Msg
     = Mdc (Material.Msg Msg)
     | PageMsg GotPageMsg
     | UrlChanged Url.Url
-    | DataMsg (Data.Msg)
     | Internal (Page.Internal.Msg Msg)
 
 type OutMsg
     = GenerateFrame (Row Entities.Coding.Model)
+    | SelectCoding (Row Entities.Coding.Model)
+    | Change (Id CodingAnswer.Model) String
 
 type alias Model =
     { mdc : Material.Model Msg
@@ -112,25 +116,14 @@ update msg data model =
                         mb_row = List.Extra.getAt index list
                     in
                         ({model | user = mb_row},Cmd.none,Nothing)
-                GotHomeMsg (Page.Home.ListMsg (SL.Select coding)) -> 
-                    let 
-                        new_model = {model | coding = Just coding}
-                        new_model2 = {new_model | url = Page.Url.Code}
-                    in
-                        (new_model2, Cmd.none, Just (GenerateFrame coding))
-                GotCodeMsg (Page.Code.DataMsg msg_) -> 
-                    update (DataMsg msg_) data model
                 _ ->
                     let
-                        ( page, effects ) =
+                        ( page, effects, pmsg ) =
                             updatePage m model.page data
                     in
-                        ( { model | page = page }, effects, Nothing)
+                        ( { model | page = page }, effects, pmsg)
         UrlChanged url -> 
             ({model | url = Page.Url.fromUrl url}, Cmd.none, Nothing)
-        DataMsg _ -> 
-            Debug.log "DataMsg got Called"
-            (model, Cmd.none, Nothing)
         Internal msg_ ->
             let
                 (internal, effects ) =
@@ -140,7 +133,7 @@ update msg data model =
 
 
 
-updatePage : GotPageMsg -> Page -> Data.Model -> ( Page, Cmd Msg )
+updatePage : GotPageMsg -> Page -> Data.Model -> ( Page, Cmd Msg, Maybe OutMsg )
 updatePage msg model data =
     case msg of
         GotLoginMsg msg_ ->
@@ -148,33 +141,51 @@ updatePage msg model data =
                 ( login, effects ) =
                     Page.Login.update (PageMsg << GotLoginMsg) msg_ model.login data
             in
-                ( { model | login = login }, effects )
+                ( { model | login = login }, effects, Nothing )
 
         GotErrorMsg msg_ ->
             let
                 ( error, effects ) =
                     Page.Error.update (PageMsg << GotErrorMsg) msg_ model.error
             in
-            ( { model | error = error }, effects )
+            ( { model | error = error }, effects, Nothing )
 
         GotDataMsg msg_ ->
             let
                 ( datam, effects ) =
                     Page.Data.update (PageMsg << GotDataMsg) msg_ model.data
             in
-            ( { model | data = datam }, effects )
+            ( { model | data = datam }, effects, Nothing )
         GotHomeMsg msg_ ->
             let
-                ( homem, effects ) =
+                ( homem, effects, mb) =
                     Page.Home.update (PageMsg << GotHomeMsg) msg_ model.home
+                outmessage = case mb of
+                    Nothing ->
+                        Nothing
+                    Just om ->
+                        Just 
+                            (case om of
+                                Page.Home.GotSelection coding ->
+                                    SelectCoding coding
+                            )
             in
-            ( { model | home = homem }, effects )
+                ( { model | home = homem }, effects, outmessage)
         GotCodeMsg msg_ -> 
             let
-                ( codem, effects ) =
+                ( codem, effects, mb ) =
                     Page.Code.update (PageMsg << GotCodeMsg) msg_ model.code
+                outmessage = case mb of 
+                    Nothing -> 
+                        Nothing
+                    Just om -> 
+                        Just 
+                            (case om of
+                                Page.Code.ChangedAnswer caid value ->
+                                    Change caid value
+                                    )
             in
-            ( { model | code = codem }, effects )
+            ( { model | code = codem }, effects, outmessage )
 
 
 view : Model -> Data.Model -> Document Msg
@@ -195,13 +206,13 @@ view model data =
                 viewLoggedIn Page.Error.view GotErrorMsg model.page.error
 
             Page.Url.StartPage ->
-                viewLoggedIn Page.Home.view GotHomeMsg model.page.home
+                viewLoggedIn (Page.Home.view model.coding) GotHomeMsg model.page.home
 
             Page.Url.Error404 _ ->
                 viewLoggedIn Page.Error.view GotErrorMsg model.page.error
             
             Page.Url.Home -> 
-                viewLoggedIn Page.Home.view GotHomeMsg model.page.home
+                viewLoggedIn (Page.Home.view model.coding) GotHomeMsg model.page.home
 
             Page.Url.Code ->
                 case model.coding of
@@ -209,12 +220,9 @@ view model data =
                         Page.Internal.view Internal model.internal (Page.Code.view (PageMsg << GotCodeMsg) model.page.code data coding)
                 
                     Nothing ->
-                        viewLoggedIn Page.Home.view GotHomeMsg model.page.home
-                
+                        viewLoggedIn (Page.Home.view model.coding) GotHomeMsg model.page.home
                 
 
-                        
-                
 
 
 subscriptions : Model -> Sub Msg
