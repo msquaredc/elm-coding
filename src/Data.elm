@@ -687,6 +687,8 @@ selectMissingAnswers model coder questionary =
     in
     result_answers
 
+
+
 maxCodingFrameIndex : I.Model -> Row Coding.Model -> Int
 maxCodingFrameIndex model coding = 
     Nav.coding2questionary model (Db.fromList [coding])
