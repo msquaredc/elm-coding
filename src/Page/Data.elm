@@ -2,6 +2,7 @@ module Page.Data exposing (Msg(..), view, Model, defaultModel,update)
 
 --import Browser exposing (Document)
 import Data
+import Data.Internal as I
 import Material
 import Material.LayoutGrid as LayoutGrid
 import Material.Options exposing (styled)
@@ -21,12 +22,12 @@ type alias Model m
 defaultModel : Model m
 defaultModel = {mdc = Material.defaultModel}
 
-view : (Msg m -> m) -> Model m -> Data.Model -> Row Coder.Model-> Document m
+view : (Msg m -> m) -> Model m -> I.Model -> Row Coder.Model-> Document m
 view lift model data user =
     { title = "Data"
     , body = [Html.map (lift << GotDBMsg) (Data.view data)]
-    , progress = Page.Internal.HideProgress
-    , navigation = Page.Internal.HideNavigation
+    , progress = Nothing
+    , navigation = Nothing
     }
 
 update : (Msg m -> m) -> Msg m -> Model m -> ( Model m, Cmd m )

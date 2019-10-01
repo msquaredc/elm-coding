@@ -1,4 +1,4 @@
-module Db.Extra exposing (Error(..), selectFromRow, assertSizeGeq, assertSizeLeq, assertSizeEq, difference, get, getMulti, intersection, map, selectBy, selectFrom, size)
+module Db.Extra exposing (Error(..),getDB, union, selectFromRow, assertSizeGeq, assertSizeLeq, assertSizeEq, difference, get, getMulti, intersection, map, selectBy, selectFrom, size)
 
 import Db exposing (Db, Row)
 import Id exposing (Id)
@@ -90,6 +90,17 @@ difference lhs rhs =
     in
     Db.fromList (List.filter (\c -> not (List.member c list_rhs)) list_lhs)
 
+union : Db a -> Db a -> Db a
+union a b =
+    let
+        diff1 = difference a b
+                |> Db.toList
+        diff2 = difference b a
+                |> Db.toList
+        inter = intersection a b
+                |> Db.toList
+    in
+        Db.fromList (diff1 ++ diff2 ++ inter)
 
 get : Db b -> (a -> Id b) -> Row a -> Result Error (Row b)
 get b accessor ( ida, valuea ) =
@@ -104,6 +115,16 @@ get b accessor ( ida, valuea ) =
         Nothing ->
 --            Err (Absent (Id.toString ida) (Id.toString idb))
             Err Absent
+
+getDB : Db b -> (a -> Id b) -> Db a -> Db b
+getDB b accessor a = 
+    Db.toList a
+    |> List.map (\(id, m)-> accessor m)
+    |> Db.getMany b
+    |> Db.filterMissing
+    |> Db.fromList
+    
+
 
 getMulti : Db b -> (a -> Id b) -> Db a -> Db b
 getMulti b accessor db =

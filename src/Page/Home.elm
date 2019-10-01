@@ -1,7 +1,9 @@
 module Page.Home exposing (..)
 
 import Page.Internal exposing (Document)
+import Data.Navigation as Nav
 import Data
+import Data.Internal as I
 import Db exposing (Db, Row)
 import Db.Extra
 import Entities.Coder as Coder
@@ -61,13 +63,13 @@ defaultModel =
     }
 
 
-view : Maybe (Row Coding.Model) -> (Msg m -> m) -> Model m -> Data.Model -> Row Coder.Model -> Document m
+view : Maybe (Row Coding.Model) -> (Msg m -> m) -> Model m -> I.Model-> Row Coder.Model -> Document m
 view coding lift model data user =
     { title = "Home"
     , body =
         text "My codings in Process:" :: viewCodings lift model data user :: [viewMaybe coding]
-    , progress = Page.Internal.HideProgress
-    , navigation = Page.Internal.HideNavigation
+    , progress = Nothing
+    , navigation = Nothing
     }
 
 viewMaybe coding = 
@@ -78,34 +80,47 @@ viewMaybe coding =
         option2 ->
             text "NoCoding"
 
-viewCodings : (Msg m -> m) -> Model m -> Data.Model -> Row Coder.Model -> Html m
+viewCodings : (Msg m -> m) -> Model m -> I.Model-> Row Coder.Model -> Html m
 viewCodings lift model data coder =
     Db.Extra.selectFrom data.codings (\c -> c.coder) (Db.fromList [ coder ])
         |> Db.toList
         |> SL.view (lift<<ListMsg) model.mdc (codingRowToListItem data)
 
 
-codingRowToListItem : Data.Model -> Row Coding.Model -> SL.Item
-codingRowToListItem data ( id, model ) =
-    case Data.coding2questionary data ( id, model ) of
-        Just ( qid, questionary ) ->
-            { icon = "person"
-            , primary = questionary.name
-            , secondary = Id.toString id
-            }
-    
-        Nothing ->
-            { icon = "error"
-            , primary = "Invalid Questionary"
-            , secondary = Id.toString id
-            }
+codingRowToListItem : I.Model-> Row Coding.Model -> SL.Item
+codingRowToListItem data (id,coding) =
+    let
+        row = [(id,coding)]
+              |> Db.fromList
+              |> Nav.coding2questionary data
+              |> Db.toList
+              |> List.head
+    in
+        case row of
+            Just ( qid, questionary ) ->
+                { icon = "person"
+                , primary = questionary.name
+                , secondary = Id.toString id
+                }
+        
+            Nothing ->
+                { icon = "error"
+                , primary = "Invalid Questionary"
+                , secondary = Id.toString id
+                }
     
 
 
-viewCoding : Data.Model -> ( Id Coding.Model, Coding.Model ) -> Lists.ListItem m
-viewCoding data ( id, model ) =
-    
-        case Data.coding2questionary data ( id, model ) of
+viewCoding : I.Model-> Row Coding.Model -> Lists.ListItem m
+viewCoding data ( id, coding ) =
+    let
+        row = [(id,coding)]
+              |> Db.fromList
+              |> Nav.coding2questionary data
+              |> Db.toList
+              |> List.head
+    in
+        case row of
             Just ( qid, questionary ) ->
                 Lists.li []
                 [ Lists.graphicIcon [] "person"

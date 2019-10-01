@@ -3,6 +3,7 @@ port module Main exposing (Msg(..), activeUsers)
 import Browser
 import Browser.Navigation as Nav
 import Data
+import Data.Internal as I
 import Dict
 import Html
 import Json.Decode as Decode exposing (Decoder, Value, decodeString, float, int, nullable, string)
@@ -14,9 +15,9 @@ import Page.Data
 import Page.Error
 import Page.Login
 import Page.Url
-import Research
 import Url
 import Db
+import Random exposing (Seed)
 
 
 type Msg
@@ -28,14 +29,12 @@ type Msg
 
 
 type alias Model =
-    { data : Data.Model
+    { data : I.Model
     , page : Page.Model
     , key : Nav.Key
+    , seed : Seed
     }
 
-
-type alias Flags =
-    { research : Research.Flags }
 
 
 main : Program Value Model Msg
@@ -78,17 +77,18 @@ init : Value -> Url.Url -> Nav.Key -> ( Model, Cmd msg )
 init flags url key =
     let
         result_flags =
-            Decode.decodeValue Data.decoder flags
+            Decode.decodeValue I.decoder flags
     in
     case result_flags of
         Ok flag_value ->
             let
                 ( data, rcmd ) =
-                    Data.init flag_value
+                    I.init flag_value
             in
             ( { data = data
               , page = Page.defaultModel
               , key = key
+              , seed = Random.initialSeed 42
               }
             , Cmd.none
             )
@@ -105,8 +105,9 @@ init flags url key =
             in
             
             ( { page = res_page
-              , data = Data.empty
+              , data = I.empty
               , key = key
+              , seed = Random.initialSeed 42
               }
             , Cmd.none
             )
@@ -128,7 +129,7 @@ update msg model =
                     Just pmsg->
                         case pmsg of
                             Page.GenerateFrame frame ->
-                                update (GotDataMsg (Data.Generate (Data.GenerateCodingFrame Data.Any frame Nothing))) model
+                                update (GotDataMsg (Data.Generate (Data.GenerateCodingFrame Data.Any frame Nothing) model.seed)) model
                             Page.SelectCoding coding -> 
                                 let
                                     old_page = model.page
@@ -142,7 +143,8 @@ update msg model =
                                     new_data = {old_data | coding_answers = Db.update caid (Maybe.map (\c -> {c|value = value})) old_data.coding_answers}
                                 in
                                     Debug.log "got changed" ({model|data = new_data}, Cmd.none)
-                                
+                            Page.Move direction object coding->
+                                update (GotDataMsg (Data.Move direction object coding)) model
                                 
         Noop ->
             ( model, Cmd.none )

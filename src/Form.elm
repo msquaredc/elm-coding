@@ -1,4 +1,4 @@
-module Form exposing (InputType(..), Model, Msg(..), decoder,inputTypeToComparable, error, inputTypeDecoder, update, view)
+module Form exposing (InputType(..), Model, Msg(..), inputTypeToComparable, inputTypeDecoder, update, view)
 
 import Dict exposing (..)
 import Html exposing (..)
@@ -6,6 +6,8 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as Decode exposing (..)
 import Number.Bounded as Bounded exposing (..)
+import Material.TextField as TextField
+import Material
 
 
 type InputType
@@ -14,27 +16,26 @@ type InputType
     | InputChoice
 
 
-type Msg
+type Msg m
     = Change String
+    | Mdc (Material.Msg m)
 
 
-type alias Model =
-    { label : String
-    , formtype : InputType
-    , content : String
+type alias Model m=
+    { mdc : Material.Model m
     }
 
 
-error =
-    Model "Error" InputString "Error"
+{- error =
+    Model "Error" InputString "Error" -}
 
 
-decoder : Decode.Decoder Model
+{- decoder : Decode.Decoder (Model m)
 decoder =
     Decode.map3 Model
         (Decode.field "label" Decode.string)
         (Decode.field "formtype" inputTypeDecoder)
-        (Decode.succeed "")
+        (Decode.succeed "") -}
 
 
 inputTypeDecoder =
@@ -65,54 +66,54 @@ inputTypeToComparable input_type =
             "Choice"
 
 
-view : InputType -> String -> Html Msg
-view formtype value =
+view : (Msg m -> m) -> Material.Model m -> InputType -> String -> Html m
+view lift mdc formtype value =
     case formtype of
         InputString ->
-            viewInputString value
+            viewInputString lift mdc value
 
         InputNumber n ->
-            viewInputNumber value n
+            viewInputNumber lift mdc value n
 
         InputChoice ->
-            viewInputChoice value
+            viewInputChoice lift mdc value
 
 
-viewInputString : String -> Html Msg
-viewInputString value =
+viewInputString : (Msg m -> m) -> Material.Model m -> String -> Html m
+viewInputString lift mdc value =
+    TextField.view (lift << Mdc)
+        "my-text-field"
+        mdc
+        [ TextField.label "Text field"
+        --, Options.onInput (lift << UpdateTextField)
+        , TextField.outlined
+        --, Options.cs "demo-text-field-outlined-shaped"
+        ]
+        []
+
+
+viewInputNumber : (Msg m -> m) -> Material.Model m -> String -> Maybe (Bounded Int) -> Html m
+viewInputNumber lift mdc value bounds =
     Html.div
         []
         [ Html.input
             [ Html.Attributes.placeholder "Your answer"
             , Html.Attributes.value value
-            , Html.Events.onInput Change
+            , Html.Events.onInput (lift << Change)
             ]
             []
         , text value
         ]
 
-viewInputNumber : String -> Maybe (Bounded Int) -> Html Msg
-viewInputNumber value bounds =
+
+viewInputChoice : (Msg m -> m) -> Material.Model m -> String -> Html m
+viewInputChoice lift mdc value =
     Html.div
         []
         [ Html.input
             [ Html.Attributes.placeholder "Your answer"
             , Html.Attributes.value value
-            , Html.Events.onInput Change
-            ]
-            []
-        , text value
-        ]
-
-
-viewInputChoice : String -> Html Msg
-viewInputChoice value =
-    Html.div
-        []
-        [ Html.input
-            [ Html.Attributes.placeholder "Your answer"
-            , Html.Attributes.value value
-            , Html.Events.onInput Change
+            , Html.Events.onInput (lift << Change)
             ]
             []
         , text value]
@@ -141,8 +142,10 @@ viewInputChoice value =
 -}
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : (Msg m -> m) -> Msg m -> Model m-> ( Model m, Cmd m)
+update lift msg model =
     case msg of
         Change newContent ->
-            ( { model | content = newContent }, Cmd.none )
+            ( model, Cmd.none )
+        Mdc msg_ -> 
+            Material.update (lift<<Mdc) msg_ model

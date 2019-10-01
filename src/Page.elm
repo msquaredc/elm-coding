@@ -2,6 +2,7 @@ module Page exposing (Model, Msg(..),OutMsg(..), Page, defaultModel, subscriptio
 
 import Browser exposing (Document)
 import Data
+import Data.Internal as I
 import Html exposing (Html, a, button, div, footer, i, img, li, nav, p, span, text, ul)
 import Html.Attributes exposing (class, classList, href, style)
 import Json.Decode as Decode
@@ -21,7 +22,7 @@ import Page.Home
 import Page.Code
 import Url
 import Entities.Coder
-import Entities.Coding
+import Entities.Coding as Coding
 import Entities.Coding.Answer as CodingAnswer
 import Entities.Coding.Question as CodingQuestion
 import Db exposing (Db, Row)
@@ -53,16 +54,17 @@ type Msg
     | Internal (Page.Internal.Msg Msg)
 
 type OutMsg
-    = GenerateFrame (Row Entities.Coding.Model)
-    | SelectCoding (Row Entities.Coding.Model)
+    = GenerateFrame (Row Coding.Model)
+    | SelectCoding (Row Coding.Model)
     | Change (Id CodingAnswer.Model) String
+    | Move Data.Direction Data.Object (Row Coding.Model)
 
 type alias Model =
     { mdc : Material.Model Msg
     , page : Page
     , url : Page.Url.Url
     , user : Maybe (Row Entities.Coder.Model)
-    , coding : Maybe (Row Entities.Coding.Model)
+    , coding : Maybe (Row Coding.Model)
     , internal : Page.Internal.Model Msg
     }
 
@@ -99,7 +101,7 @@ defaultPage =
     }
 
 
-update : Msg -> Data.Model -> Model  -> ( Model, Cmd Msg, Maybe OutMsg )
+update : Msg -> I.Model-> Model  -> ( Model, Cmd Msg, Maybe OutMsg )
 update msg data model =
     case msg of
         Mdc msg_ ->
@@ -133,7 +135,7 @@ update msg data model =
 
 
 
-updatePage : GotPageMsg -> Page -> Data.Model -> ( Page, Cmd Msg, Maybe OutMsg )
+updatePage : GotPageMsg -> Page -> I.Model-> ( Page, Cmd Msg, Maybe OutMsg )
 updatePage msg model data =
     case msg of
         GotLoginMsg msg_ ->
@@ -183,12 +185,14 @@ updatePage msg model data =
                             (case om of
                                 Page.Code.ChangedAnswer caid value ->
                                     Change caid value
+                                Page.Code.Generate direction object coding->
+                                    Move direction object coding
                                     )
             in
             ( { model | code = codem }, effects, outmessage )
 
 
-view : Model -> Data.Model -> Document Msg
+view : Model -> I.Model-> Document Msg
 view model data =
     let 
         viewLoggedIn viewf msg page = 

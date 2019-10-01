@@ -2,6 +2,7 @@ module Page.Login exposing (Model, Msg(..), defaultModel, update, view, getFilte
 
 --import Browser exposing (Document)
 import Data
+import Data.Internal as I
 import Db exposing (Db, Row)
 import Id exposing (Id)
 import Entities.Coder as Coder
@@ -52,7 +53,7 @@ defaultModel =
 -}
 
 
-update : (Msg m -> m) -> Msg m -> Model m -> Data.Model -> ( Model m, Cmd m )
+update : (Msg m -> m) -> Msg m -> Model m -> I.Model -> ( Model m, Cmd m )
 update lift msg model data =
     case msg of
         Mdc msg_ ->
@@ -71,7 +72,7 @@ getFilteredList db name =
     |> List.filter (\(i, m) -> String.startsWith (String.toLower name) (String.toLower m.name))
 
 
-view : (Msg m -> m) -> Model m -> Data.Model -> Maybe (Row Coder.Model)-> Document m
+view : (Msg m -> m) -> Model m -> I.Model-> Maybe (Row Coder.Model)-> Document m
 view lift model data user =
     case user of
         Nothing ->
@@ -80,20 +81,20 @@ view lift model data user =
         Just row ->
             { title = "Already logged in as"
             , body = [ text "You're already logged in as" ]
-            , progress = Page.Internal.Progress 1.0
-            , navigation = Page.Internal.HideNavigation
+            , progress = Just (Page.Internal.Progress 1.0)
+            , navigation = Nothing
             }
 
-viewSearch :  (Msg m -> m) -> Model m -> Data.Model -> Document m
+viewSearch :  (Msg m -> m) -> Model m -> I.Model-> Document m
 viewSearch lift model data = 
     { title = "Please log in."
     , body = [ text "You're not logged in yet."
              , p[][ask lift model data]
              , p[][showResults lift model.field data.coders model]]
-    , progress = Page.Internal.HideProgress
-    , navigation = Page.Internal.HideNavigation}
+    , progress = Nothing
+    , navigation = Nothing}
 
-ask : (Msg m -> m) -> Model m -> Data.Model -> Html m
+ask : (Msg m -> m) -> Model m -> I.Model-> Html m
 ask lift model data =
     TextField.view (lift << Mdc)
         "my-text-field"
@@ -139,7 +140,7 @@ viewCoderRow (id,model) =
         ]
 
 
-{- ask2 : (Msg m -> m) -> Model m -> Data.Model -> Html m
+{- ask2 : (Msg m -> m) -> Model m -> I.Model-> Html m
 ask2 lift model data =
     Html.map lift (
         div []

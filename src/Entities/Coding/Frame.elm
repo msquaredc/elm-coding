@@ -117,4 +117,3 @@ lastFrame : Db Model -> Row Model
 lastFrame frames =
     Db.toList frames
     |> List.foldl (\(idf,first) -> (\(ids,second) -> if first.timestamp.modified > second.timestamp.modified then (idf,first) else (ids,second))) (Id.fromString "empty", empty)
-

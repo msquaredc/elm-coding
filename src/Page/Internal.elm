@@ -11,6 +11,7 @@ import Material.TopAppBar as TopAppBar
 import Material.LayoutGrid as LayoutGrid
 import Material.Elevation as Elevation
 import Material.Button as Button
+import Material.IconButton as IconButton
 
 type alias Model m =
     {mdc : Material.Model m,
@@ -42,38 +43,36 @@ defaultModel = {mdc = Material.defaultModel,
 type alias Document m = 
     {title:String,
     body : List (Html m),
-    progress : ProgressType,
-    navigation : NavigationType}
+    progress : Maybe (ProgressType),
+    navigation : Maybe (NavigationType)}
 
 type ProgressType
-    = HideProgress
-    | Progress Float
+    = Progress Float
     | Indeterminate
 
 type NavigationType
     = Paginate Int Int
-    | HideNavigation
 
 type DrawerState
     = Open
     | Closed
 
 view : (Msg m -> m) -> Model m -> Document m -> Browser.Document m
-view lift model { title, body, progress, navigation} =
+view lift model document =
     let
         header =
-            viewHeader lift model title
+            viewHeader lift model document.title
     in
-    { title = title ++ " - Conduit2"
-    , body = viewBody lift header progress (text title) body :: [(viewNavigation lift model.mdc navigation) ]
+    { title = document.title ++ " - M²C"
+    , body = viewBody lift header document model :: [(viewNavigation lift model.mdc document.navigation) ]
     }
 
 {- viewDebug : Model -> Html msg
 viewDebug model =
     text (Page.Url.toString model.url) -}
 
-viewBody : (Msg m -> m) -> Html msg -> ProgressType -> Html msg -> List (Html msg) -> Html msg
-viewBody lift bar progress title content =
+viewBody : (Msg msg -> msg) -> Html msg -> Document msg -> Model msg -> Html msg
+viewBody lift bar document model=
     Options.styled div
         [ Options.css "display" "flex"
         , Options.css "flex-flow" "column"
@@ -103,56 +102,60 @@ viewBody lift bar progress title content =
                 , Options.css "flex-direction" "column"
                 , Options.css "align-items" "center"
                 ]
-                [ viewProgress progress,
+                [ viewProgress document.progress,
                     Options.styled div
                     [ Options.cs "demo-content-transition"
                     , Options.css "width" "100%"
                     , Options.css "max-width" "1200px"
                     ]
-                    [viewLayout Nothing content Nothing ]
+                    [viewLayout (viewPrev lift model.mdc document.navigation) document.body (viewNext lift model.mdc document.navigation) ]
                 ]
             ]
         ]
 
-viewProgress : ProgressType -> Html msg 
+viewProgress : Maybe (ProgressType) -> Html msg 
 viewProgress progress =
+
     case progress of
-        Progress value ->
-            LinearProgress.view
-                [ LinearProgress.determinate value
-                ]
-                []
-    
-        HideProgress ->
+        Just progress_type ->
+            case progress_type of
+                Progress value ->
+                    LinearProgress.view
+                        [ LinearProgress.determinate value
+                        ]
+                        []
+
+                Indeterminate ->
+                    LinearProgress.view
+                        [ LinearProgress.indeterminate
+                        ]
+                        []
+
+        Nothing -> 
             div [][]
+            
 
-        Indeterminate ->
-            LinearProgress.view
-                [ LinearProgress.indeterminate
-                ]
-                []
-    
-
-viewLayout : Maybe (List (Html msg)) -> List (Html msg) -> Maybe (List (Html msg)) -> Html msg
+viewLayout : Maybe (Html msg) -> List (Html msg) -> Maybe (Html msg) -> Html msg
 viewLayout left middle right =
     LayoutGrid.view []
-        [ LayoutGrid.cell
+        {- [ LayoutGrid.cell
+            [ LayoutGrid.span1Tablet
+            , LayoutGrid.span1Desktop
+--            , LayoutGrid.span4Phone
+            ]
+            [(Maybe.withDefault (div [][]) left)] -}
+            [LayoutGrid.cell
             [ LayoutGrid.span4Phone
             , LayoutGrid.span8Tablet
             , LayoutGrid.span12Desktop
---            , LayoutGrid.span4Phone
             ]
             middle
-{-         , LayoutGrid.cell
-            [ LayoutGrid.span8
-            , LayoutGrid.span6Tablet
+            
+        {- , LayoutGrid.cell
+            [ LayoutGrid.span1Tablet
+            , LayoutGrid.span1Desktop
             ]
-            middle
-        , LayoutGrid.cell
-            [ LayoutGrid.span2
---            , LayoutGrid.span4Phone
-            ]
-            (Maybe.withDefault [] right) -}
+            [(Maybe.withDefault (div[][]) right)] -}
         ]
 
 
@@ -206,22 +209,74 @@ viewFooter mdc =
             ]
         ]
 
-viewNavigation : (Msg m -> m) -> Material.Model m -> NavigationType -> Html m
-viewNavigation lift mdc ntype = 
-    case ntype of
-        HideNavigation ->
+viewNavigation : (Msg m -> m) -> Material.Model m -> Maybe (NavigationType)-> Html m
+viewNavigation lift mdc wntype = 
+    case wntype of 
+        Nothing -> 
             viewFooter mdc
-        Paginate cur max ->
-            Options.styled div
-            [ Typography.typography
-            , Elevation.z3
-            , Options.css "position" "fixed"
-            , Options.css "left" "0"
-            , Options.css "bottom" "0"
-            , Options.css "width" "100%"
-            , Options.css "text-align" "center"
---            , Options.css "background-color" "LightGrey"
-            ,         Options.css "color" "white",
-            Options.css "padding" "16px"
-            ]
-            [Button.view (lift << Mdc) "navigation-back" mdc [Button.outlined][text "Button"]]
+        Just ntype ->
+            case ntype of
+                Paginate cur max ->
+                    Options.styled div
+                    [ Typography.typography
+                    , Elevation.z3
+                    , Options.css "position" "fixed"
+                    , Options.css "left" "0"
+                    , Options.css "bottom" "0"
+                    , Options.css "width" "100%"
+                    , Options.css "text-align" "center"
+        --            , Options.css "background-color" "LightGrey"
+                    ,         Options.css "color" "white",
+                    Options.css "padding" "16px"
+                    ]
+                    [Button.view (lift << Mdc) "navigation-back" mdc [Button.outlined][text "Button"]]
+
+
+viewPrev : (Msg m -> m) -> Material.Model m-> Maybe (NavigationType) -> Maybe(Html m)
+viewPrev lift mdc mb_navtype =
+    case mb_navtype of 
+        Nothing ->
+            Nothing
+        Just navtype ->
+            case navtype of
+                Paginate 0 _ -> 
+                    Nothing
+                Paginate _ _ ->
+                    Just (Button.view 
+                            (lift << Mdc) 
+                            "navigation-side-previous"
+                            mdc
+                            (Options.css "margin" "32px 32px"
+                                :: Button.ripple
+                                :: Button.outlined
+                                :: Button.icon "navigate_before"
+                                :: []
+                            )
+                            []
+                    )
+viewNext : (Msg m -> m) -> Material.Model m-> Maybe (NavigationType) -> Maybe(Html m)
+viewNext lift mdc mb_navtype =
+    case mb_navtype of 
+        Nothing -> 
+            Nothing
+        Just navtype ->
+            case navtype of
+                Paginate a b -> 
+                    case a==b of
+                        True ->
+                            Nothing
+                        False ->
+                            Just (IconButton.view (lift <<Mdc) "my-icon-button" mdc
+                                [ IconButton.icon
+                                    { on = "navigate_next_border"
+                                    , off = "navigate_next"
+                                    }
+                                , IconButton.label
+                                    { on = "Remove from favorites"
+                                    , off = "Add to favorites"
+                                    }
+                                , IconButton.on
+        --                        , Options.onClick Toggle
+                                ]
+                                []
+                            )
