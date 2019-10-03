@@ -1,8 +1,8 @@
 module Page.Internal exposing (..)
 
 import Browser
-import Html exposing (Html, text, div,footer, a, span)
-import Html.Attributes exposing (class, classList, href, style)
+import Html exposing (Html, text, div,footer, a, span,h3, h6)
+import Html.Attributes as Html exposing (class, classList, href, style)
 import Material
 import Material.Options as Options
 import Material.Typography as Typography
@@ -12,6 +12,9 @@ import Material.LayoutGrid as LayoutGrid
 import Material.Elevation as Elevation
 import Material.Button as Button
 import Material.IconButton as IconButton
+import Material.Drawer.Modal as Drawer
+import Material.List as Lists
+import Material.Drawer.Dismissible as DismissibleDrawer
 
 type alias Model m =
     {mdc : Material.Model m,
@@ -22,6 +25,7 @@ type Msg m
     = Mdc (Material.Msg m)
     | OpenDrawer
     | OpenOverflow
+    | CloseDrawer
 
 update : (Msg m -> m) -> Msg m -> Model m -> ( Model m, Cmd m)
 update lift msg model =
@@ -30,6 +34,8 @@ update lift msg model =
             Material.update (lift << Mdc) msg_ model
         OpenDrawer -> 
             ({model | drawer = True}, Cmd.none)
+        CloseDrawer -> 
+            ({model | drawer = False}, Cmd.none)
         OpenOverflow -> 
             ({model | overflow = True}, Cmd.none)
 
@@ -86,15 +92,15 @@ viewBody lift bar document model=
             ]
             [ div
                 []
-                {- }                                 [ Page.drawer Mdc "page-drawer" model.mdc CloseDrawer SelectDrawerItem model.url model.is_drawer_open
-                   , Drawer.scrim [ Options.onClick CloseDrawer ] []
-                   ]
-                -}
-                []
+--                [ Page.drawer Mdc "page-drawer" model.mdc CloseDrawer SelectDrawerItem model.url model.is_drawer_open
+--                   , Drawer.scrim [ Options.onClick CloseDrawer ] []
+--                   ]
+               
+                (viewDrawer lift model)
             , Options.styled div
                 [ Options.cs "demo-content"
 
-                --                                  , DismissibleDrawer.appContent
+                , DismissibleDrawer.appContent
                 , TopAppBar.fixedAdjust
                 , Options.css "width" "100%"
                 , Options.css "display" "flex"
@@ -169,8 +175,8 @@ viewHeader lift model title =
             [ TopAppBar.navigationIcon (lift<< Mdc)
                 "my-menu"
                 model.mdc
-                []
---                [ Options.onClick (OpenDrawer) ]
+--                []
+                [ Options.onClick (lift OpenDrawer) ]
                 "menu"
             , TopAppBar.title [] [ text title ]
             ]
@@ -180,7 +186,7 @@ viewHeader lift model title =
                , TopAppBar.actionItem [] "bookmark"
                ]
             -}
-            [ TopAppBar.actionItem (lift << Mdc) "options" model.mdc [ {- Options.onClick OpenOverflow -} ] "more_vert" ]
+            [ TopAppBar.actionItem (lift << Mdc) "options" model.mdc [ Options.onClick (lift OpenOverflow) ] "more_vert" ]
         ]
 
 
@@ -280,3 +286,51 @@ viewNext lift mdc mb_navtype =
                                 ]
                                 []
                             )
+
+viewDrawer : (Msg m -> m)  -> Model m -> List (Html m)
+viewDrawer lift model = 
+    [ Drawer.view (lift << Mdc) "my-drawer" model.mdc
+        [ Drawer.open |> Options.when model.drawer ]
+        [ Drawer.header [ ]
+            [ Options.styled h3 [ Drawer.title ] [ text "Mail" ]
+            , Options.styled h6 [ Drawer.subTitle ] [ text "email@material.io" ]
+            ]
+        , Drawer.content []
+              [ Lists.nav (lift << Mdc) "my-list" model.mdc
+                    [ Lists.singleSelection
+                    , Lists.useActivated
+                    ]
+                    [ Lists.a
+                          [ Options.attribute (Html.href "#persistent-drawer")
+                          , Lists.activated
+                          ]
+                          [ Lists.graphicIcon [] "inbox"
+                          , text "Inbox"
+                          ]
+                    , Lists.a
+                          [ Options.attribute (Html.href "#persistent-drawer")
+                          ]
+                          [ Lists.graphicIcon [] "star"
+                          , text "Star"
+                          ]
+                    , Lists.divider [] []
+                    , Lists.a
+                          [ Options.attribute (Html.href "#persistent-drawer")
+                          ]
+                          [ Lists.graphicIcon [] "send"
+                          , text "Sent Mail"
+                          ]
+                    , Lists.a
+                          [ Options.attribute (Html.href "#persistent-drawer")
+                          ]
+                          [ Lists.graphicIcon [] "drafts"
+                          , text "Drafts"
+                          ]
+                    ]
+              ]
+        ]
+    , Drawer.scrim [ Options.onClick (lift CloseDrawer) ] []
+    , Options.styled Html.div
+        [ Options.cs "drawer-frame-app-content" ]
+        [ Html.p [] [ text "content" ] ]
+    ]

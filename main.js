@@ -10814,6 +10814,12 @@ var author$project$Page$Internal$update = F3(
 						model,
 						{drawer: true}),
 					elm$core$Platform$Cmd$none);
+			case 'CloseDrawer':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{drawer: false}),
+					elm$core$Platform$Cmd$none);
 			default:
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -11126,26 +11132,25 @@ var author$project$Data$Navigation$questionary2question = F2(
 			},
 			questionary);
 	});
-var author$project$Data$Navigation$questionary2answer = F2(
-	function (model, questionary) {
-		return A2(
-			author$project$Data$Navigation$question2answer,
-			model,
-			A2(author$project$Data$Navigation$questionary2question, model, questionary));
-	});
-var author$project$Data$maxCodingFrameIndex = F2(
+var author$project$Data$Access$max_coding_frame_index = F2(
 	function (model, coding) {
-		return elm$core$List$length(
-			Chadtech$elm_relational_database$Db$toList(
-				A2(
-					author$project$Data$Navigation$questionary2answer,
-					model,
+		return function (x) {
+			return x - 1;
+		}(
+			elm$core$List$length(
+				Chadtech$elm_relational_database$Db$toList(
 					A2(
-						author$project$Data$Navigation$coding2questionary,
+						author$project$Data$Navigation$question2answer,
 						model,
-						Chadtech$elm_relational_database$Db$fromList(
-							_List_fromArray(
-								[coding]))))));
+						A2(
+							author$project$Data$Navigation$questionary2question,
+							model,
+							A2(
+								author$project$Data$Navigation$coding2questionary,
+								model,
+								Chadtech$elm_relational_database$Db$fromList(
+									_List_fromArray(
+										[coding]))))))));
 	});
 var author$project$Db$Extra$selectFromRow = F3(
 	function (db, accessor, _n0) {
@@ -11683,6 +11688,29 @@ var author$project$Form$viewInputNumber = F4(
 var author$project$Form$Mdc = function (a) {
 	return {$: 'Mdc', a: a};
 };
+var author$project$Internal$Options$Listener = F2(
+	function (a, b) {
+		return {$: 'Listener', a: a, b: b};
+	});
+var author$project$Internal$Options$on = F2(
+	function (event, decodeMessage) {
+		return A2(
+			author$project$Internal$Options$Listener,
+			event,
+			A2(
+				elm$json$Json$Decode$map,
+				function (message) {
+					return {message: message, preventDefault: false, stopPropagation: false};
+				},
+				decodeMessage));
+	});
+var author$project$Internal$Options$onInput = function (f) {
+	return A2(
+		author$project$Internal$Options$on,
+		'input',
+		A2(elm$json$Json$Decode$map, f, elm$html$Html$Events$targetValue));
+};
+var author$project$Material$Options$onInput = author$project$Internal$Options$onInput;
 var author$project$Internal$Options$Set = function (a) {
 	return {$: 'Set', a: a};
 };
@@ -11706,6 +11734,17 @@ var author$project$Internal$TextField$Implementation$outlined = author$project$I
 			{outlined: true});
 	});
 var author$project$Material$TextField$outlined = author$project$Internal$TextField$Implementation$outlined;
+var author$project$Internal$TextField$Implementation$value = function (value_) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{
+					value: elm$core$Maybe$Just(value_)
+				});
+		});
+};
+var author$project$Material$TextField$value = author$project$Internal$TextField$Implementation$value;
 var author$project$Internal$Msg$Dispatch = function (a) {
 	return {$: 'Dispatch', a: a};
 };
@@ -11867,33 +11906,11 @@ var author$project$Internal$Options$Many = function (a) {
 	return {$: 'Many', a: a};
 };
 var author$project$Internal$Options$many = author$project$Internal$Options$Many;
-var author$project$Internal$Options$Listener = F2(
-	function (a, b) {
-		return {$: 'Listener', a: a, b: b};
-	});
-var author$project$Internal$Options$on = F2(
-	function (event, decodeMessage) {
-		return A2(
-			author$project$Internal$Options$Listener,
-			event,
-			A2(
-				elm$json$Json$Decode$map,
-				function (message) {
-					return {message: message, preventDefault: false, stopPropagation: false};
-				},
-				decodeMessage));
-	});
 var author$project$Internal$Options$onBlur = function (msg) {
 	return A2(
 		author$project$Internal$Options$on,
 		'blur',
 		elm$json$Json$Decode$succeed(msg));
-};
-var author$project$Internal$Options$onInput = function (f) {
-	return A2(
-		author$project$Internal$Options$on,
-		'input',
-		A2(elm$json$Json$Decode$map, f, elm$html$Html$Events$targetValue));
 };
 var author$project$Internal$Options$None = {$: 'None'};
 var author$project$Internal$Options$nop = author$project$Internal$Options$None;
@@ -12317,7 +12334,10 @@ var author$project$Form$viewInputString = F3(
 			_List_fromArray(
 				[
 					author$project$Material$TextField$label('Text field'),
-					author$project$Material$TextField$outlined
+					author$project$Material$Options$onInput(
+					A2(elm$core$Basics$composeL, lift, author$project$Form$Change)),
+					author$project$Material$TextField$outlined,
+					author$project$Material$TextField$value(value)
 				]),
 			_List_Nil);
 	});
@@ -12570,26 +12590,6 @@ var author$project$Data$Answer = function (a) {
 	return {$: 'Answer', a: a};
 };
 var author$project$Data$Next = {$: 'Next'};
-var author$project$Data$Access$max_coding_frame_index = F2(
-	function (model, coding) {
-		return function (x) {
-			return x - 1;
-		}(
-			elm$core$List$length(
-				Chadtech$elm_relational_database$Db$toList(
-					A2(
-						author$project$Data$Navigation$question2answer,
-						model,
-						A2(
-							author$project$Data$Navigation$questionary2question,
-							model,
-							A2(
-								author$project$Data$Navigation$coding2questionary,
-								model,
-								Chadtech$elm_relational_database$Db$fromList(
-									_List_fromArray(
-										[coding]))))))));
-	});
 var author$project$Data$Access$has_next_coding_frame = F2(
 	function (model, coding) {
 		return A2(
@@ -13462,199 +13462,6 @@ var author$project$Page$Code$viewCoding = F5(
 						]))
 				]));
 	});
-var author$project$Data$Access$current_codingQuestions = F2(
-	function (model, coding) {
-		var _n0 = A2(author$project$Data$Access$current_codingFrame, model, coding);
-		if (_n0.$ === 'Nothing') {
-			return _List_Nil;
-		} else {
-			var frame = _n0.a;
-			return Chadtech$elm_relational_database$Db$toList(
-				A2(
-					author$project$Data$Navigation$coding_questionary2coding_question,
-					model,
-					A2(
-						author$project$Data$Navigation$question2coding_questionary,
-						model,
-						A2(
-							author$project$Data$Navigation$answer2question,
-							model,
-							A2(
-								author$project$Data$Navigation$coding_frame2answer,
-								model,
-								Chadtech$elm_relational_database$Db$fromList(
-									_List_fromArray(
-										[frame])))))));
-		}
-	});
-var author$project$Data$Access$filter_codingAnswer_by_codingFrame = F2(
-	function (_n0, answers) {
-		var cfid = _n0.a;
-		var frame = _n0.b;
-		return A2(
-			Chadtech$elm_relational_database$Db$filter,
-			function (_n1) {
-				var aid = _n1.a;
-				var amodel = _n1.b;
-				return _Utils_eq(amodel.coding_frame, cfid);
-			},
-			answers);
-	});
-var author$project$Data$Access$filter_codingAnswer_by_codingQuestion = F2(
-	function (_n0, answers) {
-		var cqid = _n0.a;
-		var question = _n0.b;
-		return A2(
-			Chadtech$elm_relational_database$Db$filter,
-			function (_n1) {
-				var aid = _n1.a;
-				var amodel = _n1.b;
-				return _Utils_eq(amodel.coding_question, cqid);
-			},
-			answers);
-	});
-var author$project$Data$Access$current_codingAnswers = F2(
-	function (model, coding) {
-		var current_coding_frame = A2(author$project$Data$Access$current_codingFrame, model, coding);
-		var coding_questions = A2(author$project$Data$Access$current_codingQuestions, model, coding);
-		if (current_coding_frame.$ === 'Just') {
-			var coding_frame = current_coding_frame.a;
-			var filtered_answers = A2(author$project$Data$Access$filter_codingAnswer_by_codingFrame, coding_frame, model.coding_answers);
-			return A2(
-				elm$core$List$filterMap,
-				elm_community$list_extra$List$Extra$maximumBy(
-					function (_n1) {
-						var id = _n1.a;
-						var coding_answer = _n1.b;
-						return coding_answer.timestamp.accessed;
-					}),
-				A2(
-					elm$core$List$map,
-					Chadtech$elm_relational_database$Db$toList,
-					A2(
-						elm$core$List$map,
-						function (x) {
-							return A2(author$project$Data$Access$filter_codingAnswer_by_codingQuestion, x, filtered_answers);
-						},
-						coding_questions)));
-		} else {
-			return _List_Nil;
-		}
-	});
-var author$project$Entities$Coding$Frame$empty = {
-	answer: Chadtech$elm_relational_database$Id$fromString('empty'),
-	coding: Chadtech$elm_relational_database$Id$fromString('empty'),
-	timestamp: author$project$Entities$Timestamp$empty
-};
-var elm$html$Html$p = _VirtualDom_node('p');
-var author$project$Page$Code$viewDebug = F2(
-	function (model, _n0) {
-		var cid = _n0.a;
-		var cmodel = _n0.b;
-		var coding = _Utils_Tuple2(cid, cmodel);
-		var coding_answers = A2(
-			elm$core$String$join,
-			', ',
-			A2(
-				elm$core$List$map,
-				function (_n4) {
-					var id = _n4.a;
-					return Chadtech$elm_relational_database$Id$toString(id);
-				},
-				A2(author$project$Data$Access$current_codingAnswers, model, coding)));
-		var coding_frames = A2(
-			elm$core$String$join,
-			', ',
-			A2(
-				elm$core$List$map,
-				function (_n3) {
-					var id = _n3.a;
-					return Chadtech$elm_relational_database$Id$toString(id);
-				},
-				A2(author$project$Data$Access$sorted_codingFrames, model, coding)));
-		var coding_questions = A2(
-			elm$core$String$join,
-			', ',
-			A2(
-				elm$core$List$map,
-				function (_n2) {
-					var id = _n2.a;
-					return Chadtech$elm_relational_database$Id$toString(id);
-				},
-				A2(author$project$Data$Access$current_codingQuestions, model, coding)));
-		var index = A2(
-			elm$core$Maybe$withDefault,
-			0,
-			A2(author$project$Data$Access$current_codingFrame_index, model, coding));
-		var _n1 = A2(
-			elm$core$Maybe$withDefault,
-			_Utils_Tuple2(
-				Chadtech$elm_relational_database$Id$fromString('Nothing'),
-				author$project$Entities$Coding$Frame$empty),
-			A2(author$project$Data$Access$current_codingFrame, model, coding));
-		var cfid = _n1.a;
-		var cfmodel = _n1.b;
-		return A2(
-			elm$html$Html$div,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(
-					elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							elm$html$Html$text(
-							'Current index: ' + elm$core$String$fromInt(index))
-						])),
-					A2(
-					elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							elm$html$Html$text(
-							'Current coding id: ' + Chadtech$elm_relational_database$Id$toString(cid))
-						])),
-					A2(
-					elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							elm$html$Html$text(
-							'Current coding frame: ' + Chadtech$elm_relational_database$Id$toString(cfid))
-						])),
-					A2(
-					elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							elm$html$Html$text('All relevant coding frames: ' + coding_frames)
-						])),
-					A2(
-					elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							elm$html$Html$text(
-							'Max CodingFrame index: ' + elm$core$String$fromInt(
-								A2(author$project$Data$Access$max_coding_frame_index, model, coding)))
-						])),
-					A2(
-					elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							elm$html$Html$text('Current coding answers: ' + coding_answers)
-						])),
-					A2(
-					elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							elm$html$Html$text('Current coding questions: ' + coding_questions)
-						]))
-				]));
-	});
 var author$project$Page$Code$viewBody = F5(
 	function (lift, mdc, data, mb_current, coding) {
 		if (mb_current.$ === 'Just') {
@@ -13662,10 +13469,7 @@ var author$project$Page$Code$viewBody = F5(
 			return A2(
 				elm$core$List$cons,
 				A5(author$project$Page$Code$viewCoding, lift, mdc, data, current, coding),
-				_List_fromArray(
-					[
-						A2(author$project$Page$Code$viewDebug, data, coding)
-					]));
+				_List_Nil);
 		} else {
 			return _List_fromArray(
 				[
@@ -13691,11 +13495,15 @@ var author$project$Page$Code$view = F4(
 					return A2(
 						author$project$Page$Internal$Paginate,
 						x,
-						A2(author$project$Data$maxCodingFrameIndex, data, coding));
+						A2(author$project$Data$Access$max_coding_frame_index, data, coding));
 				},
 				A2(author$project$Data$Access$current_codingFrame_index, data, coding)),
 			progress: elm$core$Maybe$Just(
-				author$project$Page$Internal$Progress(0.78)),
+				author$project$Page$Internal$Progress(
+					A2(
+						elm$core$Maybe$withDefault,
+						0,
+						A2(author$project$Data$Access$current_codingFrame_index, data, coding)) / A2(author$project$Data$Access$max_coding_frame_index, data, coding))),
 			title: 'Coding'
 		};
 	});
@@ -14670,9 +14478,390 @@ var author$project$Page$Home$view = F5(
 			title: 'Home'
 		};
 	});
+var author$project$Internal$Drawer$Dismissible$Implementation$appContent = author$project$Internal$Options$cs('mdc-drawer-app-content');
+var author$project$Material$Drawer$Dismissible$appContent = author$project$Internal$Drawer$Dismissible$Implementation$appContent;
 var author$project$Material$Options$cs = author$project$Internal$Options$cs;
 var author$project$Internal$TopAppBar$Implementation$fixedAdjust = author$project$Internal$Options$cs('mdc-top-app-bar--fixed-adjust');
 var author$project$Material$TopAppBar$fixedAdjust = author$project$Internal$TopAppBar$Implementation$fixedAdjust;
+var author$project$Internal$Drawer$Implementation$content = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-drawer__content'),
+			options));
+};
+var author$project$Internal$Drawer$Modal$Implementation$content = author$project$Internal$Drawer$Implementation$content;
+var author$project$Material$Drawer$Modal$content = author$project$Internal$Drawer$Modal$Implementation$content;
+var elm$html$Html$header = _VirtualDom_node('header');
+var author$project$Internal$Drawer$Implementation$header = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$header,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-drawer__header'),
+			options));
+};
+var author$project$Internal$Drawer$Modal$Implementation$header = author$project$Internal$Drawer$Implementation$header;
+var author$project$Material$Drawer$Modal$header = author$project$Internal$Drawer$Modal$Implementation$header;
+var author$project$Internal$Drawer$Implementation$open = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{open: true});
+	});
+var author$project$Internal$Drawer$Modal$Implementation$open = author$project$Internal$Drawer$Implementation$open;
+var author$project$Material$Drawer$Modal$open = author$project$Internal$Drawer$Modal$Implementation$open;
+var author$project$Internal$Drawer$Modal$Implementation$scrim = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-drawer-scrim'),
+			options));
+};
+var author$project$Material$Drawer$Modal$scrim = author$project$Internal$Drawer$Modal$Implementation$scrim;
+var author$project$Internal$Drawer$Implementation$subTitle = author$project$Internal$Options$cs('mdc-drawer__subtitle');
+var author$project$Internal$Drawer$Modal$Implementation$subTitle = author$project$Internal$Drawer$Implementation$subTitle;
+var author$project$Material$Drawer$Modal$subTitle = author$project$Internal$Drawer$Modal$Implementation$subTitle;
+var author$project$Internal$Drawer$Implementation$title = author$project$Internal$Options$cs('mdc-drawer__title');
+var author$project$Internal$Drawer$Modal$Implementation$title = author$project$Internal$Drawer$Implementation$title;
+var author$project$Material$Drawer$Modal$title = author$project$Internal$Drawer$Modal$Implementation$title;
+var author$project$Internal$Drawer$Implementation$defaultConfig = {onClose: elm$core$Maybe$Nothing, open: false};
+var author$project$Internal$Drawer$Model$EndAnimation = {$: 'EndAnimation'};
+var author$project$Internal$Drawer$Model$NoOp = {$: 'NoOp'};
+var author$project$Internal$Drawer$Model$StartAnimation = function (a) {
+	return {$: 'StartAnimation', a: a};
+};
+var elm$html$Html$aside = _VirtualDom_node('aside');
+var author$project$Internal$Drawer$Implementation$view = F5(
+	function (className, lift, model, options, nodes) {
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$Drawer$Implementation$defaultConfig, options);
+		var config = summary.config;
+		var stateChanged = (!model.closeOnAnimationEnd) && (!_Utils_eq(config.open, model.open));
+		return A3(
+			author$project$Internal$Options$styled,
+			elm$html$Html$aside,
+			_Utils_ap(
+				_List_fromArray(
+					[
+						author$project$Internal$Options$cs('mdc-drawer'),
+						author$project$Internal$Options$cs(className),
+						A2(
+						author$project$Internal$Options$when,
+						stateChanged,
+						author$project$Internal$GlobalEvents$onTick(
+							elm$json$Json$Decode$succeed(
+								lift(
+									author$project$Internal$Drawer$Model$StartAnimation(config.open))))),
+						A2(
+						author$project$Internal$Options$when,
+						config.open || model.open,
+						author$project$Internal$Options$cs('mdc-drawer--open')),
+						A2(
+						author$project$Internal$Options$when,
+						config.open && (stateChanged || model.animating),
+						author$project$Internal$Options$cs('mdc-drawer--animate')),
+						A2(
+						author$project$Internal$Options$when,
+						config.open && model.animating,
+						author$project$Internal$Options$cs('mdc-drawer--opening')),
+						A2(
+						author$project$Internal$Options$when,
+						(!config.open) && model.animating,
+						author$project$Internal$Options$cs('mdc-drawer--closing')),
+						A2(
+						author$project$Internal$Options$when,
+						model.animating,
+						A2(
+							author$project$Internal$Options$on,
+							'transitionend',
+							elm$json$Json$Decode$succeed(
+								lift(author$project$Internal$Drawer$Model$EndAnimation)))),
+						A2(
+						author$project$Internal$Options$when,
+						(!elm$core$String$isEmpty(className)) && (config.open || model.open),
+						A2(author$project$Internal$Options$data, 'focustrap', '{}')),
+						A2(
+						author$project$Internal$Options$on,
+						'keydown',
+						A3(
+							elm$json$Json$Decode$map2,
+							F2(
+								function (key, keyCode) {
+									return (_Utils_eq(
+										key,
+										elm$core$Maybe$Just('Escape')) || (keyCode === 27)) ? A2(
+										elm$core$Maybe$withDefault,
+										lift(author$project$Internal$Drawer$Model$NoOp),
+										config.onClose) : lift(author$project$Internal$Drawer$Model$NoOp);
+								}),
+							elm$json$Json$Decode$oneOf(
+								_List_fromArray(
+									[
+										A2(
+										elm$json$Json$Decode$map,
+										elm$core$Maybe$Just,
+										A2(
+											elm$json$Json$Decode$at,
+											_List_fromArray(
+												['key']),
+											elm$json$Json$Decode$string)),
+										elm$json$Json$Decode$succeed(elm$core$Maybe$Nothing)
+									])),
+							A2(
+								elm$json$Json$Decode$at,
+								_List_fromArray(
+									['keyCode']),
+								elm$json$Json$Decode$int)))
+					]),
+				options),
+			nodes);
+	});
+var author$project$Internal$Drawer$Implementation$render = function (className) {
+	return A3(
+		author$project$Internal$Component$render,
+		author$project$Internal$Drawer$Implementation$getSet.get,
+		author$project$Internal$Drawer$Implementation$view(className),
+		author$project$Internal$Msg$DrawerMsg);
+};
+var author$project$Internal$Drawer$Modal$Implementation$className = 'mdc-drawer--modal';
+var author$project$Internal$Drawer$Modal$Implementation$view = author$project$Internal$Drawer$Implementation$render(author$project$Internal$Drawer$Modal$Implementation$className);
+var author$project$Material$Drawer$Modal$view = author$project$Internal$Drawer$Modal$Implementation$view;
+var author$project$Internal$List$Implementation$node = function (nodeFunc) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{
+					node: elm$core$Maybe$Just(nodeFunc)
+				});
+		});
+};
+var author$project$Material$List$a = F2(
+	function (options, items) {
+		return A2(
+			author$project$Internal$List$Implementation$li,
+			A2(
+				elm$core$List$cons,
+				author$project$Internal$List$Implementation$node(elm$html$Html$a),
+				options),
+			items);
+	});
+var author$project$Internal$List$Implementation$activated = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{activated: true});
+	});
+var author$project$Material$List$activated = author$project$Internal$List$Implementation$activated;
+var author$project$Internal$List$Implementation$asListItemView = F9(
+	function (domId, lift, model, config, listItemsIds, focusedIndex, index, options, children) {
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			A2(elm$core$Maybe$withDefault, elm$html$Html$div, summary.config.node),
+			_List_Nil,
+			_List_Nil,
+			children);
+	});
+var author$project$Internal$List$Implementation$asListItem = F3(
+	function (dom_node, options, children) {
+		return {
+			children: children,
+			focusable: false,
+			options: A2(
+				elm$core$List$cons,
+				author$project$Internal$List$Implementation$node(dom_node),
+				options),
+			view: author$project$Internal$List$Implementation$asListItemView
+		};
+	});
+var author$project$Internal$List$Implementation$divider = function (options) {
+	return A2(
+		author$project$Internal$List$Implementation$asListItem,
+		elm$html$Html$li,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-divider'),
+			A2(
+				elm$core$List$cons,
+				author$project$Internal$Options$role('separator'),
+				options)));
+};
+var author$project$Material$List$divider = author$project$Internal$List$Implementation$divider;
+var elm$html$Html$nav = _VirtualDom_node('nav');
+var author$project$Material$List$nav = F5(
+	function (lift, domId, model, options, items) {
+		return A5(
+			author$project$Internal$List$Implementation$view,
+			lift,
+			domId,
+			model,
+			A2(
+				elm$core$List$cons,
+				author$project$Internal$List$Implementation$node(elm$html$Html$nav),
+				options),
+			items);
+	});
+var author$project$Internal$List$Implementation$singleSelection = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{isRadioGroup: false, isSingleSelectionList: true});
+	});
+var author$project$Material$List$singleSelection = author$project$Internal$List$Implementation$singleSelection;
+var author$project$Internal$List$Implementation$useActivated = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{useActivated: true});
+	});
+var author$project$Material$List$useActivated = author$project$Internal$List$Implementation$useActivated;
+var author$project$Material$Options$attribute = author$project$Internal$Options$attribute;
+var author$project$Material$Options$onClick = author$project$Internal$Options$onClick;
+var author$project$Material$Options$when = author$project$Internal$Options$when;
+var author$project$Page$Internal$CloseDrawer = {$: 'CloseDrawer'};
+var elm$html$Html$h3 = _VirtualDom_node('h3');
+var elm$html$Html$h6 = _VirtualDom_node('h6');
+var elm$html$Html$p = _VirtualDom_node('p');
+var author$project$Page$Internal$viewDrawer = F2(
+	function (lift, model) {
+		return _List_fromArray(
+			[
+				A5(
+				author$project$Material$Drawer$Modal$view,
+				A2(elm$core$Basics$composeL, lift, author$project$Page$Internal$Mdc),
+				'my-drawer',
+				model.mdc,
+				_List_fromArray(
+					[
+						A2(author$project$Material$Options$when, model.drawer, author$project$Material$Drawer$Modal$open)
+					]),
+				_List_fromArray(
+					[
+						A2(
+						author$project$Material$Drawer$Modal$header,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A3(
+								author$project$Material$Options$styled,
+								elm$html$Html$h3,
+								_List_fromArray(
+									[author$project$Material$Drawer$Modal$title]),
+								_List_fromArray(
+									[
+										elm$html$Html$text('Mail')
+									])),
+								A3(
+								author$project$Material$Options$styled,
+								elm$html$Html$h6,
+								_List_fromArray(
+									[author$project$Material$Drawer$Modal$subTitle]),
+								_List_fromArray(
+									[
+										elm$html$Html$text('email@material.io')
+									]))
+							])),
+						A2(
+						author$project$Material$Drawer$Modal$content,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A5(
+								author$project$Material$List$nav,
+								A2(elm$core$Basics$composeL, lift, author$project$Page$Internal$Mdc),
+								'my-list',
+								model.mdc,
+								_List_fromArray(
+									[author$project$Material$List$singleSelection, author$project$Material$List$useActivated]),
+								_List_fromArray(
+									[
+										A2(
+										author$project$Material$List$a,
+										_List_fromArray(
+											[
+												author$project$Material$Options$attribute(
+												elm$html$Html$Attributes$href('#persistent-drawer')),
+												author$project$Material$List$activated
+											]),
+										_List_fromArray(
+											[
+												A2(author$project$Material$List$graphicIcon, _List_Nil, 'inbox'),
+												elm$html$Html$text('Inbox')
+											])),
+										A2(
+										author$project$Material$List$a,
+										_List_fromArray(
+											[
+												author$project$Material$Options$attribute(
+												elm$html$Html$Attributes$href('#persistent-drawer'))
+											]),
+										_List_fromArray(
+											[
+												A2(author$project$Material$List$graphicIcon, _List_Nil, 'star'),
+												elm$html$Html$text('Star')
+											])),
+										A2(author$project$Material$List$divider, _List_Nil, _List_Nil),
+										A2(
+										author$project$Material$List$a,
+										_List_fromArray(
+											[
+												author$project$Material$Options$attribute(
+												elm$html$Html$Attributes$href('#persistent-drawer'))
+											]),
+										_List_fromArray(
+											[
+												A2(author$project$Material$List$graphicIcon, _List_Nil, 'send'),
+												elm$html$Html$text('Sent Mail')
+											])),
+										A2(
+										author$project$Material$List$a,
+										_List_fromArray(
+											[
+												author$project$Material$Options$attribute(
+												elm$html$Html$Attributes$href('#persistent-drawer'))
+											]),
+										_List_fromArray(
+											[
+												A2(author$project$Material$List$graphicIcon, _List_Nil, 'drafts'),
+												elm$html$Html$text('Drafts')
+											]))
+									]))
+							]))
+					])),
+				A2(
+				author$project$Material$Drawer$Modal$scrim,
+				_List_fromArray(
+					[
+						author$project$Material$Options$onClick(
+						lift(author$project$Page$Internal$CloseDrawer))
+					]),
+				_List_Nil),
+				A3(
+				author$project$Material$Options$styled,
+				elm$html$Html$div,
+				_List_fromArray(
+					[
+						author$project$Material$Options$cs('drawer-frame-app-content')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						elm$html$Html$p,
+						_List_Nil,
+						_List_fromArray(
+							[
+								elm$html$Html$text('content')
+							]))
+					]))
+			]);
+	});
 var elm$core$List$singleton = function (value) {
 	return _List_fromArray(
 		[value]);
@@ -15082,13 +15271,17 @@ var author$project$Page$Internal$viewBody = F4(
 						]),
 					_List_fromArray(
 						[
-							A2(elm$html$Html$div, _List_Nil, _List_Nil),
+							A2(
+							elm$html$Html$div,
+							_List_Nil,
+							A2(author$project$Page$Internal$viewDrawer, lift, model)),
 							A3(
 							author$project$Material$Options$styled,
 							elm$html$Html$div,
 							_List_fromArray(
 								[
 									author$project$Material$Options$cs('demo-content'),
+									author$project$Material$Drawer$Dismissible$appContent,
 									author$project$Material$TopAppBar$fixedAdjust,
 									A2(author$project$Material$Options$css, 'width', '100%'),
 									A2(author$project$Material$Options$css, 'display', 'flex'),
@@ -15259,7 +15452,6 @@ var author$project$Internal$TopAppBar$Model$Scroll = function (a) {
 	return {$: 'Scroll', a: a};
 };
 var author$project$Internal$TopAppBar$Model$defaultConfig = {collapsed: false, dense: false, fixed: false, prominent: false, _short: false};
-var elm$html$Html$header = _VirtualDom_node('header');
 var author$project$Internal$TopAppBar$Implementation$topAppBar = F4(
 	function (lift, model, options, sections) {
 		var top = A2(elm$core$Maybe$withDefault, 0, model.styleTop);
@@ -15360,6 +15552,8 @@ var author$project$Internal$TopAppBar$Implementation$topAppBar = F4(
 	});
 var author$project$Internal$TopAppBar$Implementation$view = A3(author$project$Internal$Component$render, author$project$Internal$TopAppBar$Implementation$getSet.get, author$project$Internal$TopAppBar$Implementation$topAppBar, author$project$Internal$Msg$TopAppBarMsg);
 var author$project$Material$TopAppBar$view = author$project$Internal$TopAppBar$Implementation$view;
+var author$project$Page$Internal$OpenDrawer = {$: 'OpenDrawer'};
+var author$project$Page$Internal$OpenOverflow = {$: 'OpenOverflow'};
 var author$project$Page$Internal$viewHeader = F3(
 	function (lift, model, title) {
 		return A5(
@@ -15382,7 +15576,11 @@ var author$project$Page$Internal$viewHeader = F3(
 							A2(elm$core$Basics$composeL, lift, author$project$Page$Internal$Mdc),
 							'my-menu',
 							model.mdc,
-							_List_Nil,
+							_List_fromArray(
+								[
+									author$project$Material$Options$onClick(
+									lift(author$project$Page$Internal$OpenDrawer))
+								]),
 							'menu'),
 							A2(
 							author$project$Material$TopAppBar$title,
@@ -15403,7 +15601,11 @@ var author$project$Page$Internal$viewHeader = F3(
 							A2(elm$core$Basics$composeL, lift, author$project$Page$Internal$Mdc),
 							'options',
 							model.mdc,
-							_List_Nil,
+							_List_fromArray(
+								[
+									author$project$Material$Options$onClick(
+									lift(author$project$Page$Internal$OpenOverflow))
+								]),
 							'more_vert')
 						]))
 				]));
@@ -15537,7 +15739,6 @@ var author$project$Page$Internal$view = F3(
 			title: document.title + ' - M²C'
 		};
 	});
-var author$project$Material$Options$onInput = author$project$Internal$Options$onInput;
 var author$project$Page$Login$UpdateTextField = function (a) {
 	return {$: 'UpdateTextField', a: a};
 };

@@ -8,6 +8,7 @@ import Json.Decode as Decode exposing (..)
 import Number.Bounded as Bounded exposing (..)
 import Material.TextField as TextField
 import Material
+import Material.Options as Options
 
 
 type InputType
@@ -85,8 +86,10 @@ viewInputString lift mdc value =
         "my-text-field"
         mdc
         [ TextField.label "Text field"
-        --, Options.onInput (lift << UpdateTextField)
+        , Options.onInput (lift << Change)
         , TextField.outlined
+        , TextField.value value
+--        , TextField.fullwidth
         --, Options.cs "demo-text-field-outlined-shaped"
         ]
         []

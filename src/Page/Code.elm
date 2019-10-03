@@ -90,8 +90,8 @@ view lift model data coding =
     { title = "Coding"
     , body =
         viewBody lift model data mb_current coding
-    , progress = Just(Page.Internal.Progress 0.78)
-    , navigation = Maybe.map (\x -> Page.Internal.Paginate x (Data.maxCodingFrameIndex data coding)) (A.current_codingFrame_index data coding)
+    , progress = Just(Page.Internal.Progress ((/) (toFloat (Maybe.withDefault 0 (A.current_codingFrame_index data coding))) (toFloat (A.max_coding_frame_index data coding))))
+    , navigation = Maybe.map (\x -> Page.Internal.Paginate x (A.max_coding_frame_index data coding)) (A.current_codingFrame_index data coding)
     }
 
 
@@ -99,7 +99,7 @@ viewBody : (Msg m -> m) -> Model m ->  I.Model-> Maybe ( Id CodingFrame.Model, C
 viewBody lift mdc data mb_current coding =
     case mb_current of
         Just current ->
-            viewCoding lift mdc data current coding :: [viewDebug data coding]
+            viewCoding lift mdc data current coding :: [{- viewDebug data coding -}]
 
         Nothing ->
             [ text "An Error occured while loadeng your Coding Frame" ]
