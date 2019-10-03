@@ -70,9 +70,10 @@ coding_answer (fid,_) (qid,_) =
 missing_codingAnswers : I.Model -> Row Coding.Model -> Row CodingFrame.Model -> List (Random.Generator (Row CodingAnswer.Model))
 missing_codingAnswers model coding cf = 
     let
-        missing_questions = A.missing_coding_questions model coding
+        missing_questions = A.missing_coding_questions model coding cf
                               
     in
+        Debug.log "generation mapper coding answers"
         missing_questions
         |> List.map (\(qid) -> (coding_answer cf qid))
 

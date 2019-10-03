@@ -7443,6 +7443,7 @@ var author$project$Data$Generation$row_coding_frame = F2(
 			elm$random$Random$andThen(author$project$Data$Generation$row),
 			A2(author$project$Data$Generation$coding_frame, model, coding));
 	});
+var elm$core$Debug$log = _Debug_log;
 var elm$random$Random$Generate = function (a) {
 	return {$: 'Generate', a: a};
 };
@@ -7522,48 +7523,40 @@ var author$project$Data$generateCodingFrame = F2(
 			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		} else {
 			var generator = _n0.a;
-			return _Utils_Tuple2(
-				model,
-				A2(
-					elm$random$Random$generate,
+			return A2(
+				elm$core$Debug$log,
+				'random generate coding_frame dispatch',
+				_Utils_Tuple2(
+					model,
 					A2(
-						elm$core$Basics$composeL,
-						A2(elm$core$Basics$composeL, author$project$Data$New, author$project$Data$CodingFrame),
-						elm$core$Maybe$Just),
-					generator));
+						elm$random$Random$generate,
+						A2(
+							elm$core$Basics$composeL,
+							A2(elm$core$Basics$composeL, author$project$Data$New, author$project$Data$CodingFrame),
+							elm$core$Maybe$Just),
+						generator)));
 		}
 	});
 var author$project$Data$CodingAnswer = function (a) {
 	return {$: 'CodingAnswer', a: a};
 };
-var elm$core$Debug$log = _Debug_log;
 var author$project$Data$Access$present_coding_questions = F2(
-	function (model, coding) {
+	function (model, coding_frame) {
 		return A2(
-			elm$core$Maybe$withDefault,
-			_List_Nil,
-			A2(
-				elm$core$Maybe$map,
-				Chadtech$elm_relational_database$Db$toList,
+			elm$core$Debug$log,
+			'present2',
+			Chadtech$elm_relational_database$Db$toList(
 				A2(
-					elm$core$Maybe$map,
-					author$project$Data$Navigation$coding_answer2coding_question(model),
+					author$project$Data$Navigation$coding_answer2coding_question,
+					model,
 					A2(
-						elm$core$Maybe$map,
-						author$project$Data$Navigation$coding_frame2coding_answer(model),
-						A2(
-							elm$core$Debug$log,
-							'currentFrame',
-							A2(
-								elm$core$Maybe$map,
-								Chadtech$elm_relational_database$Db$fromList,
-								A2(
-									elm$core$Maybe$map,
-									function (x) {
-										return _List_fromArray(
-											[x]);
-									},
-									A2(author$project$Data$Access$current_codingFrame, model, coding))))))));
+						author$project$Data$Navigation$coding_frame2coding_answer,
+						model,
+						Chadtech$elm_relational_database$Db$fromList(
+							function (x) {
+								return _List_fromArray(
+									[x]);
+							}(coding_frame))))));
 	});
 var author$project$Data$Navigation$coding_questionary2coding_question = F2(
 	function (model, coding_questionary) {
@@ -7603,39 +7596,20 @@ var author$project$Data$Navigation$coding_frame2coding_question = F2(
 					A2(author$project$Data$Navigation$coding_frame2answer, model, coding_frame))));
 		return A2(author$project$Db$Extra$union, left, right);
 	});
-var author$project$Data$Access$missing_coding_questions = F2(
-	function (model, coding) {
-		var present = A2(
-			elm$core$Debug$log,
-			'present',
-			Chadtech$elm_relational_database$Db$fromList(
-				A2(author$project$Data$Access$present_coding_questions, model, coding)));
+var author$project$Data$Access$missing_coding_questions = F3(
+	function (model, coding, cf) {
+		var present = Chadtech$elm_relational_database$Db$fromList(
+			A2(author$project$Data$Access$present_coding_questions, model, cf));
 		var all = A2(
-			elm$core$Maybe$map,
-			author$project$Data$Navigation$coding_frame2coding_question(model),
-			A2(
-				elm$core$Maybe$map,
-				Chadtech$elm_relational_database$Db$fromList,
-				A2(
-					elm$core$Maybe$map,
-					function (x) {
-						return _List_fromArray(
-							[x]);
-					},
-					A2(author$project$Data$Access$current_codingFrame, model, coding))));
-		return A2(
-			elm$core$Debug$log,
-			'missing',
-			A2(
-				elm$core$Maybe$withDefault,
-				_List_Nil,
-				A2(
-					elm$core$Maybe$map,
-					Chadtech$elm_relational_database$Db$toList,
-					A2(
-						elm$core$Maybe$map,
-						author$project$Db$Extra$difference(present),
-						all))));
+			author$project$Data$Navigation$coding_frame2coding_question,
+			model,
+			Chadtech$elm_relational_database$Db$fromList(
+				function (x) {
+					return _List_fromArray(
+						[x]);
+				}(cf)));
+		return Chadtech$elm_relational_database$Db$toList(
+			A2(author$project$Db$Extra$difference, all, present));
 	});
 var author$project$Data$Generation$coding_answer = F2(
 	function (_n0, _n1) {
@@ -7646,17 +7620,21 @@ var author$project$Data$Generation$coding_answer = F2(
 	});
 var author$project$Data$Generation$missing_codingAnswers = F3(
 	function (model, coding, cf) {
-		var missing_questions = A2(author$project$Data$Access$missing_coding_questions, model, coding);
+		var missing_questions = A3(author$project$Data$Access$missing_coding_questions, model, coding, cf);
 		return A2(
 			elm$core$List$map,
 			function (qid) {
 				return A2(author$project$Data$Generation$coding_answer, cf, qid);
 			},
-			missing_questions);
+			A2(elm$core$Debug$log, 'generation mapper coding answers', missing_questions));
 	});
 var author$project$Data$generateMissingCodingAnswers = F3(
 	function (model, coding, coding_frame) {
-		var generators = A3(author$project$Data$Generation$missing_codingAnswers, model, coding, coding_frame);
+		var generators = A3(
+			author$project$Data$Generation$missing_codingAnswers,
+			model,
+			coding,
+			A2(elm$core$Debug$log, 'dispatch coding frame', coding_frame));
 		return elm$core$Platform$Cmd$batch(
 			A2(
 				elm$core$List$map,
@@ -7665,7 +7643,7 @@ var author$project$Data$generateMissingCodingAnswers = F3(
 						elm$core$Basics$composeL,
 						A2(elm$core$Basics$composeL, author$project$Data$New, author$project$Data$CodingAnswer),
 						elm$core$Maybe$Just)),
-				A2(elm$core$Debug$log, 'Generating', generators)));
+				A2(elm$core$Debug$log, 'missing coding answers generate dispatch', generators)));
 	});
 var author$project$Data$SetTime = F2(
 	function (a, b) {
@@ -8238,13 +8216,16 @@ var author$project$Data$update = F2(
 				while (true) {
 					switch (_n1.a.$) {
 						case 'CodingFrame':
-							return A2(author$project$Data$generateCodingFrame, model, coding);
+							return A4(elm$core$Debug$log, 'Generating coding Frame', author$project$Data$generateCodingFrame, model, coding);
 						case 'CodingAnswer':
 							if (_n1.b.$ === 'Just') {
 								var frame = _n1.b.a;
-								return _Utils_Tuple2(
-									model,
-									A3(author$project$Data$generateMissingCodingAnswers, model, coding, frame));
+								return A2(
+									elm$core$Debug$log,
+									'Generating Missing coding answers',
+									_Utils_Tuple2(
+										model,
+										A3(author$project$Data$generateMissingCodingAnswers, model, coding, frame)));
 							} else {
 								break _n1$2;
 							}
@@ -8252,7 +8233,11 @@ var author$project$Data$update = F2(
 							break _n1$2;
 					}
 				}
-				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+				var a = _n1;
+				return A2(
+					elm$core$Debug$log,
+					'Generate empty',
+					_Utils_Tuple2(model, elm$core$Platform$Cmd$none));
 			case 'SetTime':
 				var entity = msg.a;
 				var tmsg = msg.b;
@@ -13643,7 +13628,7 @@ var author$project$Page$Code$viewDebug = F2(
 					_List_Nil,
 					_List_fromArray(
 						[
-							elm$html$Html$text('All relevant coding frames :' + coding_frames)
+							elm$html$Html$text('All relevant coding frames: ' + coding_frames)
 						])),
 					A2(
 					elm$html$Html$p,
@@ -13714,669 +13699,11 @@ var author$project$Page$Code$view = F4(
 			title: 'Coding'
 		};
 	});
-var author$project$Data$AnswerMsg = F2(
-	function (a, b) {
-		return {$: 'AnswerMsg', a: a, b: b};
-	});
-var author$project$Data$Entity = function (a) {
-	return {$: 'Entity', a: a};
-};
-var author$project$Db$Extra$NotFound = {$: 'NotFound'};
-var elm$core$List$isEmpty = function (xs) {
-	if (!xs.b) {
-		return true;
-	} else {
-		return false;
-	}
-};
-var author$project$Db$Extra$selectBy = F3(
-	function (db, accessor, evaluator) {
-		var result = A2(
-			Chadtech$elm_relational_database$Db$filter,
-			function (_n1) {
-				var id = _n1.a;
-				var value = _n1.b;
-				return evaluator(
-					accessor(value));
-			},
-			db);
-		var _n0 = elm$core$List$isEmpty(
-			Chadtech$elm_relational_database$Db$toList(result));
-		if (_n0) {
-			return elm$core$Result$Err(author$project$Db$Extra$NotFound);
-		} else {
-			return elm$core$Result$Ok(result);
-		}
-	});
-var elm$core$Result$map = F2(
-	function (func, ra) {
-		if (ra.$ === 'Ok') {
-			var a = ra.a;
-			return elm$core$Result$Ok(
-				func(a));
-		} else {
-			var e = ra.a;
-			return elm$core$Result$Err(e);
-		}
-	});
-var author$project$Data$selectAllAnswers = F2(
-	function (model, questionary) {
-		return A2(
-			elm$core$Result$map,
-			A2(
-				author$project$Db$Extra$selectFrom,
-				model.answers,
-				function (c) {
-					return c.question;
-				}),
-			A2(
-				elm$core$Result$map,
-				A2(
-					author$project$Db$Extra$selectFrom,
-					model.questions,
-					function (c) {
-						return c.questionary;
-					}),
-				A3(
-					author$project$Db$Extra$selectBy,
-					model.questionaries,
-					function (c) {
-						return c.name;
-					},
-					function (c) {
-						return _Utils_eq(c, questionary);
-					})));
-	});
-var author$project$Db$Extra$TooFew = F2(
-	function (a, b) {
-		return {$: 'TooFew', a: a, b: b};
-	});
-var author$project$Db$Extra$size = function (db) {
-	return elm$core$List$length(
-		Chadtech$elm_relational_database$Db$toList(db));
-};
-var elm$core$Basics$ge = _Utils_ge;
-var author$project$Db$Extra$assertSizeGeq = F3(
-	function (target_size, error, db) {
-		return (_Utils_cmp(
-			author$project$Db$Extra$size(db),
-			target_size) > -1) ? elm$core$Result$Ok(db) : elm$core$Result$Err(
-			A2(
-				author$project$Db$Extra$TooFew,
-				author$project$Db$Extra$size(db),
-				target_size));
-	});
-var author$project$Db$Extra$TooMuch = F2(
-	function (a, b) {
-		return {$: 'TooMuch', a: a, b: b};
-	});
-var author$project$Db$Extra$assertSizeLeq = F3(
-	function (target_size, error, db) {
-		return (_Utils_cmp(
-			author$project$Db$Extra$size(db),
-			target_size) < 1) ? elm$core$Result$Ok(db) : elm$core$Result$Err(
-			A2(
-				author$project$Db$Extra$TooMuch,
-				author$project$Db$Extra$size(db),
-				target_size));
-	});
-var author$project$Data$selectFramesFromCoderName = F2(
-	function (model, name) {
-		return A2(
-			elm$core$Result$map,
-			A2(
-				author$project$Db$Extra$selectFrom,
-				model.coding_frames,
-				function (c) {
-					return c.coding;
-				}),
-			A2(
-				elm$core$Result$map,
-				A2(
-					author$project$Db$Extra$selectFrom,
-					model.codings,
-					function (c) {
-						return c.coder;
-					}),
-				A2(
-					elm$core$Result$andThen,
-					A2(author$project$Db$Extra$assertSizeGeq, 1, name),
-					A2(
-						elm$core$Result$andThen,
-						A2(author$project$Db$Extra$assertSizeLeq, 1, name),
-						A3(
-							author$project$Db$Extra$selectBy,
-							model.coders,
-							function (c) {
-								return c.name;
-							},
-							function (c) {
-								return _Utils_eq(c, name);
-							})))));
-	});
-var author$project$Data$selectFramesFromQuestionaryName = F2(
-	function (model, name) {
-		return A2(
-			elm$core$Result$map,
-			A2(
-				author$project$Db$Extra$selectFrom,
-				model.coding_frames,
-				function (c) {
-					return c.answer;
-				}),
-			A2(
-				elm$core$Result$map,
-				A2(
-					author$project$Db$Extra$selectFrom,
-					model.answers,
-					function (c) {
-						return c.question;
-					}),
-				A2(
-					elm$core$Result$map,
-					A2(
-						author$project$Db$Extra$selectFrom,
-						model.questions,
-						function (c) {
-							return c.questionary;
-						}),
-					A2(
-						elm$core$Result$andThen,
-						A2(author$project$Db$Extra$assertSizeGeq, 1, name),
-						A2(
-							elm$core$Result$andThen,
-							A2(author$project$Db$Extra$assertSizeLeq, 1, name),
-							A3(
-								author$project$Db$Extra$selectBy,
-								model.questionaries,
-								function (c) {
-									return c.name;
-								},
-								function (c) {
-									return _Utils_eq(c, name);
-								}))))));
-	});
-var elm$core$Result$map2 = F3(
-	function (func, ra, rb) {
-		if (ra.$ === 'Err') {
-			var x = ra.a;
-			return elm$core$Result$Err(x);
-		} else {
-			var a = ra.a;
-			if (rb.$ === 'Err') {
-				var x = rb.a;
-				return elm$core$Result$Err(x);
-			} else {
-				var b = rb.a;
-				return elm$core$Result$Ok(
-					A2(func, a, b));
-			}
-		}
-	});
-var author$project$Data$selectCodingFrames = F3(
-	function (model, coder, questionary) {
-		var questionary_frames = A2(author$project$Data$selectFramesFromQuestionaryName, model, questionary);
-		var coder_frames = A2(author$project$Data$selectFramesFromCoderName, model, coder);
-		return A3(elm$core$Result$map2, author$project$Db$Extra$intersection, coder_frames, questionary_frames);
-	});
-var author$project$Data$selectMissingAnswers = F3(
-	function (model, coder, questionary) {
-		var frame_answers = A2(
-			elm$core$Result$map,
-			Chadtech$elm_relational_database$Db$fromList,
-			A2(
-				elm$core$Result$map,
-				Chadtech$elm_relational_database$Db$filterMissing,
-				A2(
-					elm$core$Result$map,
-					Chadtech$elm_relational_database$Db$getMany(model.answers),
-					A2(
-						elm$core$Result$map,
-						elm$core$List$map(
-							function (_n0) {
-								var id = _n0.a;
-								var value = _n0.b;
-								return value.answer;
-							}),
-						A2(
-							elm$core$Result$map,
-							Chadtech$elm_relational_database$Db$toList,
-							A3(author$project$Data$selectCodingFrames, model, coder, questionary))))));
-		var result_answers = A3(
-			elm$core$Result$map2,
-			author$project$Db$Extra$difference,
-			A2(author$project$Data$selectAllAnswers, model, questionary),
-			frame_answers);
-		return result_answers;
-	});
-var elm$html$Html$td = _VirtualDom_node('td');
-var author$project$Internal$DataTable$Implementation$td = F2(
-	function (options, nodes) {
-		var summary = A2(
-			author$project$Internal$Options$collect,
-			{},
-			options);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			elm$html$Html$td,
-			_List_fromArray(
-				[
-					author$project$Internal$Options$cs('mdc-data-table__cell')
-				]),
-			_List_Nil,
-			nodes);
-	});
-var author$project$Material$DataTable$td = author$project$Internal$DataTable$Implementation$td;
-var elm$html$Html$tr = _VirtualDom_node('tr');
-var author$project$Internal$DataTable$Implementation$tr = F2(
-	function (options, nodes) {
-		var summary = A2(
-			author$project$Internal$Options$collect,
-			{},
-			options);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			elm$html$Html$tr,
-			_List_fromArray(
-				[
-					author$project$Internal$Options$cs('mdc-data-table__row')
-				]),
-			_List_Nil,
-			nodes);
-	});
-var author$project$Material$DataTable$tr = author$project$Internal$DataTable$Implementation$tr;
-var author$project$Entities$Answer$toTableRow = function (_n0) {
-	var id = _n0.a;
-	var model = _n0.b;
-	return A2(
-		author$project$Material$DataTable$tr,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						Chadtech$elm_relational_database$Id$toString(id))
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						Chadtech$elm_relational_database$Id$toString(model.question))
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						Chadtech$elm_relational_database$Id$toString(model.user))
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(model.value)
-					]))
-			]));
-};
-var elm$html$Html$table = _VirtualDom_node('table');
-var author$project$Internal$DataTable$Implementation$table = F2(
-	function (options, nodes) {
-		var summary = A2(
-			author$project$Internal$Options$collect,
-			{},
-			options);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			elm$html$Html$table,
-			_List_fromArray(
-				[
-					author$project$Internal$Options$cs('mdc-data-table__table')
-				]),
-			_List_Nil,
-			nodes);
-	});
-var author$project$Material$DataTable$table = author$project$Internal$DataTable$Implementation$table;
-var elm$html$Html$tbody = _VirtualDom_node('tbody');
-var author$project$Internal$DataTable$Implementation$tbody = F2(
-	function (options, nodes) {
-		return A3(author$project$Internal$Options$styled, elm$html$Html$tbody, options, nodes);
-	});
-var author$project$Material$DataTable$tbody = author$project$Internal$DataTable$Implementation$tbody;
-var elm$html$Html$th = _VirtualDom_node('th');
-var author$project$Internal$DataTable$Implementation$th = F2(
-	function (options, nodes) {
-		var summary = A2(
-			author$project$Internal$Options$collect,
-			{},
-			options);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			elm$html$Html$th,
-			_List_fromArray(
-				[
-					author$project$Internal$Options$cs('mdc-data-table__header-cell'),
-					author$project$Internal$Options$role('columnheader')
-				]),
-			_List_Nil,
-			nodes);
-	});
-var author$project$Material$DataTable$th = author$project$Internal$DataTable$Implementation$th;
-var elm$html$Html$thead = _VirtualDom_node('thead');
-var author$project$Internal$DataTable$Implementation$thead = F2(
-	function (options, nodes) {
-		return A3(author$project$Internal$Options$styled, elm$html$Html$thead, options, nodes);
-	});
-var author$project$Material$DataTable$thead = author$project$Internal$DataTable$Implementation$thead;
-var author$project$Internal$DataTable$Implementation$trh = F2(
-	function (options, nodes) {
-		var summary = A2(
-			author$project$Internal$Options$collect,
-			{},
-			options);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			elm$html$Html$tr,
-			_List_fromArray(
-				[
-					author$project$Internal$Options$cs('mdc-data-table__header-row')
-				]),
-			_List_Nil,
-			nodes);
-	});
-var author$project$Material$DataTable$trh = author$project$Internal$DataTable$Implementation$trh;
-var author$project$Internal$DataTable$Implementation$view = F2(
-	function (options, nodes) {
-		var summary = A2(
-			author$project$Internal$Options$collect,
-			{},
-			options);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			elm$html$Html$div,
-			_List_fromArray(
-				[
-					author$project$Internal$Options$cs('mdc-data-table')
-				]),
-			_List_Nil,
-			nodes);
-	});
-var author$project$Material$DataTable$view = author$project$Internal$DataTable$Implementation$view;
-var elm$html$Html$h3 = _VirtualDom_node('h3');
-var author$project$Entities$Answer$viewTable = function (model) {
-	return A2(
-		elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$h3,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text('Answers')
-					])),
-				A2(
-				author$project$Material$DataTable$view,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						author$project$Material$DataTable$table,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								author$project$Material$DataTable$thead,
-								_List_Nil,
-								_List_fromArray(
-									[
-										A2(
-										author$project$Material$DataTable$trh,
-										_List_Nil,
-										_List_fromArray(
-											[
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('ID')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('Question')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('User')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('Value')
-													]))
-											]))
-									])),
-								A2(
-								author$project$Material$DataTable$tbody,
-								_List_Nil,
-								A2(
-									elm$core$List$map,
-									author$project$Entities$Answer$toTableRow,
-									Chadtech$elm_relational_database$Db$toList(model)))
-							]))
-					]))
-			]));
-};
-var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
-var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
-var author$project$Data$viewAnswers = F3(
-	function (model, coder, questionary) {
-		var _n0 = A3(author$project$Data$selectMissingAnswers, model, coder, questionary);
-		if (_n0.$ === 'Ok') {
-			var value = _n0.a;
-			return A2(
-				elm$html$Html$map,
-				A2(
-					elm$core$Basics$composeL,
-					author$project$Data$Entity,
-					author$project$Data$AnswerMsg(elm$core$Maybe$Nothing)),
-				author$project$Entities$Answer$viewTable(value));
-		} else {
-			var error = _n0.a;
-			return elm$html$Html$text('An error occured.');
-		}
-	});
-var author$project$Data$CodingFrameMsg = F2(
-	function (a, b) {
-		return {$: 'CodingFrameMsg', a: a, b: b};
-	});
-var author$project$Entities$Coding$Frame$toTableRow = function (_n0) {
-	var id = _n0.a;
-	var model = _n0.b;
-	return A2(
-		author$project$Material$DataTable$tr,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						Chadtech$elm_relational_database$Id$toString(id))
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						Chadtech$elm_relational_database$Id$toString(model.answer))
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						Chadtech$elm_relational_database$Id$toString(model.coding))
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						elm$core$String$fromInt(model.timestamp.created))
-					])),
-				A2(
-				author$project$Material$DataTable$td,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text(
-						elm$core$String$fromInt(model.timestamp.modified))
-					]))
-			]));
-};
-var author$project$Entities$Coding$Frame$viewTable = function (model) {
-	return A2(
-		elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				elm$html$Html$h3,
-				_List_Nil,
-				_List_fromArray(
-					[
-						elm$html$Html$text('Coding Frame')
-					])),
-				A2(
-				author$project$Material$DataTable$view,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						author$project$Material$DataTable$table,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								author$project$Material$DataTable$thead,
-								_List_Nil,
-								_List_fromArray(
-									[
-										A2(
-										author$project$Material$DataTable$trh,
-										_List_Nil,
-										_List_fromArray(
-											[
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('ID')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('Answer')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('Coding')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('Created')
-													])),
-												A2(
-												author$project$Material$DataTable$th,
-												_List_Nil,
-												_List_fromArray(
-													[
-														elm$html$Html$text('Modified')
-													]))
-											]))
-									])),
-								A2(
-								author$project$Material$DataTable$tbody,
-								_List_Nil,
-								A2(
-									elm$core$List$map,
-									author$project$Entities$Coding$Frame$toTableRow,
-									Chadtech$elm_relational_database$Db$toList(model)))
-							]))
-					]))
-			]));
-};
-var author$project$Data$viewContent3 = F3(
-	function (model, coder, questionary) {
-		var _n0 = A3(author$project$Data$selectCodingFrames, model, coder, questionary);
-		if (_n0.$ === 'Ok') {
-			var value = _n0.a;
-			return A2(
-				elm$html$Html$map,
-				A2(
-					elm$core$Basics$composeL,
-					author$project$Data$Entity,
-					author$project$Data$CodingFrameMsg(elm$core$Maybe$Nothing)),
-				author$project$Entities$Coding$Frame$viewTable(value));
-		} else {
-			var error = _n0.a;
-			return elm$html$Html$text('An error occured.');
-		}
-	});
-var author$project$Data$view = function (model) {
-	return A2(
-		elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				elm$html$Html$text('Name: ' + model.name),
-				A3(author$project$Data$viewAnswers, model, 'Jerome Bergmann', 'First Questionary'),
-				A3(author$project$Data$viewContent3, model, 'Jerome Bergmann', 'First Questionary'),
-				elm$html$Html$text('Before'),
-				elm$html$Html$text('After')
-			]));
-};
 var author$project$Page$Data$GotDBMsg = function (a) {
 	return {$: 'GotDBMsg', a: a};
 };
+var elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
+var elm$html$Html$map = elm$virtual_dom$VirtualDom$map;
 var author$project$Page$Data$view = F4(
 	function (lift, model, data, user) {
 		return {
@@ -14385,7 +13712,7 @@ var author$project$Page$Data$view = F4(
 					A2(
 					elm$html$Html$map,
 					A2(elm$core$Basics$composeL, lift, author$project$Page$Data$GotDBMsg),
-					author$project$Data$view(data))
+					A2(elm$html$Html$div, _List_Nil, _List_Nil))
 				]),
 			navigation: elm$core$Maybe$Nothing,
 			progress: elm$core$Maybe$Nothing,
@@ -14688,6 +14015,7 @@ var elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
 var elm$core$Array$tailIndex = function (len) {
 	return (len >>> 5) << 5;
 };
+var elm$core$Basics$ge = _Utils_ge;
 var elm$core$Array$sliceLeft = F2(
 	function (from, array) {
 		var len = array.a;

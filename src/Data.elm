@@ -1,7 +1,6 @@
 module Data exposing
     ( Msg(..)
     , update
-    , view
     , getCodingAnswers
 --    , GenerateMsg(..)
 --    , GenerationType(..)
@@ -68,10 +67,6 @@ type TimedEntity
     = TimedCodingFrame (Id CodingFrame.Model)
     | TimedCodingAnswer (Id CodingAnswer.Model)
 
-{- type GenerateMsg 
-    = GenerateCodingFrame (Row Coding.Model) (Maybe (Row Questionary.Model))
-    | GenerateCodingAnswers (Row CodingFrame.Model)
---    | GenerateCodingAnswer (Row CodingFrame.Model) (Row CodingQuestion.Model) -}
 
 type Object 
     = Answer (Maybe (Row Answer.Model))
@@ -124,12 +119,15 @@ update msg model =
         Generate object coding coding_frame -> 
             case (object,coding_frame) of
                 (CodingFrame _, _) ->
+                    Debug.log "Generating coding Frame"
                     generateCodingFrame model coding
         
                 (CodingAnswer _, Just frame) -> 
+                    Debug.log "Generating Missing coding answers"
                     (model, generateMissingCodingAnswers model coding frame)
 
-                _ ->
+                a ->
+                    Debug.log "Generate empty"
                     (model, Cmd.none)
         SetTime entity tmsg ->
             case entity of
@@ -176,9 +174,9 @@ update msg model =
 generateMissingCodingAnswers : I.Model -> Row Coding.Model -> Row CodingFrame.Model -> Cmd Msg
 generateMissingCodingAnswers model coding coding_frame=
     let
-        generators = G.missing_codingAnswers model coding coding_frame
+        generators = G.missing_codingAnswers model coding (Debug.log "dispatch coding frame" coding_frame)
     in
-        Debug.log "Generating"
+        Debug.log "missing coding answers generate dispatch"
         generators
         |> List.map (Random.generate (New << CodingAnswer << Just))
         |> Cmd.batch
@@ -263,6 +261,7 @@ generateCodingFrame model coding =
             (model, Cmd.none)
     
         Just generator ->
+            Debug.log "random generate coding_frame dispatch"
             (model, Random.generate (New << CodingFrame << Just) generator)
                 
 
@@ -373,7 +372,7 @@ generateCodingAnswer model seed coding_frame coding_question =
                     (new_model,
                     Task.perform (\x -> (SetTime (TimedCodingAnswer new_coding_answer_id) (Timestamp.All x))) Time.now, Just new_seed)        
 
-generateCodingAnswers : I.Model -> Seed -> Row CodingFrame.Model -> (I.Model, Cmd Msg, Maybe Seed)
+{- generateCodingAnswers : I.Model -> Seed -> Row CodingFrame.Model -> (I.Model, Cmd Msg, Maybe Seed)
 generateCodingAnswers model seed coding_frame =
     let
         missing_questions = getMissingQuestions model coding_frame
@@ -386,7 +385,7 @@ generateCodingAnswers model seed coding_frame =
                 |> updateFolder model seed
         
             Err error ->
-                (model, Cmd.none, Nothing)
+                (model, Cmd.none, Nothing) -}
                 
         
 
@@ -487,7 +486,7 @@ viewTabBar model =
         ] -}
 
 
-view : I.Model -> Html Msg
+{- view : I.Model -> Html Msg
 view model =
     div []
         [ text ("Name: " ++ model.name)
@@ -498,7 +497,7 @@ view model =
         , text "After"
 --        , viewTabBar model
 --        , viewTabContent model
-        ]
+        ] -}
 
 
 unwrap : Result Error (Db a) -> List (Row a)
@@ -583,14 +582,14 @@ viewContent3 model coder questionary =
             text "An error occured."
 
 
-viewAnswers : I.Model -> String -> String -> Html Msg
+{- viewAnswers : I.Model -> String -> String -> Html Msg
 viewAnswers model coder questionary =
     case selectMissingAnswers model coder questionary of
         Ok value ->
             Html.map (Entity << AnswerMsg Nothing) (Answer.viewTable value)
 
         Err error ->
-            text "An error occured."
+            text "An error occured." -}
 
 
 viewCodingQuestions : I.Model -> Row CodingFrame.Model -> Html Msg
@@ -676,13 +675,13 @@ getCodingQuestionsViaCodingAnswer model coding_frame =
         |> Ok
                 
 
-getMissingQuestions : I.Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
+{- getMissingQuestions : I.Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
 getMissingQuestions model frame =
     let
         all = getCodingQuestionsViaAnswer model frame 
         present = getCodingQuestionsViaCodingAnswer model frame
     in
-        Result.map2 (Db.Extra.difference) all present
+        Result.map2 (Db.Extra.difference) all present -}
 
 hasValidFrameQuestionPath : I.Model -> Row (CodingFrame.Model) -> Bool
 hasValidFrameQuestionPath model frame = 
@@ -747,7 +746,7 @@ selectAllAnswers model questionary =
         |> Result.map (Db.Extra.selectFrom model.answers (\c -> c.question))
 
 
-selectMissingAnswers : I.Model -> String -> String -> Result Db.Extra.Error (Db Answer.Model)
+{- selectMissingAnswers : I.Model -> String -> String -> Result Db.Extra.Error (Db Answer.Model)
 selectMissingAnswers model coder questionary =
     let
         frame_answers =
@@ -761,7 +760,7 @@ selectMissingAnswers model coder questionary =
         result_answers =
             Result.map2 (Db.Extra.difference) (selectAllAnswers model questionary) frame_answers
     in
-    result_answers
+    result_answers -}
 
 
 
@@ -790,7 +789,7 @@ selectCurrentCodingQuestions model (id,frame) =
     in
         current_answers
 -}
-selectMissingCodingQuestions : I.Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
+{- selectMissingCodingQuestions : I.Model -> Row CodingFrame.Model -> Result Db.Extra.Error (Db CodingQuestion.Model)
 selectMissingCodingQuestions model (id,frame) = 
     let
         frame_questions = Db.Extra.selectBy model.coding_answers (\c -> c.coding_frame) (\c -> c == id)
@@ -798,7 +797,7 @@ selectMissingCodingQuestions model (id,frame) =
         all_questions = getCodingQuestionsViaAnswer model (id,frame)
     in
         Result.map2 (\c -> Db.Extra.difference c) frame_questions all_questions 
-
+ -}
 newCoder : Seed -> String -> ( Row Coder.Model, Seed )
 newCoder seed name =
     let

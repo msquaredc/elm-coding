@@ -163,32 +163,28 @@ has_previous_question : I.Model -> Row Coding.Model -> Bool
 has_previous_question model coding = 
     Debug.todo "" False
 
-present_coding_questions : I.Model -> Row Coding.Model -> List (Row CodingQuestion.Model)
-present_coding_questions model coding =
-    Debug.log "currentFrame"
-    (current_codingFrame model coding
-    |> Maybe.map (\x -> [x])
-    |> Maybe.map Db.fromList)
-    |> Maybe.map (Nav.coding_frame2coding_answer model)
-    |> Maybe.map (Nav.coding_answer2coding_question model)
-    |> Maybe.map (Db.toList)
-    |> Maybe.withDefault []
+present_coding_questions : I.Model -> Row CodingFrame.Model -> List (Row CodingQuestion.Model)
+present_coding_questions model coding_frame =
+    Debug.log "present2"(
+    coding_frame
+    |>(\x -> [x])
+    |> Db.fromList
+    |> Nav.coding_frame2coding_answer model
+    |> Nav.coding_answer2coding_question model
+    |> Db.toList)
 
-missing_coding_questions : I.Model -> Row Coding.Model -> List (Row CodingQuestion.Model)
-missing_coding_questions model coding = 
+missing_coding_questions : I.Model -> Row Coding.Model-> Row CodingFrame.Model -> List (Row CodingQuestion.Model)
+missing_coding_questions model coding cf = 
     let
-        
-        present = Debug.log "present"(present_coding_questions model coding
-                  |> Db.fromList)
-        all = current_codingFrame model coding
-              |> Maybe.map (\x-> [x])
-              |> Maybe.map (Db.fromList)
-              |> Maybe.map (Nav.coding_frame2coding_question model)
+        present = present_coding_questions model cf
+                  |> Db.fromList
+        all = cf
+              |> (\x-> [x])
+              |> (Db.fromList)
+              |> (Nav.coding_frame2coding_question model)
     in
-        Debug.log "missing"
-        (Maybe.map (Db.Extra.difference present) all
-        |> Maybe.map (Db.toList)
-        |> Maybe.withDefault [])
+        Db.Extra.difference all present
+        |> Db.toList
 
 max_coding_frame_index : I.Model -> Row Coding.Model -> Int
 max_coding_frame_index model coding = 

@@ -25,7 +25,7 @@ defaultModel = {mdc = Material.defaultModel}
 view : (Msg m -> m) -> Model m -> I.Model -> Row Coder.Model-> Document m
 view lift model data user =
     { title = "Data"
-    , body = [Html.map (lift << GotDBMsg) (Data.view data)]
+    , body = [Html.map (lift << GotDBMsg) (div [][])]
     , progress = Nothing
     , navigation = Nothing
     }

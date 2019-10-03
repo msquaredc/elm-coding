@@ -396,7 +396,7 @@ viewDebug model (cid,cmodel) =
             [ p[][text ("Current index: " ++ (String.fromInt (index)))]
             , p[][text ("Current coding id: " ++ (Id.toString cid))]
             , p[][text ("Current coding frame: "++ (Id.toString cfid))]
-            , p[][text ("All relevant coding frames :"++ coding_frames)]
+            , p[][text ("All relevant coding frames: "++ coding_frames)]
             , p[][text ("Max CodingFrame index: " ++ String.fromInt (A.max_coding_frame_index model coding))]
             , p[][text ("Current coding answers: " ++ coding_answers)]
             , p[][text ("Current coding questions: "++ coding_questions)]
