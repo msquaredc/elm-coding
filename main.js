@@ -6652,19 +6652,40 @@ var Chadtech$elm_relational_database$Db$update = F3(
 				f,
 				dict));
 	});
-var author$project$Data$Any = {$: 'Any'};
-var author$project$Data$Generate = F2(
-	function (a, b) {
-		return {$: 'Generate', a: a, b: b};
-	});
-var author$project$Data$GenerateCodingFrame = F3(
+var author$project$Data$CodingFrame = function (a) {
+	return {$: 'CodingFrame', a: a};
+};
+var author$project$Data$Generate = F3(
 	function (a, b, c) {
-		return {$: 'GenerateCodingFrame', a: a, b: b, c: c};
+		return {$: 'Generate', a: a, b: b, c: c};
 	});
 var author$project$Data$Move = F3(
 	function (a, b, c) {
 		return {$: 'Move', a: a, b: b, c: c};
 	});
+var Chadtech$elm_relational_database$Db$get = F2(
+	function (_n0, thisId) {
+		var dict = _n0.a;
+		return A2(
+			elm$core$Dict$get,
+			Chadtech$elm_relational_database$Id$toString(thisId),
+			dict);
+	});
+var Chadtech$elm_relational_database$Db$insert = F2(
+	function (_n0, _n1) {
+		var thisId = _n0.a;
+		var item = _n0.b;
+		var dict = _n1.a;
+		return Chadtech$elm_relational_database$Db$Db(
+			A3(
+				elm$core$Dict$insert,
+				Chadtech$elm_relational_database$Id$toString(thisId),
+				item,
+				dict));
+	});
+var author$project$Data$New = function (a) {
+	return {$: 'New', a: a};
+};
 var Chadtech$elm_relational_database$Db$toList = function (_n0) {
 	var dict = _n0.a;
 	return A2(
@@ -6701,7 +6722,7 @@ var elm_community$list_extra$List$Extra$maximumBy = F2(
 			return elm$core$Maybe$Nothing;
 		}
 	});
-var author$project$Data$recentAccess = function (all_candidates) {
+var author$project$Data$Access$recent_access = function (all_candidates) {
 	return A2(
 		elm_community$list_extra$List$Extra$maximumBy,
 		function (_n0) {
@@ -6796,38 +6817,9 @@ var author$project$Data$Navigation$coding2coding_frame = F2(
 			},
 			coding);
 	});
-var elm$core$Debug$log = _Debug_log;
-var elm$core$Debug$todo = _Debug_todo;
-var author$project$Data$moveCodingFrame = F3(
-	function (model, direction, coding) {
-		var coding_frames = A2(
-			author$project$Data$Navigation$coding2coding_frame,
-			model,
-			Chadtech$elm_relational_database$Db$fromList(
-				_List_fromArray(
-					[coding])));
-		var current = author$project$Data$recentAccess(coding_frames);
-		return A3(
-			elm$core$Debug$log,
-			'moveCodingFrame',
-			_Debug_todo(
-				'Data',
-				{
-					start: {line: 244, column: 37},
-					end: {line: 244, column: 47}
-				}),
-			'');
-	});
-var author$project$Data$SetTime = F2(
-	function (a, b) {
-		return {$: 'SetTime', a: a, b: b};
-	});
-var author$project$Data$TimedCodingFrame = function (a) {
-	return {$: 'TimedCodingFrame', a: a};
-};
-var author$project$Data$currentCodingFrame = F2(
+var author$project$Data$Access$current_codingFrame = F2(
 	function (model, coding) {
-		return author$project$Data$recentAccess(
+		return author$project$Data$Access$recent_access(
 			A2(
 				author$project$Data$Navigation$coding2coding_frame,
 				model,
@@ -6863,14 +6855,6 @@ var Chadtech$elm_relational_database$Db$filterMissing = function (items) {
 		elm$core$Basics$identity,
 		A2(elm$core$List$map, onlyPresent, items));
 };
-var Chadtech$elm_relational_database$Db$get = F2(
-	function (_n0, thisId) {
-		var dict = _n0.a;
-		return A2(
-			elm$core$Dict$get,
-			Chadtech$elm_relational_database$Id$toString(thisId),
-			dict);
-	});
 var Chadtech$elm_relational_database$Db$getWithId = F2(
 	function (db, thisId) {
 		return _Utils_Tuple2(
@@ -7042,7 +7026,7 @@ var elm$core$Maybe$andThen = F2(
 			return elm$core$Maybe$Nothing;
 		}
 	});
-var author$project$Data$currentQuestion = F2(
+var author$project$Data$Access$current_question = F2(
 	function (model, coding) {
 		return A2(
 			elm$core$Maybe$andThen,
@@ -7060,7 +7044,764 @@ var author$project$Data$currentQuestion = F2(
 								_List_fromArray(
 									[x]));
 						},
-						A2(author$project$Data$currentCodingFrame, model, coding)))));
+						A2(author$project$Data$Access$current_codingFrame, model, coding)))));
+	});
+var author$project$Data$Navigation$coding2answer = F2(
+	function (model, coding) {
+		return A2(
+			author$project$Data$Navigation$coding_frame2answer,
+			model,
+			A2(author$project$Data$Navigation$coding2coding_frame, model, coding));
+	});
+var author$project$Data$Navigation$question2answer = F2(
+	function (model, answer) {
+		return A3(
+			author$project$Db$Extra$selectFrom,
+			model.answers,
+			function (c) {
+				return c.question;
+			},
+			answer);
+	});
+var author$project$Data$Access$missing_answers = F2(
+	function (model, coding) {
+		var question_answers = A2(
+			elm$core$Maybe$map,
+			author$project$Data$Navigation$question2answer(model),
+			A2(
+				elm$core$Maybe$map,
+				function (x) {
+					return Chadtech$elm_relational_database$Db$fromList(
+						_List_fromArray(
+							[x]));
+				},
+				A2(author$project$Data$Access$current_question, model, coding)));
+		var all_present_answers = A2(
+			author$project$Data$Navigation$coding2answer,
+			model,
+			Chadtech$elm_relational_database$Db$fromList(
+				_List_fromArray(
+					[coding])));
+		return A2(
+			elm$core$Maybe$map,
+			Chadtech$elm_relational_database$Db$toList,
+			A2(
+				elm$core$Maybe$map,
+				function (x) {
+					return A2(author$project$Db$Extra$difference, x, all_present_answers);
+				},
+				question_answers));
+	});
+var author$project$Data$Access$present_questions = F2(
+	function (model, coding) {
+		return Chadtech$elm_relational_database$Db$toList(
+			A2(
+				author$project$Data$Navigation$answer2question,
+				model,
+				A2(
+					author$project$Data$Navigation$coding_frame2answer,
+					model,
+					A2(
+						author$project$Data$Navigation$coding2coding_frame,
+						model,
+						Chadtech$elm_relational_database$Db$fromList(
+							_List_fromArray(
+								[coding]))))));
+	});
+var author$project$Data$Navigation$coding2question = F2(
+	function (model, coding) {
+		return A2(
+			author$project$Data$Navigation$coding_frame2question,
+			model,
+			A2(author$project$Data$Navigation$coding2coding_frame, model, coding));
+	});
+var author$project$Data$Access$missing_questions = F2(
+	function (model, coding) {
+		var present = Chadtech$elm_relational_database$Db$fromList(
+			A2(author$project$Data$Access$present_questions, model, coding));
+		var all = A2(
+			author$project$Data$Navigation$coding2question,
+			model,
+			Chadtech$elm_relational_database$Db$fromList(
+				_List_fromArray(
+					[coding])));
+		return Chadtech$elm_relational_database$Db$toList(
+			A2(author$project$Db$Extra$difference, present, all));
+	});
+var author$project$Entities$Timestamp$empty = {accessed: 0, created: 0, modified: 0};
+var elm$core$List$tail = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return elm$core$Maybe$Just(xs);
+	} else {
+		return elm$core$Maybe$Nothing;
+	}
+};
+var elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var elm$random$Random$Generator = function (a) {
+	return {$: 'Generator', a: a};
+};
+var elm$random$Random$map = F2(
+	function (func, _n0) {
+		var genA = _n0.a;
+		return elm$random$Random$Generator(
+			function (seed0) {
+				var _n1 = genA(seed0);
+				var a = _n1.a;
+				var seed1 = _n1.b;
+				return _Utils_Tuple2(
+					func(a),
+					seed1);
+			});
+	});
+var elm$random$Random$addOne = function (value) {
+	return _Utils_Tuple2(1, value);
+};
+var elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var elm$core$Basics$abs = function (n) {
+	return (n < 0) ? (-n) : n;
+};
+var elm$core$List$sum = function (numbers) {
+	return A3(elm$core$List$foldl, elm$core$Basics$add, 0, numbers);
+};
+var elm$core$Bitwise$and = _Bitwise_and;
+var elm$core$Bitwise$xor = _Bitwise_xor;
+var elm$random$Random$peel = function (_n0) {
+	var state = _n0.a;
+	var word = (state ^ (state >>> ((state >>> 28) + 4))) * 277803737;
+	return ((word >>> 22) ^ word) >>> 0;
+};
+var elm$random$Random$float = F2(
+	function (a, b) {
+		return elm$random$Random$Generator(
+			function (seed0) {
+				var seed1 = elm$random$Random$next(seed0);
+				var range = elm$core$Basics$abs(b - a);
+				var n1 = elm$random$Random$peel(seed1);
+				var n0 = elm$random$Random$peel(seed0);
+				var lo = (134217727 & n1) * 1.0;
+				var hi = (67108863 & n0) * 1.0;
+				var val = ((hi * 1.34217728e8) + lo) / 9.007199254740992e15;
+				var scaled = (val * range) + a;
+				return _Utils_Tuple2(
+					scaled,
+					elm$random$Random$next(seed1));
+			});
+	});
+var elm$random$Random$getByWeight = F3(
+	function (_n0, others, countdown) {
+		getByWeight:
+		while (true) {
+			var weight = _n0.a;
+			var value = _n0.b;
+			if (!others.b) {
+				return value;
+			} else {
+				var second = others.a;
+				var otherOthers = others.b;
+				if (_Utils_cmp(
+					countdown,
+					elm$core$Basics$abs(weight)) < 1) {
+					return value;
+				} else {
+					var $temp$_n0 = second,
+						$temp$others = otherOthers,
+						$temp$countdown = countdown - elm$core$Basics$abs(weight);
+					_n0 = $temp$_n0;
+					others = $temp$others;
+					countdown = $temp$countdown;
+					continue getByWeight;
+				}
+			}
+		}
+	});
+var elm$random$Random$weighted = F2(
+	function (first, others) {
+		var normalize = function (_n0) {
+			var weight = _n0.a;
+			return elm$core$Basics$abs(weight);
+		};
+		var total = normalize(first) + elm$core$List$sum(
+			A2(elm$core$List$map, normalize, others));
+		return A2(
+			elm$random$Random$map,
+			A2(elm$random$Random$getByWeight, first, others),
+			A2(elm$random$Random$float, 0, total));
+	});
+var elm$random$Random$uniform = F2(
+	function (value, valueList) {
+		return A2(
+			elm$random$Random$weighted,
+			elm$random$Random$addOne(value),
+			A2(elm$core$List$map, elm$random$Random$addOne, valueList));
+	});
+var author$project$Data$Generation$coding_frame = F2(
+	function (model, _n0) {
+		var cid = _n0.a;
+		var coding = _n0.b;
+		var missing_questions = A2(
+			author$project$Data$Access$missing_questions,
+			model,
+			_Utils_Tuple2(cid, coding));
+		var missing_answers = A2(
+			author$project$Data$Access$missing_answers,
+			model,
+			_Utils_Tuple2(cid, coding));
+		var current_question = A2(
+			author$project$Data$Access$current_question,
+			model,
+			_Utils_Tuple2(cid, coding));
+		var _n1 = _Utils_Tuple3(
+			current_question,
+			missing_answers,
+			A2(elm$core$Maybe$andThen, elm$core$List$head, missing_answers));
+		if (((_n1.a.$ === 'Just') && (_n1.b.$ === 'Just')) && (_n1.c.$ === 'Just')) {
+			var _n2 = _n1.a.a;
+			var qid = _n2.a;
+			var question = _n2.b;
+			var answers = _n1.b.a;
+			var head = _n1.c.a;
+			return elm$core$Maybe$Just(
+				A2(
+					elm$random$Random$map,
+					function (_n3) {
+						var aid = _n3.a;
+						var answer = _n3.b;
+						return A3(author$project$Entities$Coding$Frame$Model, aid, cid, author$project$Entities$Timestamp$empty);
+					},
+					A2(
+						elm$random$Random$uniform,
+						head,
+						A2(
+							elm$core$Maybe$withDefault,
+							_List_Nil,
+							elm$core$List$tail(answers)))));
+		} else {
+			var new_question = elm$core$List$head(missing_questions);
+			var new_answers = A2(
+				elm$core$Maybe$map,
+				Chadtech$elm_relational_database$Db$toList,
+				A2(
+					elm$core$Maybe$map,
+					author$project$Data$Navigation$question2answer(model),
+					A2(
+						elm$core$Maybe$map,
+						function (x) {
+							return Chadtech$elm_relational_database$Db$fromList(
+								_List_fromArray(
+									[x]));
+						},
+						new_question)));
+			var _n4 = _Utils_Tuple3(
+				new_question,
+				new_answers,
+				A2(elm$core$Maybe$andThen, elm$core$List$head, new_answers));
+			if (((_n4.a.$ === 'Just') && (_n4.b.$ === 'Just')) && (_n4.c.$ === 'Just')) {
+				var question = _n4.a.a;
+				var answers = _n4.b.a;
+				var head = _n4.c.a;
+				return elm$core$Maybe$Just(
+					A2(
+						elm$random$Random$map,
+						function (_n5) {
+							var aid = _n5.a;
+							var answer = _n5.b;
+							return A3(author$project$Entities$Coding$Frame$Model, aid, cid, author$project$Entities$Timestamp$empty);
+						},
+						A2(
+							elm$random$Random$uniform,
+							head,
+							A2(
+								elm$core$Maybe$withDefault,
+								_List_Nil,
+								elm$core$List$tail(answers)))));
+			} else {
+				return elm$core$Maybe$Nothing;
+			}
+		}
+	});
+var elm$core$Char$fromCode = _Char_fromCode;
+var Chadtech$elm_relational_database$Id$toChar = function (_int) {
+	var code = (_int < 10) ? (_int + 48) : ((_int < 36) ? (_int + 55) : (_int + 61));
+	return elm$core$Char$fromCode(code);
+};
+var elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var elm$core$String$fromList = _String_fromList;
+var Chadtech$elm_relational_database$Id$intsToString = A2(
+	elm$core$Basics$composeR,
+	elm$core$List$map(Chadtech$elm_relational_database$Id$toChar),
+	elm$core$String$fromList);
+var elm$random$Random$int = F2(
+	function (a, b) {
+		return elm$random$Random$Generator(
+			function (seed0) {
+				var _n0 = (_Utils_cmp(a, b) < 0) ? _Utils_Tuple2(a, b) : _Utils_Tuple2(b, a);
+				var lo = _n0.a;
+				var hi = _n0.b;
+				var range = (hi - lo) + 1;
+				if (!((range - 1) & range)) {
+					return _Utils_Tuple2(
+						(((range - 1) & elm$random$Random$peel(seed0)) >>> 0) + lo,
+						elm$random$Random$next(seed0));
+				} else {
+					var threshhold = (((-range) >>> 0) % range) >>> 0;
+					var accountForBias = function (seed) {
+						accountForBias:
+						while (true) {
+							var x = elm$random$Random$peel(seed);
+							var seedN = elm$random$Random$next(seed);
+							if (_Utils_cmp(x, threshhold) < 0) {
+								var $temp$seed = seedN;
+								seed = $temp$seed;
+								continue accountForBias;
+							} else {
+								return _Utils_Tuple2((x % range) + lo, seedN);
+							}
+						}
+					};
+					return accountForBias(seed0);
+				}
+			});
+	});
+var elm$random$Random$listHelp = F4(
+	function (revList, n, gen, seed) {
+		listHelp:
+		while (true) {
+			if (n < 1) {
+				return _Utils_Tuple2(revList, seed);
+			} else {
+				var _n0 = gen(seed);
+				var value = _n0.a;
+				var newSeed = _n0.b;
+				var $temp$revList = A2(elm$core$List$cons, value, revList),
+					$temp$n = n - 1,
+					$temp$gen = gen,
+					$temp$seed = newSeed;
+				revList = $temp$revList;
+				n = $temp$n;
+				gen = $temp$gen;
+				seed = $temp$seed;
+				continue listHelp;
+			}
+		}
+	});
+var elm$random$Random$list = F2(
+	function (n, _n0) {
+		var gen = _n0.a;
+		return elm$random$Random$Generator(
+			function (seed) {
+				return A4(elm$random$Random$listHelp, _List_Nil, n, gen, seed);
+			});
+	});
+var Chadtech$elm_relational_database$Id$generator = A2(
+	elm$random$Random$map,
+	A2(elm$core$Basics$composeR, Chadtech$elm_relational_database$Id$intsToString, Chadtech$elm_relational_database$Id$Id),
+	A2(
+		elm$random$Random$list,
+		64,
+		A2(elm$random$Random$int, 0, 61)));
+var author$project$Data$Generation$row = function (element) {
+	return A2(
+		elm$random$Random$map,
+		function (id) {
+			return _Utils_Tuple2(id, element);
+		},
+		Chadtech$elm_relational_database$Id$generator);
+};
+var elm$random$Random$andThen = F2(
+	function (callback, _n0) {
+		var genA = _n0.a;
+		return elm$random$Random$Generator(
+			function (seed) {
+				var _n1 = genA(seed);
+				var result = _n1.a;
+				var newSeed = _n1.b;
+				var _n2 = callback(result);
+				var genB = _n2.a;
+				return genB(newSeed);
+			});
+	});
+var author$project$Data$Generation$row_coding_frame = F2(
+	function (model, coding) {
+		return A2(
+			elm$core$Maybe$map,
+			elm$random$Random$andThen(author$project$Data$Generation$row),
+			A2(author$project$Data$Generation$coding_frame, model, coding));
+	});
+var elm$random$Random$Generate = function (a) {
+	return {$: 'Generate', a: a};
+};
+var elm$time$Time$Name = function (a) {
+	return {$: 'Name', a: a};
+};
+var elm$time$Time$Offset = function (a) {
+	return {$: 'Offset', a: a};
+};
+var elm$time$Time$Zone = F2(
+	function (a, b) {
+		return {$: 'Zone', a: a, b: b};
+	});
+var elm$time$Time$customZone = elm$time$Time$Zone;
+var elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var elm$time$Time$millisToPosix = elm$time$Time$Posix;
+var elm$time$Time$now = _Time_now(elm$time$Time$millisToPosix);
+var elm$time$Time$posixToMillis = function (_n0) {
+	var millis = _n0.a;
+	return millis;
+};
+var elm$random$Random$init = A2(
+	elm$core$Task$andThen,
+	function (time) {
+		return elm$core$Task$succeed(
+			elm$random$Random$initialSeed(
+				elm$time$Time$posixToMillis(time)));
+	},
+	elm$time$Time$now);
+var elm$random$Random$step = F2(
+	function (_n0, seed) {
+		var generator = _n0.a;
+		return generator(seed);
+	});
+var elm$random$Random$onEffects = F3(
+	function (router, commands, seed) {
+		if (!commands.b) {
+			return elm$core$Task$succeed(seed);
+		} else {
+			var generator = commands.a.a;
+			var rest = commands.b;
+			var _n1 = A2(elm$random$Random$step, generator, seed);
+			var value = _n1.a;
+			var newSeed = _n1.b;
+			return A2(
+				elm$core$Task$andThen,
+				function (_n2) {
+					return A3(elm$random$Random$onEffects, router, rest, newSeed);
+				},
+				A2(elm$core$Platform$sendToApp, router, value));
+		}
+	});
+var elm$random$Random$onSelfMsg = F3(
+	function (_n0, _n1, seed) {
+		return elm$core$Task$succeed(seed);
+	});
+var elm$random$Random$cmdMap = F2(
+	function (func, _n0) {
+		var generator = _n0.a;
+		return elm$random$Random$Generate(
+			A2(elm$random$Random$map, func, generator));
+	});
+_Platform_effectManagers['Random'] = _Platform_createManager(elm$random$Random$init, elm$random$Random$onEffects, elm$random$Random$onSelfMsg, elm$random$Random$cmdMap);
+var elm$random$Random$command = _Platform_leaf('Random');
+var elm$random$Random$generate = F2(
+	function (tagger, generator) {
+		return elm$random$Random$command(
+			elm$random$Random$Generate(
+				A2(elm$random$Random$map, tagger, generator)));
+	});
+var author$project$Data$generateCodingFrame = F2(
+	function (model, coding) {
+		var _n0 = A2(author$project$Data$Generation$row_coding_frame, model, coding);
+		if (_n0.$ === 'Nothing') {
+			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+		} else {
+			var generator = _n0.a;
+			return _Utils_Tuple2(
+				model,
+				A2(
+					elm$random$Random$generate,
+					A2(
+						elm$core$Basics$composeL,
+						A2(elm$core$Basics$composeL, author$project$Data$New, author$project$Data$CodingFrame),
+						elm$core$Maybe$Just),
+					generator));
+		}
+	});
+var author$project$Data$CodingAnswer = function (a) {
+	return {$: 'CodingAnswer', a: a};
+};
+var elm$core$Debug$log = _Debug_log;
+var author$project$Data$Access$present_coding_questions = F2(
+	function (model, coding) {
+		return A2(
+			elm$core$Maybe$withDefault,
+			_List_Nil,
+			A2(
+				elm$core$Maybe$map,
+				Chadtech$elm_relational_database$Db$toList,
+				A2(
+					elm$core$Maybe$map,
+					author$project$Data$Navigation$coding_answer2coding_question(model),
+					A2(
+						elm$core$Maybe$map,
+						author$project$Data$Navigation$coding_frame2coding_answer(model),
+						A2(
+							elm$core$Debug$log,
+							'currentFrame',
+							A2(
+								elm$core$Maybe$map,
+								Chadtech$elm_relational_database$Db$fromList,
+								A2(
+									elm$core$Maybe$map,
+									function (x) {
+										return _List_fromArray(
+											[x]);
+									},
+									A2(author$project$Data$Access$current_codingFrame, model, coding))))))));
+	});
+var author$project$Data$Navigation$coding_questionary2coding_question = F2(
+	function (model, coding_questionary) {
+		return A3(
+			author$project$Db$Extra$selectFrom,
+			model.coding_questions,
+			function (c) {
+				return c.coding_questionary;
+			},
+			coding_questionary);
+	});
+var author$project$Data$Navigation$question2coding_questionary = F2(
+	function (model, question) {
+		return A3(
+			author$project$Db$Extra$selectFrom,
+			model.coding_questionaries,
+			function (c) {
+				return c.question;
+			},
+			question);
+	});
+var author$project$Data$Navigation$coding_frame2coding_question = F2(
+	function (model, coding_frame) {
+		var right = A2(
+			author$project$Data$Navigation$coding_answer2coding_question,
+			model,
+			A2(author$project$Data$Navigation$coding_frame2coding_answer, model, coding_frame));
+		var left = A2(
+			author$project$Data$Navigation$coding_questionary2coding_question,
+			model,
+			A2(
+				author$project$Data$Navigation$question2coding_questionary,
+				model,
+				A2(
+					author$project$Data$Navigation$answer2question,
+					model,
+					A2(author$project$Data$Navigation$coding_frame2answer, model, coding_frame))));
+		return A2(author$project$Db$Extra$union, left, right);
+	});
+var author$project$Data$Access$missing_coding_questions = F2(
+	function (model, coding) {
+		var present = A2(
+			elm$core$Debug$log,
+			'present',
+			Chadtech$elm_relational_database$Db$fromList(
+				A2(author$project$Data$Access$present_coding_questions, model, coding)));
+		var all = A2(
+			elm$core$Maybe$map,
+			author$project$Data$Navigation$coding_frame2coding_question(model),
+			A2(
+				elm$core$Maybe$map,
+				Chadtech$elm_relational_database$Db$fromList,
+				A2(
+					elm$core$Maybe$map,
+					function (x) {
+						return _List_fromArray(
+							[x]);
+					},
+					A2(author$project$Data$Access$current_codingFrame, model, coding))));
+		return A2(
+			elm$core$Debug$log,
+			'missing',
+			A2(
+				elm$core$Maybe$withDefault,
+				_List_Nil,
+				A2(
+					elm$core$Maybe$map,
+					Chadtech$elm_relational_database$Db$toList,
+					A2(
+						elm$core$Maybe$map,
+						author$project$Db$Extra$difference(present),
+						all))));
+	});
+var author$project$Data$Generation$coding_answer = F2(
+	function (_n0, _n1) {
+		var fid = _n0.a;
+		var qid = _n1.a;
+		return author$project$Data$Generation$row(
+			A4(author$project$Entities$Coding$Answer$Model, qid, fid, '', author$project$Entities$Timestamp$empty));
+	});
+var author$project$Data$Generation$missing_codingAnswers = F3(
+	function (model, coding, cf) {
+		var missing_questions = A2(author$project$Data$Access$missing_coding_questions, model, coding);
+		return A2(
+			elm$core$List$map,
+			function (qid) {
+				return A2(author$project$Data$Generation$coding_answer, cf, qid);
+			},
+			missing_questions);
+	});
+var author$project$Data$generateMissingCodingAnswers = F3(
+	function (model, coding, coding_frame) {
+		var generators = A3(author$project$Data$Generation$missing_codingAnswers, model, coding, coding_frame);
+		return elm$core$Platform$Cmd$batch(
+			A2(
+				elm$core$List$map,
+				elm$random$Random$generate(
+					A2(
+						elm$core$Basics$composeL,
+						A2(elm$core$Basics$composeL, author$project$Data$New, author$project$Data$CodingAnswer),
+						elm$core$Maybe$Just)),
+				A2(elm$core$Debug$log, 'Generating', generators)));
+	});
+var author$project$Data$SetTime = F2(
+	function (a, b) {
+		return {$: 'SetTime', a: a, b: b};
+	});
+var author$project$Data$TimedCodingFrame = function (a) {
+	return {$: 'TimedCodingFrame', a: a};
+};
+var author$project$Entities$Timestamp$Accessed = function (a) {
+	return {$: 'Accessed', a: a};
+};
+var author$project$Data$accessCodingFrame = function (id) {
+	return A2(
+		elm$core$Task$perform,
+		function (x) {
+			return A2(
+				author$project$Data$SetTime,
+				author$project$Data$TimedCodingFrame(id),
+				author$project$Entities$Timestamp$Accessed(x));
+		},
+		elm$time$Time$now);
+};
+var elm$core$List$sortBy = _List_sortBy;
+var author$project$Data$Access$sorted_codingFrames = F2(
+	function (model, coding) {
+		return A2(
+			elm$core$List$sortBy,
+			function (_n0) {
+				var m = _n0.b;
+				return m.timestamp.created;
+			},
+			Chadtech$elm_relational_database$Db$toList(
+				A2(
+					author$project$Data$Navigation$coding2coding_frame,
+					model,
+					Chadtech$elm_relational_database$Db$fromList(
+						_List_fromArray(
+							[coding])))));
+	});
+var elm_community$list_extra$List$Extra$findIndexHelp = F3(
+	function (index, predicate, list) {
+		findIndexHelp:
+		while (true) {
+			if (!list.b) {
+				return elm$core$Maybe$Nothing;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (predicate(x)) {
+					return elm$core$Maybe$Just(index);
+				} else {
+					var $temp$index = index + 1,
+						$temp$predicate = predicate,
+						$temp$list = xs;
+					index = $temp$index;
+					predicate = $temp$predicate;
+					list = $temp$list;
+					continue findIndexHelp;
+				}
+			}
+		}
+	});
+var elm_community$list_extra$List$Extra$findIndex = elm_community$list_extra$List$Extra$findIndexHelp(0);
+var elm_community$list_extra$List$Extra$elemIndex = function (x) {
+	return elm_community$list_extra$List$Extra$findIndex(
+		elm$core$Basics$eq(x));
+};
+var author$project$Data$Access$current_codingFrame_index = F2(
+	function (model, coding) {
+		return A2(
+			elm$core$Maybe$andThen,
+			function (x) {
+				return A2(
+					elm_community$list_extra$List$Extra$elemIndex,
+					x,
+					A2(author$project$Data$Access$sorted_codingFrames, model, coding));
+			},
+			A2(author$project$Data$Access$current_codingFrame, model, coding));
+	});
+var elm$core$List$drop = F2(
+	function (n, list) {
+		drop:
+		while (true) {
+			if (n <= 0) {
+				return list;
+			} else {
+				if (!list.b) {
+					return list;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs;
+					n = $temp$n;
+					list = $temp$list;
+					continue drop;
+				}
+			}
+		}
+	});
+var elm_community$list_extra$List$Extra$getAt = F2(
+	function (idx, xs) {
+		return (idx < 0) ? elm$core$Maybe$Nothing : elm$core$List$head(
+			A2(elm$core$List$drop, idx, xs));
+	});
+var author$project$Data$moveCodingFrame = F3(
+	function (model, direction, coding) {
+		var current_index = A2(author$project$Data$Access$current_codingFrame_index, model, coding);
+		var coding_frames = A2(author$project$Data$Access$sorted_codingFrames, model, coding);
+		var new_frame = function () {
+			if (direction.$ === 'Next') {
+				return A2(
+					elm$core$Maybe$andThen,
+					function (x) {
+						return A2(elm_community$list_extra$List$Extra$getAt, x + 1, coding_frames);
+					},
+					current_index);
+			} else {
+				return A2(
+					elm$core$Maybe$andThen,
+					function (x) {
+						return A2(elm_community$list_extra$List$Extra$getAt, x - 1, coding_frames);
+					},
+					current_index);
+			}
+		}();
+		if (new_frame.$ === 'Nothing') {
+			return A2(author$project$Data$generateCodingFrame, model, coding);
+		} else {
+			var _n1 = new_frame.a;
+			var id = _n1.a;
+			var frame = _n1.b;
+			return _Utils_Tuple2(
+				model,
+				author$project$Data$accessCodingFrame(id));
+		}
 	});
 var author$project$Data$Navigation$answer2coding_frame = F2(
 	function (model, answer) {
@@ -7092,36 +7833,6 @@ var author$project$Data$Navigation$coding_question2coding_answer = F2(
 			},
 			coding_question);
 	});
-var author$project$Data$Navigation$coding_questionary2coding_question = F2(
-	function (model, coding_questionary) {
-		return A3(
-			author$project$Db$Extra$selectFrom,
-			model.coding_questions,
-			function (c) {
-				return c.coding_questionary;
-			},
-			coding_questionary);
-	});
-var author$project$Data$Navigation$question2answer = F2(
-	function (model, answer) {
-		return A3(
-			author$project$Db$Extra$selectFrom,
-			model.answers,
-			function (c) {
-				return c.question;
-			},
-			answer);
-	});
-var author$project$Data$Navigation$question2coding_questionary = F2(
-	function (model, question) {
-		return A3(
-			author$project$Db$Extra$selectFrom,
-			model.coding_questionaries,
-			function (c) {
-				return c.question;
-			},
-			question);
-	});
 var author$project$Data$Navigation$question2coding_frame = F2(
 	function (model, question) {
 		var right = A2(
@@ -7140,9 +7851,6 @@ var author$project$Data$Navigation$question2coding_frame = F2(
 			A2(author$project$Data$Navigation$question2answer, model, question));
 		return A2(author$project$Db$Extra$union, left, right);
 	});
-var author$project$Entities$Timestamp$All = function (a) {
-	return {$: 'All', a: a};
-};
 var elm$core$Maybe$map2 = F3(
 	function (func, ma, mb) {
 		if (ma.$ === 'Nothing') {
@@ -7158,23 +7866,7 @@ var elm$core$Maybe$map2 = F3(
 			}
 		}
 	});
-var elm$time$Time$Name = function (a) {
-	return {$: 'Name', a: a};
-};
-var elm$time$Time$Offset = function (a) {
-	return {$: 'Offset', a: a};
-};
-var elm$time$Time$Zone = F2(
-	function (a, b) {
-		return {$: 'Zone', a: a, b: b};
-	});
-var elm$time$Time$customZone = elm$time$Time$Zone;
-var elm$time$Time$Posix = function (a) {
-	return {$: 'Posix', a: a};
-};
-var elm$time$Time$millisToPosix = elm$time$Time$Posix;
-var elm$time$Time$now = _Time_now(elm$time$Time$millisToPosix);
-var author$project$Data$accessCodingFrame = F3(
+var author$project$Data$accessFirstCodingFrameOfQuestion = F3(
 	function (model, coding, mbquestion) {
 		var mbsame = A3(
 			elm$core$Maybe$map2,
@@ -7183,7 +7875,7 @@ var author$project$Data$accessCodingFrame = F3(
 					return _Utils_eq(a, b);
 				}),
 			mbquestion,
-			A2(author$project$Data$currentQuestion, model, coding));
+			A2(author$project$Data$Access$current_question, model, coding));
 		var _n0 = _Utils_Tuple2(mbsame, mbquestion);
 		if (((_n0.a.$ === 'Just') && (!_n0.a.a)) && (_n0.b.$ === 'Just')) {
 			var question = _n0.b.a;
@@ -7216,88 +7908,13 @@ var author$project$Data$accessCodingFrame = F3(
 							return A2(
 								author$project$Data$SetTime,
 								author$project$Data$TimedCodingFrame(id),
-								author$project$Entities$Timestamp$All(x));
+								author$project$Entities$Timestamp$Accessed(x));
 						},
 						elm$time$Time$now));
 			}
 		} else {
 			return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
-	});
-var author$project$Data$generateCodingFrame = F2(
-	function (model, coding) {
-		return A3(
-			elm$core$Debug$log,
-			'generateCodingFrame',
-			_Debug_todo(
-				'Data',
-				{
-					start: {line: 235, column: 37},
-					end: {line: 235, column: 47}
-				}),
-			'');
-	});
-var author$project$Data$Navigation$coding2question = F2(
-	function (model, coding) {
-		return A2(
-			author$project$Data$Navigation$coding_frame2question,
-			model,
-			A2(author$project$Data$Navigation$coding2coding_frame, model, coding));
-	});
-var elm$core$List$sortBy = _List_sortBy;
-var elm_community$list_extra$List$Extra$findIndexHelp = F3(
-	function (index, predicate, list) {
-		findIndexHelp:
-		while (true) {
-			if (!list.b) {
-				return elm$core$Maybe$Nothing;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (predicate(x)) {
-					return elm$core$Maybe$Just(index);
-				} else {
-					var $temp$index = index + 1,
-						$temp$predicate = predicate,
-						$temp$list = xs;
-					index = $temp$index;
-					predicate = $temp$predicate;
-					list = $temp$list;
-					continue findIndexHelp;
-				}
-			}
-		}
-	});
-var elm_community$list_extra$List$Extra$findIndex = elm_community$list_extra$List$Extra$findIndexHelp(0);
-var elm_community$list_extra$List$Extra$elemIndex = function (x) {
-	return elm_community$list_extra$List$Extra$findIndex(
-		elm$core$Basics$eq(x));
-};
-var elm$core$List$drop = F2(
-	function (n, list) {
-		drop:
-		while (true) {
-			if (n <= 0) {
-				return list;
-			} else {
-				if (!list.b) {
-					return list;
-				} else {
-					var x = list.a;
-					var xs = list.b;
-					var $temp$n = n - 1,
-						$temp$list = xs;
-					n = $temp$n;
-					list = $temp$list;
-					continue drop;
-				}
-			}
-		}
-	});
-var elm_community$list_extra$List$Extra$getAt = F2(
-	function (idx, xs) {
-		return (idx < 0) ? elm$core$Maybe$Nothing : elm$core$List$head(
-			A2(elm$core$List$drop, idx, xs));
 	});
 var author$project$Data$moveQuestion = F3(
 	function (model, direction, coding) {
@@ -7314,7 +7931,7 @@ var author$project$Data$moveQuestion = F3(
 					Chadtech$elm_relational_database$Db$fromList(
 						_List_fromArray(
 							[coding])))));
-		var current_question = A2(author$project$Data$currentQuestion, model, coding);
+		var current_question = A2(author$project$Data$Access$current_question, model, coding);
 		var current_index = A2(
 			elm$core$Maybe$andThen,
 			function (x) {
@@ -7333,7 +7950,7 @@ var author$project$Data$moveQuestion = F3(
 				} else {
 					var _n3 = _n1.a;
 					var new_question = A2(elm_community$list_extra$List$Extra$getAt, index - 1, questions);
-					return A3(author$project$Data$accessCodingFrame, model, coding, new_question);
+					return A3(author$project$Data$accessFirstCodingFrameOfQuestion, model, coding, new_question);
 				}
 			} else {
 				var _n4 = _n1.a;
@@ -7344,22 +7961,10 @@ var author$project$Data$moveQuestion = F3(
 					return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				} else {
 					var new_question = A2(elm_community$list_extra$List$Extra$getAt, index + 1, questions);
-					return A3(author$project$Data$accessCodingFrame, model, coding, new_question);
+					return A3(author$project$Data$accessFirstCodingFrameOfQuestion, model, coding, new_question);
 				}
 			}
 		}
-	});
-var Chadtech$elm_relational_database$Db$insert = F2(
-	function (_n0, _n1) {
-		var thisId = _n0.a;
-		var item = _n0.b;
-		var dict = _n1.a;
-		return Chadtech$elm_relational_database$Db$Db(
-			A3(
-				elm$core$Dict$insert,
-				Chadtech$elm_relational_database$Id$toString(thisId),
-				item,
-				dict));
 	});
 var author$project$Data$optionalUpdate = F3(
 	function (id, database, updater) {
@@ -7514,561 +8119,63 @@ var author$project$Data$updateEntity = F2(
 					elm$core$Platform$Cmd$none);
 		}
 	});
-var author$project$Data$GenerateCodingAnswers = function (a) {
-	return {$: 'GenerateCodingAnswers', a: a};
-};
-var elm$core$Char$fromCode = _Char_fromCode;
-var Chadtech$elm_relational_database$Id$toChar = function (_int) {
-	var code = (_int < 10) ? (_int + 48) : ((_int < 36) ? (_int + 55) : (_int + 61));
-	return elm$core$Char$fromCode(code);
-};
-var elm$core$Basics$composeR = F3(
-	function (f, g, x) {
-		return g(
-			f(x));
-	});
-var elm$core$String$fromList = _String_fromList;
-var Chadtech$elm_relational_database$Id$intsToString = A2(
-	elm$core$Basics$composeR,
-	elm$core$List$map(Chadtech$elm_relational_database$Id$toChar),
-	elm$core$String$fromList);
-var elm$core$Basics$negate = function (n) {
-	return -n;
-};
-var elm$core$Bitwise$and = _Bitwise_and;
-var elm$random$Random$Generator = function (a) {
-	return {$: 'Generator', a: a};
-};
-var elm$core$Bitwise$xor = _Bitwise_xor;
-var elm$random$Random$peel = function (_n0) {
-	var state = _n0.a;
-	var word = (state ^ (state >>> ((state >>> 28) + 4))) * 277803737;
-	return ((word >>> 22) ^ word) >>> 0;
-};
-var elm$random$Random$int = F2(
-	function (a, b) {
-		return elm$random$Random$Generator(
-			function (seed0) {
-				var _n0 = (_Utils_cmp(a, b) < 0) ? _Utils_Tuple2(a, b) : _Utils_Tuple2(b, a);
-				var lo = _n0.a;
-				var hi = _n0.b;
-				var range = (hi - lo) + 1;
-				if (!((range - 1) & range)) {
-					return _Utils_Tuple2(
-						(((range - 1) & elm$random$Random$peel(seed0)) >>> 0) + lo,
-						elm$random$Random$next(seed0));
-				} else {
-					var threshhold = (((-range) >>> 0) % range) >>> 0;
-					var accountForBias = function (seed) {
-						accountForBias:
-						while (true) {
-							var x = elm$random$Random$peel(seed);
-							var seedN = elm$random$Random$next(seed);
-							if (_Utils_cmp(x, threshhold) < 0) {
-								var $temp$seed = seedN;
-								seed = $temp$seed;
-								continue accountForBias;
-							} else {
-								return _Utils_Tuple2((x % range) + lo, seedN);
-							}
-						}
-					};
-					return accountForBias(seed0);
-				}
-			});
-	});
-var elm$random$Random$listHelp = F4(
-	function (revList, n, gen, seed) {
-		listHelp:
-		while (true) {
-			if (n < 1) {
-				return _Utils_Tuple2(revList, seed);
-			} else {
-				var _n0 = gen(seed);
-				var value = _n0.a;
-				var newSeed = _n0.b;
-				var $temp$revList = A2(elm$core$List$cons, value, revList),
-					$temp$n = n - 1,
-					$temp$gen = gen,
-					$temp$seed = newSeed;
-				revList = $temp$revList;
-				n = $temp$n;
-				gen = $temp$gen;
-				seed = $temp$seed;
-				continue listHelp;
-			}
-		}
-	});
-var elm$random$Random$list = F2(
-	function (n, _n0) {
-		var gen = _n0.a;
-		return elm$random$Random$Generator(
-			function (seed) {
-				return A4(elm$random$Random$listHelp, _List_Nil, n, gen, seed);
-			});
-	});
-var elm$random$Random$map = F2(
-	function (func, _n0) {
-		var genA = _n0.a;
-		return elm$random$Random$Generator(
-			function (seed0) {
-				var _n1 = genA(seed0);
-				var a = _n1.a;
-				var seed1 = _n1.b;
-				return _Utils_Tuple2(
-					func(a),
-					seed1);
-			});
-	});
-var Chadtech$elm_relational_database$Id$generator = A2(
-	elm$random$Random$map,
-	A2(elm$core$Basics$composeR, Chadtech$elm_relational_database$Id$intsToString, Chadtech$elm_relational_database$Id$Id),
-	A2(
-		elm$random$Random$list,
-		64,
-		A2(elm$random$Random$int, 0, 61)));
 var author$project$Data$TimedCodingAnswer = function (a) {
 	return {$: 'TimedCodingAnswer', a: a};
 };
-var author$project$Data$NoResult = {$: 'NoResult'};
-var elm$core$Result$fromMaybe = F2(
-	function (err, maybe) {
-		if (maybe.$ === 'Just') {
-			var v = maybe.a;
-			return elm$core$Result$Ok(v);
-		} else {
-			return elm$core$Result$Err(err);
-		}
-	});
-var author$project$Data$getCodingAnswer = F3(
-	function (model, _n0, _n1) {
-		var fid = _n0.a;
-		var frame = _n0.b;
-		var qid = _n1.a;
-		var question = _n1.b;
-		return A2(
-			elm$core$Result$fromMaybe,
-			author$project$Data$NoResult,
-			A2(
-				elm_community$list_extra$List$Extra$maximumBy,
-				function (_n4) {
-					var id = _n4.a;
-					var m = _n4.b;
-					return m.timestamp.modified;
-				},
-				Chadtech$elm_relational_database$Db$toList(
-					A2(
-						Chadtech$elm_relational_database$Db$filter,
-						function (_n3) {
-							var x = _n3.b;
-							return _Utils_eq(x.coding_question, qid);
+var author$project$Data$updateTimestamp = F2(
+	function (object, tmsg) {
+		var mb_timed_entity = function () {
+			switch (object.$) {
+				case 'CodingAnswer':
+					var mb = object.a;
+					return A2(
+						elm$core$Maybe$map,
+						function (_n2) {
+							var id = _n2.a;
+							return author$project$Data$TimedCodingAnswer(id);
 						},
-						A2(
-							Chadtech$elm_relational_database$Db$filter,
-							function (_n2) {
-								var x = _n2.b;
-								return _Utils_eq(x.coding_frame, fid);
-							},
-							model.coding_answers)))));
-	});
-var author$project$Entities$Timestamp$empty = {accessed: 0, created: 0, modified: 0};
-var elm$random$Random$step = F2(
-	function (_n0, seed) {
-		var generator = _n0.a;
-		return generator(seed);
-	});
-var author$project$Data$generateCodingAnswer = F4(
-	function (model, seed, coding_frame, coding_question) {
-		var candidate = A3(author$project$Data$getCodingAnswer, model, coding_frame, coding_question);
-		if (candidate.$ === 'Ok') {
-			var value = candidate.a;
-			return _Utils_Tuple3(model, elm$core$Platform$Cmd$none, elm$core$Maybe$Nothing);
-		} else {
-			var _n1 = candidate.a;
-			var _n2 = coding_question;
-			var qid = _n2.a;
-			var qm = _n2.b;
-			var _n3 = A2(elm$random$Random$step, Chadtech$elm_relational_database$Id$generator, seed);
-			var new_coding_answer_id = _n3.a;
-			var new_seed = _n3.b;
-			var _n4 = coding_frame;
-			var cid = _n4.a;
-			var cm = _n4.b;
-			var new_coding_answer = {coding_frame: cid, coding_question: qid, timestamp: author$project$Entities$Timestamp$empty, value: ''};
-			var new_coding_answers = A2(
-				Chadtech$elm_relational_database$Db$insert,
-				_Utils_Tuple2(new_coding_answer_id, new_coding_answer),
-				model.coding_answers);
-			var new_model = _Utils_update(
-				model,
-				{coding_answers: new_coding_answers});
-			return _Utils_Tuple3(
-				new_model,
-				A2(
-					elm$core$Task$perform,
-					function (x) {
-						return A2(
-							author$project$Data$SetTime,
-							author$project$Data$TimedCodingAnswer(new_coding_answer_id),
-							author$project$Entities$Timestamp$All(x));
-					},
-					elm$time$Time$now),
-				elm$core$Maybe$Just(new_seed));
-		}
-	});
-var author$project$Db$Extra$Absent = {$: 'Absent'};
-var author$project$Db$Extra$get = F3(
-	function (b, accessor, _n0) {
-		var ida = _n0.a;
-		var valuea = _n0.b;
-		var idb = accessor(valuea);
-		var _n1 = A2(Chadtech$elm_relational_database$Db$get, b, idb);
-		if (_n1.$ === 'Just') {
-			var valueb = _n1.a;
-			return elm$core$Result$Ok(
-				_Utils_Tuple2(idb, valueb));
-		} else {
-			return elm$core$Result$Err(author$project$Db$Extra$Absent);
-		}
-	});
-var elm$core$Result$andThen = F2(
-	function (callback, result) {
-		if (result.$ === 'Ok') {
-			var value = result.a;
-			return callback(value);
-		} else {
-			var msg = result.a;
-			return elm$core$Result$Err(msg);
-		}
-	});
-var elm$core$Result$map = F2(
-	function (func, ra) {
-		if (ra.$ === 'Ok') {
-			var a = ra.a;
-			return elm$core$Result$Ok(
-				func(a));
-		} else {
-			var e = ra.a;
-			return elm$core$Result$Err(e);
-		}
-	});
-var author$project$Data$getCodingQuestionsViaAnswer = F2(
-	function (model, frame) {
-		return A2(
-			elm$core$Result$map,
-			A2(
-				author$project$Db$Extra$selectFrom,
-				model.coding_questions,
-				function (c) {
-					return c.coding_questionary;
-				}),
-			A2(
-				elm$core$Result$map,
-				A2(
-					author$project$Db$Extra$selectFrom,
-					model.coding_questionaries,
-					function (c) {
-						return c.question;
-					}),
-				A2(
-					elm$core$Result$map,
-					function (c) {
-						return A2(Chadtech$elm_relational_database$Db$insert, c, Chadtech$elm_relational_database$Db$empty);
-					},
-					A2(
-						elm$core$Result$andThen,
-						A2(
-							author$project$Db$Extra$get,
-							model.questions,
-							function (c) {
-								return c.question;
-							}),
-						A3(
-							author$project$Db$Extra$get,
-							model.answers,
-							function (c) {
-								return c.answer;
-							},
-							frame)))));
-	});
-var author$project$Db$Extra$selectFromRow = F3(
-	function (db, accessor, _n0) {
-		var id = _n0.a;
-		var row = _n0.b;
-		return A2(
-			Chadtech$elm_relational_database$Db$filter,
-			function (_n1) {
-				var value = _n1.b;
-				return _Utils_eq(
-					accessor(value),
-					id);
-			},
-			db);
-	});
-var elm$core$Set$Set_elm_builtin = function (a) {
-	return {$: 'Set_elm_builtin', a: a};
-};
-var elm$core$Set$empty = elm$core$Set$Set_elm_builtin(elm$core$Dict$empty);
-var elm$core$Set$insert = F2(
-	function (key, _n0) {
-		var dict = _n0.a;
-		return elm$core$Set$Set_elm_builtin(
-			A3(elm$core$Dict$insert, key, _Utils_Tuple0, dict));
-	});
-var elm$core$Dict$member = F2(
-	function (key, dict) {
-		var _n0 = A2(elm$core$Dict$get, key, dict);
-		if (_n0.$ === 'Just') {
-			return true;
-		} else {
-			return false;
-		}
-	});
-var elm$core$Set$member = F2(
-	function (key, _n0) {
-		var dict = _n0.a;
-		return A2(elm$core$Dict$member, key, dict);
-	});
-var elm_community$list_extra$List$Extra$uniqueHelp = F4(
-	function (f, existing, remaining, accumulator) {
-		uniqueHelp:
-		while (true) {
-			if (!remaining.b) {
-				return elm$core$List$reverse(accumulator);
-			} else {
-				var first = remaining.a;
-				var rest = remaining.b;
-				var computedFirst = f(first);
-				if (A2(elm$core$Set$member, computedFirst, existing)) {
-					var $temp$f = f,
-						$temp$existing = existing,
-						$temp$remaining = rest,
-						$temp$accumulator = accumulator;
-					f = $temp$f;
-					existing = $temp$existing;
-					remaining = $temp$remaining;
-					accumulator = $temp$accumulator;
-					continue uniqueHelp;
-				} else {
-					var $temp$f = f,
-						$temp$existing = A2(elm$core$Set$insert, computedFirst, existing),
-						$temp$remaining = rest,
-						$temp$accumulator = A2(elm$core$List$cons, first, accumulator);
-					f = $temp$f;
-					existing = $temp$existing;
-					remaining = $temp$remaining;
-					accumulator = $temp$accumulator;
-					continue uniqueHelp;
-				}
+						mb);
+				case 'CodingFrame':
+					var mb = object.a;
+					return A2(
+						elm$core$Maybe$map,
+						function (_n3) {
+							var id = _n3.a;
+							return author$project$Data$TimedCodingFrame(id);
+						},
+						mb);
+				default:
+					return elm$core$Maybe$Nothing;
 			}
-		}
-	});
-var elm_community$list_extra$List$Extra$unique = function (list) {
-	return A4(elm_community$list_extra$List$Extra$uniqueHelp, elm$core$Basics$identity, elm$core$Set$empty, list, _List_Nil);
-};
-var author$project$Data$getCodingQuestionsViaCodingAnswer = F2(
-	function (model, coding_frame) {
-		var all = A3(
-			author$project$Db$Extra$selectFromRow,
-			model.coding_answers,
-			function (c) {
-				return c.coding_frame;
-			},
-			coding_frame);
-		return elm$core$Result$Ok(
-			Chadtech$elm_relational_database$Db$fromList(
-				Chadtech$elm_relational_database$Db$filterMissing(
-					A2(
-						Chadtech$elm_relational_database$Db$getMany,
-						model.coding_questions,
-						A2(
-							elm$core$List$map,
-							Chadtech$elm_relational_database$Id$fromString,
-							elm_community$list_extra$List$Extra$unique(
-								A2(
-									elm$core$List$map,
-									Chadtech$elm_relational_database$Id$toString,
-									A2(
-										elm$core$List$map,
-										function (_n0) {
-											var id = _n0.a;
-											var answer = _n0.b;
-											return answer.coding_question;
-										},
-										Chadtech$elm_relational_database$Db$toList(all)))))))));
-	});
-var elm$core$Result$map2 = F3(
-	function (func, ra, rb) {
-		if (ra.$ === 'Err') {
-			var x = ra.a;
-			return elm$core$Result$Err(x);
+		}();
+		if (mb_timed_entity.$ === 'Nothing') {
+			return elm$core$Platform$Cmd$none;
 		} else {
-			var a = ra.a;
-			if (rb.$ === 'Err') {
-				var x = rb.a;
-				return elm$core$Result$Err(x);
-			} else {
-				var b = rb.a;
-				return elm$core$Result$Ok(
-					A2(func, a, b));
-			}
-		}
-	});
-var author$project$Data$getMissingQuestions = F2(
-	function (model, frame) {
-		var present = A2(author$project$Data$getCodingQuestionsViaCodingAnswer, model, frame);
-		var all = A2(author$project$Data$getCodingQuestionsViaAnswer, model, frame);
-		return A3(elm$core$Result$map2, author$project$Db$Extra$difference, all, present);
-	});
-var elm$core$List$tail = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return elm$core$Maybe$Just(xs);
-	} else {
-		return elm$core$Maybe$Nothing;
-	}
-};
-var elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
-var author$project$Data$updateFolder = F3(
-	function (model, seed, updaters) {
-		var _n0 = elm$core$List$head(updaters);
-		if (_n0.$ === 'Nothing') {
-			return _Utils_Tuple3(model, elm$core$Platform$Cmd$none, elm$core$Maybe$Nothing);
-		} else {
-			var update_f = _n0.a;
-			var _n1 = A2(update_f, model, seed);
-			var newmodel = _n1.a;
-			var neweffect = _n1.b;
-			var newseed = _n1.c;
-			var _n2 = elm$core$List$tail(updaters);
-			if (_n2.$ === 'Nothing') {
-				return _Utils_Tuple3(newmodel, neweffect, newseed);
-			} else {
-				var tail = _n2.a;
-				var _n3 = A3(
-					author$project$Data$updateFolder,
-					newmodel,
-					A2(
-						elm$core$Maybe$withDefault,
-						elm$random$Random$initialSeed(0),
-						newseed),
-					tail);
-				var restmodel = _n3.a;
-				var resteffect = _n3.b;
-				var restseed = _n3.c;
-				return _Utils_Tuple3(
-					restmodel,
-					elm$core$Platform$Cmd$batch(
-						_List_fromArray(
-							[neweffect, resteffect])),
-					restseed);
-			}
-		}
-	});
-var author$project$Data$generateCodingAnswers = F3(
-	function (model, seed, coding_frame) {
-		var missing_questions = A2(author$project$Data$getMissingQuestions, model, coding_frame);
-		if (missing_questions.$ === 'Ok') {
-			var missing_db = missing_questions.a;
-			return A3(
-				author$project$Data$updateFolder,
-				model,
-				seed,
-				A2(
-					elm$core$List$map,
-					function (y) {
-						return function (x) {
-							return function (s) {
-								return A4(author$project$Data$generateCodingAnswer, x, s, coding_frame, y);
-							};
-						};
-					},
-					Chadtech$elm_relational_database$Db$toList(missing_db)));
-		} else {
-			var error = missing_questions.a;
-			return _Utils_Tuple3(model, elm$core$Platform$Cmd$none, elm$core$Maybe$Nothing);
-		}
-	});
-var author$project$Data$hasValidFrameQuestionPath = F2(
-	function (model, frame) {
-		var _n0 = A2(author$project$Data$getCodingQuestionsViaAnswer, model, frame);
-		if (_n0.$ === 'Ok') {
-			var value = _n0.a;
-			return true;
-		} else {
-			var error = _n0.a;
-			return false;
-		}
-	});
-var author$project$Data$getCurrentFrames = F2(
-	function (model, coding) {
-		return A2(
-			elm$core$List$filter,
-			author$project$Data$hasValidFrameQuestionPath(model),
-			Chadtech$elm_relational_database$Db$toList(
-				A3(
-					author$project$Db$Extra$selectFromRow,
-					model.coding_frames,
-					function (value) {
-						return value.coding;
-					},
-					coding)));
-	});
-var author$project$Data$getCurrentFrame = F2(
-	function (model, coding) {
-		return A2(
-			elm$core$Result$fromMaybe,
-			author$project$Data$NoResult,
-			A2(
-				elm_community$list_extra$List$Extra$maximumBy,
-				function (_n0) {
-					var id = _n0.a;
-					var m = _n0.b;
-					return m.timestamp.accessed;
+			var timed_entity = mb_timed_entity.a;
+			return A2(
+				elm$core$Task$perform,
+				function (x) {
+					return A2(
+						author$project$Data$SetTime,
+						timed_entity,
+						tmsg(x));
 				},
-				A2(author$project$Data$getCurrentFrames, model, coding)));
-	});
-var author$project$Data$updateGeneration = F3(
-	function (msg, seed, model) {
-		updateGeneration:
-		while (true) {
-			if (msg.$ === 'GenerateCodingFrame') {
-				var gentype = msg.a;
-				var coding = msg.b;
-				var questionary = msg.c;
-				var current_frame = A2(author$project$Data$getCurrentFrame, model, coding);
-				var _n1 = _Utils_Tuple2(gentype, current_frame);
-				if ((_n1.a.$ === 'Any') && (_n1.b.$ === 'Ok')) {
-					var _n2 = _n1.a;
-					var frame = _n1.b.a;
-					var $temp$msg = author$project$Data$GenerateCodingAnswers(frame),
-						$temp$seed = seed,
-						$temp$model = model;
-					msg = $temp$msg;
-					seed = $temp$seed;
-					model = $temp$model;
-					continue updateGeneration;
-				} else {
-					return _Utils_Tuple3(model, elm$core$Platform$Cmd$none, elm$core$Maybe$Nothing);
-				}
-			} else {
-				var coding_frame = msg.a;
-				return A3(author$project$Data$generateCodingAnswers, model, seed, coding_frame);
-			}
+				elm$time$Time$now);
 		}
 	});
-var elm$time$Time$posixToMillis = function (_n0) {
-	var millis = _n0.a;
-	return millis;
+var author$project$Db$Extra$chainable_get = F2(
+	function (db, id) {
+		var mb = A2(Chadtech$elm_relational_database$Db$get, db, id);
+		if (mb.$ === 'Nothing') {
+			return elm$core$Maybe$Nothing;
+		} else {
+			var v = mb.a;
+			return elm$core$Maybe$Just(
+				_Utils_Tuple2(id, v));
+		}
+	});
+var author$project$Entities$Timestamp$All = function (a) {
+	return {$: 'All', a: a};
 };
 var author$project$Entities$Timestamp$update = F2(
 	function (msg, model) {
@@ -8123,20 +8230,29 @@ var author$project$Data$update = F2(
 				var emsg = msg.a;
 				return A2(author$project$Data$updateEntity, emsg, model);
 			case 'Generate':
-				var msg_ = msg.a;
-				var seed = msg.b;
-				return A5(
-					_Debug_todo(
-						'Data',
-						{
-							start: {line: 125, column: 13},
-							end: {line: 125, column: 23}
-						}),
-					'Look at me. I\'m the generator now',
-					author$project$Data$updateGeneration,
-					msg_,
-					seed,
-					model);
+				var object = msg.a;
+				var coding = msg.b;
+				var coding_frame = msg.c;
+				var _n1 = _Utils_Tuple2(object, coding_frame);
+				_n1$2:
+				while (true) {
+					switch (_n1.a.$) {
+						case 'CodingFrame':
+							return A2(author$project$Data$generateCodingFrame, model, coding);
+						case 'CodingAnswer':
+							if (_n1.b.$ === 'Just') {
+								var frame = _n1.b.a;
+								return _Utils_Tuple2(
+									model,
+									A3(author$project$Data$generateMissingCodingAnswers, model, coding, frame));
+							} else {
+								break _n1$2;
+							}
+						default:
+							break _n1$2;
+					}
+				}
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 			case 'SetTime':
 				var entity = msg.a;
 				var tmsg = msg.b;
@@ -8161,13 +8277,25 @@ var author$project$Data$update = F2(
 						elm$core$Maybe$map(
 							author$project$Entities$Timestamp$updateTimestamp(tmsg)),
 						model.coding_frames);
+					var mb_old_coding_frame = A2(Chadtech$elm_relational_database$Db$get, model.coding_frames, id);
+					var coding = A2(
+						elm$core$Maybe$andThen,
+						function (x) {
+							return A2(author$project$Db$Extra$chainable_get, model.codings, x.coding);
+						},
+						mb_old_coding_frame);
+					var missing_cmd = A3(
+						elm$core$Maybe$map2,
+						author$project$Data$generateMissingCodingAnswers(model),
+						coding,
+						A2(author$project$Db$Extra$chainable_get, model.coding_frames, id));
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
 							{coding_frames: new_coding_frames}),
-						elm$core$Platform$Cmd$none);
+						A2(elm$core$Maybe$withDefault, elm$core$Platform$Cmd$none, missing_cmd));
 				}
-			default:
+			case 'Move':
 				var direction = msg.a;
 				var object = msg.b;
 				var coding = msg.c;
@@ -8179,6 +8307,53 @@ var author$project$Data$update = F2(
 					default:
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				}
+			default:
+				var object = msg.a;
+				_n4$2:
+				while (true) {
+					switch (object.$) {
+						case 'CodingFrame':
+							if (object.a.$ === 'Just') {
+								var coding_frame = object.a.a;
+								return A2(
+									elm$core$Debug$log,
+									'new CodingFrame',
+									_Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												coding_frames: A2(Chadtech$elm_relational_database$Db$insert, coding_frame, model.coding_frames)
+											}),
+										A2(author$project$Data$updateTimestamp, object, author$project$Entities$Timestamp$All)));
+							} else {
+								break _n4$2;
+							}
+						case 'CodingAnswer':
+							if (object.a.$ === 'Just') {
+								var _n5 = object.a.a;
+								var id = _n5.a;
+								var ca = _n5.b;
+								return A2(
+									elm$core$Debug$log,
+									'new CodingAnswer',
+									_Utils_Tuple2(
+										_Utils_update(
+											model,
+											{
+												coding_answers: A2(
+													Chadtech$elm_relational_database$Db$insert,
+													_Utils_Tuple2(id, ca),
+													model.coding_answers)
+											}),
+										A2(author$project$Data$updateTimestamp, object, author$project$Entities$Timestamp$All)));
+							} else {
+								break _n4$2;
+							}
+						default:
+							break _n4$2;
+					}
+				}
+				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
 	});
 var author$project$Main$GotDataMsg = function (a) {
@@ -10092,9 +10267,6 @@ var author$project$Internal$TopAppBar$Implementation$checkForUpdate = function (
 		},
 		model.topAppBarHeight);
 };
-var elm$core$Basics$abs = function (n) {
-	return (n < 0) ? (-n) : n;
-};
 var author$project$Internal$TopAppBar$Implementation$moveTopAppBar = function (model) {
 	return A2(
 		elm$core$Maybe$andThen,
@@ -10376,13 +10548,13 @@ var author$project$Page$Code$ChangedAnswer = F2(
 	function (a, b) {
 		return {$: 'ChangedAnswer', a: a, b: b};
 	});
-var author$project$Page$Code$Generate = F3(
-	function (a, b, c) {
-		return {$: 'Generate', a: a, b: b, c: c};
-	});
 var author$project$Page$Code$Mdc = function (a) {
 	return {$: 'Mdc', a: a};
 };
+var author$project$Page$Code$Move = F3(
+	function (a, b, c) {
+		return {$: 'Move', a: a, b: b, c: c};
+	});
 var author$project$Page$Code$update = F3(
 	function (lift, msg, model) {
 		switch (msg.$) {
@@ -10412,7 +10584,7 @@ var author$project$Page$Code$update = F3(
 					model,
 					elm$core$Platform$Cmd$none,
 					elm$core$Maybe$Just(
-						A3(author$project$Page$Code$Generate, direction, object, coding)));
+						A3(author$project$Page$Code$Move, direction, object, coding)));
 		}
 	});
 var author$project$Page$Data$Mdc = function (a) {
@@ -10829,12 +11001,13 @@ var author$project$Main$update = F2(
 						var pmsg = mbpmsg.a;
 						switch (pmsg.$) {
 							case 'GenerateFrame':
-								var frame = pmsg.a;
+								var coding = pmsg.a;
 								var $temp$msg = author$project$Main$GotDataMsg(
-									A2(
+									A3(
 										author$project$Data$Generate,
-										A3(author$project$Data$GenerateCodingFrame, author$project$Data$Any, frame, elm$core$Maybe$Nothing),
-										model.seed)),
+										author$project$Data$CodingFrame(elm$core$Maybe$Nothing),
+										coding,
+										elm$core$Maybe$Nothing)),
 									$temp$model = model;
 								msg = $temp$msg;
 								model = $temp$model;
@@ -10938,29 +11111,6 @@ var author$project$Main$update = F2(
 			}
 		}
 	});
-var author$project$Data$currentCodingFrameIndex = F2(
-	function (model, coding) {
-		var coding_frames = A2(
-			author$project$Data$Navigation$coding2coding_frame,
-			model,
-			Chadtech$elm_relational_database$Db$fromList(
-				_List_fromArray(
-					[coding])));
-		var current_frame = author$project$Data$recentAccess(coding_frames);
-		var sorted_coding_frames = A2(
-			elm$core$List$sortBy,
-			function (_n1) {
-				var m = _n1.b;
-				return m.timestamp.created;
-			},
-			Chadtech$elm_relational_database$Db$toList(coding_frames));
-		if (current_frame.$ === 'Nothing') {
-			return elm$core$Maybe$Just(0);
-		} else {
-			var value = current_frame.a;
-			return A2(elm_community$list_extra$List$Extra$elemIndex, value, sorted_coding_frames);
-		}
-	});
 var author$project$Data$Navigation$question2questionary = F2(
 	function (model, question) {
 		return A3(
@@ -10991,7 +11141,7 @@ var author$project$Data$Navigation$questionary2question = F2(
 			},
 			questionary);
 	});
-var author$project$Data$Navigation$questionary2answers = F2(
+var author$project$Data$Navigation$questionary2answer = F2(
 	function (model, questionary) {
 		return A2(
 			author$project$Data$Navigation$question2answer,
@@ -11003,7 +11153,7 @@ var author$project$Data$maxCodingFrameIndex = F2(
 		return elm$core$List$length(
 			Chadtech$elm_relational_database$Db$toList(
 				A2(
-					author$project$Data$Navigation$questionary2answers,
+					author$project$Data$Navigation$questionary2answer,
 					model,
 					A2(
 						author$project$Data$Navigation$coding2questionary,
@@ -11011,6 +11161,20 @@ var author$project$Data$maxCodingFrameIndex = F2(
 						Chadtech$elm_relational_database$Db$fromList(
 							_List_fromArray(
 								[coding]))))));
+	});
+var author$project$Db$Extra$selectFromRow = F3(
+	function (db, accessor, _n0) {
+		var id = _n0.a;
+		var row = _n0.b;
+		return A2(
+			Chadtech$elm_relational_database$Db$filter,
+			function (_n1) {
+				var value = _n1.b;
+				return _Utils_eq(
+					accessor(value),
+					id);
+			},
+			db);
 	});
 var author$project$Data$getCodingAnswers = F2(
 	function (answers, frame) {
@@ -11022,6 +11186,21 @@ var author$project$Data$getCodingAnswers = F2(
 					return c.coding_frame;
 				},
 				frame));
+	});
+var author$project$Db$Extra$Absent = {$: 'Absent'};
+var author$project$Db$Extra$get = F3(
+	function (b, accessor, _n0) {
+		var ida = _n0.a;
+		var valuea = _n0.b;
+		var idb = accessor(valuea);
+		var _n1 = A2(Chadtech$elm_relational_database$Db$get, b, idb);
+		if (_n1.$ === 'Just') {
+			var valueb = _n1.a;
+			return elm$core$Result$Ok(
+				_Utils_Tuple2(idb, valueb));
+		} else {
+			return elm$core$Result$Err(author$project$Db$Extra$Absent);
+		}
 	});
 var author$project$Internal$Options$Class = function (a) {
 	return {$: 'Class', a: a};
@@ -12253,6 +12432,67 @@ var author$project$Page$Code$viewFormElements = F3(
 				},
 				list));
 	});
+var elm$core$Set$Set_elm_builtin = function (a) {
+	return {$: 'Set_elm_builtin', a: a};
+};
+var elm$core$Set$empty = elm$core$Set$Set_elm_builtin(elm$core$Dict$empty);
+var elm$core$Set$insert = F2(
+	function (key, _n0) {
+		var dict = _n0.a;
+		return elm$core$Set$Set_elm_builtin(
+			A3(elm$core$Dict$insert, key, _Utils_Tuple0, dict));
+	});
+var elm$core$Dict$member = F2(
+	function (key, dict) {
+		var _n0 = A2(elm$core$Dict$get, key, dict);
+		if (_n0.$ === 'Just') {
+			return true;
+		} else {
+			return false;
+		}
+	});
+var elm$core$Set$member = F2(
+	function (key, _n0) {
+		var dict = _n0.a;
+		return A2(elm$core$Dict$member, key, dict);
+	});
+var elm_community$list_extra$List$Extra$uniqueHelp = F4(
+	function (f, existing, remaining, accumulator) {
+		uniqueHelp:
+		while (true) {
+			if (!remaining.b) {
+				return elm$core$List$reverse(accumulator);
+			} else {
+				var first = remaining.a;
+				var rest = remaining.b;
+				var computedFirst = f(first);
+				if (A2(elm$core$Set$member, computedFirst, existing)) {
+					var $temp$f = f,
+						$temp$existing = existing,
+						$temp$remaining = rest,
+						$temp$accumulator = accumulator;
+					f = $temp$f;
+					existing = $temp$existing;
+					remaining = $temp$remaining;
+					accumulator = $temp$accumulator;
+					continue uniqueHelp;
+				} else {
+					var $temp$f = f,
+						$temp$existing = A2(elm$core$Set$insert, computedFirst, existing),
+						$temp$remaining = rest,
+						$temp$accumulator = A2(elm$core$List$cons, first, accumulator);
+					f = $temp$f;
+					existing = $temp$existing;
+					remaining = $temp$remaining;
+					accumulator = $temp$accumulator;
+					continue uniqueHelp;
+				}
+			}
+		}
+	});
+var elm_community$list_extra$List$Extra$unique = function (list) {
+	return A4(elm_community$list_extra$List$Extra$uniqueHelp, elm$core$Basics$identity, elm$core$Set$empty, list, _List_Nil);
+};
 var elm_community$maybe_extra$Maybe$Extra$foldrValues = F2(
 	function (item, list) {
 		if (item.$ === 'Nothing') {
@@ -12341,8 +12581,42 @@ var author$project$Page$Code$viewCodingForm = F4(
 				},
 				types));
 	});
-var author$project$Data$Answer = {$: 'Answer'};
+var author$project$Data$Answer = function (a) {
+	return {$: 'Answer', a: a};
+};
 var author$project$Data$Next = {$: 'Next'};
+var author$project$Data$Access$max_coding_frame_index = F2(
+	function (model, coding) {
+		return function (x) {
+			return x - 1;
+		}(
+			elm$core$List$length(
+				Chadtech$elm_relational_database$Db$toList(
+					A2(
+						author$project$Data$Navigation$question2answer,
+						model,
+						A2(
+							author$project$Data$Navigation$questionary2question,
+							model,
+							A2(
+								author$project$Data$Navigation$coding2questionary,
+								model,
+								Chadtech$elm_relational_database$Db$fromList(
+									_List_fromArray(
+										[coding]))))))));
+	});
+var author$project$Data$Access$has_next_coding_frame = F2(
+	function (model, coding) {
+		return A2(
+			elm$core$Debug$log,
+			'CodingFrame',
+			_Utils_cmp(
+				A2(
+					elm$core$Maybe$withDefault,
+					0,
+					A2(author$project$Data$Access$current_codingFrame_index, model, coding)),
+				A2(author$project$Data$Access$max_coding_frame_index, model, coding)) < 0);
+	});
 var author$project$Internal$Button$Implementation$onClick = function (handler) {
 	return author$project$Internal$Options$option(
 		function (options) {
@@ -12873,12 +13147,15 @@ var author$project$Page$Code$Click = F3(
 	function (a, b, c) {
 		return {$: 'Click', a: a, b: b, c: c};
 	});
-var author$project$Page$Code$viewNextAnswer = F5(
-	function (lift, mdc, _n0, cur, max) {
+var author$project$Page$Code$viewNextAnswer = F6(
+	function (lift, mdc, data, _n0, cur, max) {
 		var id = _n0.a;
 		var coding = _n0.b;
-		var _n1 = _Utils_eq(cur, max);
-		if (_n1) {
+		var _n1 = A2(
+			author$project$Data$Access$has_next_coding_frame,
+			data,
+			_Utils_Tuple2(id, coding));
+		if (!_n1) {
 			return A2(elm$html$Html$div, _List_Nil, _List_Nil);
 		} else {
 			return A5(
@@ -12897,7 +13174,10 @@ var author$project$Page$Code$viewNextAnswer = F5(
 						A2(
 							elm$core$Basics$composeL,
 							lift,
-							A2(author$project$Page$Code$Click, author$project$Data$Next, author$project$Data$Answer))(
+							A2(
+								author$project$Page$Code$Click,
+								author$project$Data$Next,
+								author$project$Data$Answer(elm$core$Maybe$Nothing)))(
 							_Utils_Tuple2(id, coding)))
 					]),
 				_List_fromArray(
@@ -12910,7 +13190,9 @@ var author$project$Page$Code$viewNextAnswer = F5(
 					]));
 		}
 	});
-var author$project$Data$Question = {$: 'Question'};
+var author$project$Data$Question = function (a) {
+	return {$: 'Question', a: a};
+};
 var author$project$Internal$Icon$Implementation$size24 = A2(author$project$Internal$Options$css, 'font-size', '24px');
 var author$project$Material$Icon$size24 = author$project$Internal$Icon$Implementation$size24;
 var author$project$Page$Code$viewNextQuestion = F5(
@@ -12935,7 +13217,10 @@ var author$project$Page$Code$viewNextQuestion = F5(
 						A2(
 							elm$core$Basics$composeL,
 							lift,
-							A2(author$project$Page$Code$Click, author$project$Data$Next, author$project$Data$Question))(
+							A2(
+								author$project$Page$Code$Click,
+								author$project$Data$Next,
+								author$project$Data$Question(elm$core$Maybe$Nothing)))(
 							_Utils_Tuple2(id, coding)))
 					]),
 				_List_fromArray(
@@ -12949,11 +13234,28 @@ var author$project$Page$Code$viewNextQuestion = F5(
 		}
 	});
 var author$project$Data$Previous = {$: 'Previous'};
-var author$project$Page$Code$viewPreviousAnswer = F5(
-	function (lift, mdc, _n0, cur, max) {
+var author$project$Data$Access$has_previous_coding_frame = F2(
+	function (model, coding) {
+		var _n0 = A2(author$project$Data$Access$current_codingFrame_index, model, coding);
+		if (_n0.$ === 'Nothing') {
+			return false;
+		} else {
+			if (!_n0.a) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+	});
+var author$project$Page$Code$viewPreviousAnswer = F6(
+	function (lift, mdc, data, _n0, cur, max) {
 		var id = _n0.a;
 		var coding = _n0.b;
-		if (!cur) {
+		var _n1 = A2(
+			author$project$Data$Access$has_previous_coding_frame,
+			data,
+			_Utils_Tuple2(id, coding));
+		if (!_n1) {
 			return A2(elm$html$Html$div, _List_Nil, _List_Nil);
 		} else {
 			return A5(
@@ -12972,7 +13274,10 @@ var author$project$Page$Code$viewPreviousAnswer = F5(
 						A2(
 							elm$core$Basics$composeL,
 							lift,
-							A2(author$project$Page$Code$Click, author$project$Data$Previous, author$project$Data$Answer))(
+							A2(
+								author$project$Page$Code$Click,
+								author$project$Data$Previous,
+								author$project$Data$Answer(elm$core$Maybe$Nothing)))(
 							_Utils_Tuple2(id, coding)))
 					]),
 				_List_fromArray(
@@ -13007,7 +13312,10 @@ var author$project$Page$Code$viewPreviousQuestion = F5(
 						A2(
 							elm$core$Basics$composeL,
 							lift,
-							A2(author$project$Page$Code$Click, author$project$Data$Previous, author$project$Data$Question))(
+							A2(
+								author$project$Page$Code$Click,
+								author$project$Data$Previous,
+								author$project$Data$Question(elm$core$Maybe$Nothing)))(
 							_Utils_Tuple2(id, coding)))
 					]),
 				_List_fromArray(
@@ -13055,6 +13363,16 @@ var author$project$Page$Code$viewQuestion = function (question) {
 					]))
 			]));
 };
+var elm$core$Result$andThen = F2(
+	function (callback, result) {
+		if (result.$ === 'Ok') {
+			var value = result.a;
+			return callback(value);
+		} else {
+			var msg = result.a;
+			return elm$core$Result$Err(msg);
+		}
+	});
 var author$project$Page$Code$viewCoding = F5(
 	function (lift, model, data, current, coding) {
 		var answer = A3(
@@ -13121,7 +13439,7 @@ var author$project$Page$Code$viewCoding = F5(
 								[author$project$Material$LayoutGrid$span1Tablet, author$project$Material$LayoutGrid$span1Desktop, author$project$Material$LayoutGrid$alignMiddle]),
 							_List_fromArray(
 								[
-									A5(author$project$Page$Code$viewPreviousAnswer, lift, model.mdc, coding, 4, 10)
+									A6(author$project$Page$Code$viewPreviousAnswer, lift, model.mdc, data, coding, 4, 10)
 								])),
 							A2(
 							author$project$Material$LayoutGrid$inner,
@@ -13154,8 +13472,201 @@ var author$project$Page$Code$viewCoding = F5(
 								[author$project$Material$LayoutGrid$span1Tablet, author$project$Material$LayoutGrid$span1Desktop, author$project$Material$LayoutGrid$alignMiddle]),
 							_List_fromArray(
 								[
-									A5(author$project$Page$Code$viewNextAnswer, lift, model.mdc, coding, 4, 10)
+									A6(author$project$Page$Code$viewNextAnswer, lift, model.mdc, data, coding, 4, 10)
 								]))
+						]))
+				]));
+	});
+var author$project$Data$Access$current_codingQuestions = F2(
+	function (model, coding) {
+		var _n0 = A2(author$project$Data$Access$current_codingFrame, model, coding);
+		if (_n0.$ === 'Nothing') {
+			return _List_Nil;
+		} else {
+			var frame = _n0.a;
+			return Chadtech$elm_relational_database$Db$toList(
+				A2(
+					author$project$Data$Navigation$coding_questionary2coding_question,
+					model,
+					A2(
+						author$project$Data$Navigation$question2coding_questionary,
+						model,
+						A2(
+							author$project$Data$Navigation$answer2question,
+							model,
+							A2(
+								author$project$Data$Navigation$coding_frame2answer,
+								model,
+								Chadtech$elm_relational_database$Db$fromList(
+									_List_fromArray(
+										[frame])))))));
+		}
+	});
+var author$project$Data$Access$filter_codingAnswer_by_codingFrame = F2(
+	function (_n0, answers) {
+		var cfid = _n0.a;
+		var frame = _n0.b;
+		return A2(
+			Chadtech$elm_relational_database$Db$filter,
+			function (_n1) {
+				var aid = _n1.a;
+				var amodel = _n1.b;
+				return _Utils_eq(amodel.coding_frame, cfid);
+			},
+			answers);
+	});
+var author$project$Data$Access$filter_codingAnswer_by_codingQuestion = F2(
+	function (_n0, answers) {
+		var cqid = _n0.a;
+		var question = _n0.b;
+		return A2(
+			Chadtech$elm_relational_database$Db$filter,
+			function (_n1) {
+				var aid = _n1.a;
+				var amodel = _n1.b;
+				return _Utils_eq(amodel.coding_question, cqid);
+			},
+			answers);
+	});
+var author$project$Data$Access$current_codingAnswers = F2(
+	function (model, coding) {
+		var current_coding_frame = A2(author$project$Data$Access$current_codingFrame, model, coding);
+		var coding_questions = A2(author$project$Data$Access$current_codingQuestions, model, coding);
+		if (current_coding_frame.$ === 'Just') {
+			var coding_frame = current_coding_frame.a;
+			var filtered_answers = A2(author$project$Data$Access$filter_codingAnswer_by_codingFrame, coding_frame, model.coding_answers);
+			return A2(
+				elm$core$List$filterMap,
+				elm_community$list_extra$List$Extra$maximumBy(
+					function (_n1) {
+						var id = _n1.a;
+						var coding_answer = _n1.b;
+						return coding_answer.timestamp.accessed;
+					}),
+				A2(
+					elm$core$List$map,
+					Chadtech$elm_relational_database$Db$toList,
+					A2(
+						elm$core$List$map,
+						function (x) {
+							return A2(author$project$Data$Access$filter_codingAnswer_by_codingQuestion, x, filtered_answers);
+						},
+						coding_questions)));
+		} else {
+			return _List_Nil;
+		}
+	});
+var author$project$Entities$Coding$Frame$empty = {
+	answer: Chadtech$elm_relational_database$Id$fromString('empty'),
+	coding: Chadtech$elm_relational_database$Id$fromString('empty'),
+	timestamp: author$project$Entities$Timestamp$empty
+};
+var elm$html$Html$p = _VirtualDom_node('p');
+var author$project$Page$Code$viewDebug = F2(
+	function (model, _n0) {
+		var cid = _n0.a;
+		var cmodel = _n0.b;
+		var coding = _Utils_Tuple2(cid, cmodel);
+		var coding_answers = A2(
+			elm$core$String$join,
+			', ',
+			A2(
+				elm$core$List$map,
+				function (_n4) {
+					var id = _n4.a;
+					return Chadtech$elm_relational_database$Id$toString(id);
+				},
+				A2(author$project$Data$Access$current_codingAnswers, model, coding)));
+		var coding_frames = A2(
+			elm$core$String$join,
+			', ',
+			A2(
+				elm$core$List$map,
+				function (_n3) {
+					var id = _n3.a;
+					return Chadtech$elm_relational_database$Id$toString(id);
+				},
+				A2(author$project$Data$Access$sorted_codingFrames, model, coding)));
+		var coding_questions = A2(
+			elm$core$String$join,
+			', ',
+			A2(
+				elm$core$List$map,
+				function (_n2) {
+					var id = _n2.a;
+					return Chadtech$elm_relational_database$Id$toString(id);
+				},
+				A2(author$project$Data$Access$current_codingQuestions, model, coding)));
+		var index = A2(
+			elm$core$Maybe$withDefault,
+			0,
+			A2(author$project$Data$Access$current_codingFrame_index, model, coding));
+		var _n1 = A2(
+			elm$core$Maybe$withDefault,
+			_Utils_Tuple2(
+				Chadtech$elm_relational_database$Id$fromString('Nothing'),
+				author$project$Entities$Coding$Frame$empty),
+			A2(author$project$Data$Access$current_codingFrame, model, coding));
+		var cfid = _n1.a;
+		var cfmodel = _n1.b;
+		return A2(
+			elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text(
+							'Current index: ' + elm$core$String$fromInt(index))
+						])),
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text(
+							'Current coding id: ' + Chadtech$elm_relational_database$Id$toString(cid))
+						])),
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text(
+							'Current coding frame: ' + Chadtech$elm_relational_database$Id$toString(cfid))
+						])),
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('All relevant coding frames :' + coding_frames)
+						])),
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text(
+							'Max CodingFrame index: ' + elm$core$String$fromInt(
+								A2(author$project$Data$Access$max_coding_frame_index, model, coding)))
+						])),
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('Current coding answers: ' + coding_answers)
+						])),
+					A2(
+					elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							elm$html$Html$text('Current coding questions: ' + coding_questions)
 						]))
 				]));
 	});
@@ -13166,7 +13677,10 @@ var author$project$Page$Code$viewBody = F5(
 			return A2(
 				elm$core$List$cons,
 				A5(author$project$Page$Code$viewCoding, lift, mdc, data, current, coding),
-				_List_Nil);
+				_List_fromArray(
+					[
+						A2(author$project$Page$Code$viewDebug, data, coding)
+					]));
 		} else {
 			return _List_fromArray(
 				[
@@ -13183,23 +13697,7 @@ var author$project$Page$Internal$Progress = function (a) {
 };
 var author$project$Page$Code$view = F4(
 	function (lift, model, data, coding) {
-		var all_coding_frames = A3(
-			author$project$Db$Extra$selectFrom,
-			data.coding_frames,
-			function (c) {
-				return c.coding;
-			},
-			Chadtech$elm_relational_database$Db$fromList(
-				_List_fromArray(
-					[coding])));
-		var mb_current = A2(
-			elm_community$list_extra$List$Extra$maximumBy,
-			function (_n0) {
-				var id = _n0.a;
-				var m = _n0.b;
-				return m.timestamp.accessed;
-			},
-			Chadtech$elm_relational_database$Db$toList(all_coding_frames));
+		var mb_current = A2(author$project$Data$Access$current_codingFrame, data, coding);
 		return {
 			body: A5(author$project$Page$Code$viewBody, lift, model, data, mb_current, coding),
 			navigation: A2(
@@ -13210,7 +13708,7 @@ var author$project$Page$Code$view = F4(
 						x,
 						A2(author$project$Data$maxCodingFrameIndex, data, coding));
 				},
-				A2(author$project$Data$currentCodingFrameIndex, data, coding)),
+				A2(author$project$Data$Access$current_codingFrame_index, data, coding)),
 			progress: elm$core$Maybe$Just(
 				author$project$Page$Internal$Progress(0.78)),
 			title: 'Coding'
@@ -13248,6 +13746,17 @@ var author$project$Db$Extra$selectBy = F3(
 			return elm$core$Result$Err(author$project$Db$Extra$NotFound);
 		} else {
 			return elm$core$Result$Ok(result);
+		}
+	});
+var elm$core$Result$map = F2(
+	function (func, ra) {
+		if (ra.$ === 'Ok') {
+			var a = ra.a;
+			return elm$core$Result$Ok(
+				func(a));
+		} else {
+			var e = ra.a;
+			return elm$core$Result$Err(e);
 		}
 	});
 var author$project$Data$selectAllAnswers = F2(
@@ -13386,6 +13895,23 @@ var author$project$Data$selectFramesFromQuestionaryName = F2(
 								function (c) {
 									return _Utils_eq(c, name);
 								}))))));
+	});
+var elm$core$Result$map2 = F3(
+	function (func, ra, rb) {
+		if (ra.$ === 'Err') {
+			var x = ra.a;
+			return elm$core$Result$Err(x);
+		} else {
+			var a = ra.a;
+			if (rb.$ === 'Err') {
+				var x = rb.a;
+				return elm$core$Result$Err(x);
+			} else {
+				var b = rb.a;
+				return elm$core$Result$Ok(
+					A2(func, a, b));
+			}
+		}
 	});
 var author$project$Data$selectCodingFrames = F3(
 	function (model, coder, questionary) {
@@ -15764,7 +16290,6 @@ var author$project$Page$Login$showResults = F4(
 			model,
 			A2(author$project$Page$Login$getFilteredList, db, name));
 	});
-var elm$html$Html$p = _VirtualDom_node('p');
 var author$project$Page$Login$viewSearch = F3(
 	function (lift, model, data) {
 		return {

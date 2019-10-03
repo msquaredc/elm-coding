@@ -2,6 +2,9 @@ module Page.Code exposing (Model, Msg(..), OutMsg(..), defaultModel, getMaxCodin
 
 import Data exposing (Direction(..))
 import Data.Internal as I
+import Data.Access as A
+import Data.Validation as Validate
+import Data.Navigation as Nav
 import Db exposing (Db, Row)
 
 import Db.Extra
@@ -38,7 +41,7 @@ type alias Model m =
 
 type OutMsg
     = ChangedAnswer (Id CodingAnswer.Model) String
-    | Generate Data.Direction Data.Object (Row Coding.Model)
+    | Move Data.Direction Data.Object (Row Coding.Model)
 
 
 defaultModel : Model m
@@ -71,24 +74,24 @@ update lift msg model =
         Change caid value ->
             ( model, Cmd.none, Just (ChangedAnswer caid value) )
         Click direction object coding ->
-            ( model, Cmd.none, Just (Generate direction object coding) )
+            ( model, Cmd.none, Just (Move direction object coding) )
 
 
 view : (Msg m -> m) -> Model m -> I.Model-> Row Coding.Model -> Document m
 view lift model data coding =
     let
-        all_coding_frames =
-            Db.Extra.selectFrom data.coding_frames (\c -> c.coding) (Db.fromList [ coding ])
+       {-  all_coding_frames =
+            Db.Extra.selectFrom data.coding_frames (\c -> c.coding) (Db.fromList [ coding ]) -}
 
-        mb_current =
-            Db.toList all_coding_frames
-                |> List.Extra.maximumBy (\( id, m ) -> m.timestamp.accessed)
+        mb_current = A.current_codingFrame data coding
+            {- Db.toList all_coding_frames
+                |> List.Extra.maximumBy (\( id, m ) -> m.timestamp.accessed) -}
     in
     { title = "Coding"
     , body =
         viewBody lift model data mb_current coding
     , progress = Just(Page.Internal.Progress 0.78)
-    , navigation = Maybe.map (\x -> Page.Internal.Paginate x (Data.maxCodingFrameIndex data coding)) (Data.currentCodingFrameIndex data coding)
+    , navigation = Maybe.map (\x -> Page.Internal.Paginate x (Data.maxCodingFrameIndex data coding)) (A.current_codingFrame_index data coding)
     }
 
 
@@ -96,7 +99,7 @@ viewBody : (Msg m -> m) -> Model m ->  I.Model-> Maybe ( Id CodingFrame.Model, C
 viewBody lift mdc data mb_current coding =
     case mb_current of
         Just current ->
-            viewCoding lift mdc data current coding :: []
+            viewCoding lift mdc data current coding :: [viewDebug data coding]
 
         Nothing ->
             [ text "An Error occured while loadeng your Coding Frame" ]
@@ -149,7 +152,7 @@ viewCoding lift model data current coding =
                         , LayoutGrid.span1Desktop
                         , LayoutGrid.alignMiddle
                         ]
-                        [ viewPreviousAnswer lift model.mdc coding 4 10]
+                        [ viewPreviousAnswer lift model.mdc data coding 4 10]
                     , LayoutGrid.inner [
                         LayoutGrid.span6Tablet
                         , LayoutGrid.span10Desktop
@@ -173,7 +176,7 @@ viewCoding lift model data current coding =
                         , LayoutGrid.span1Desktop
                         , LayoutGrid.alignMiddle
                         ]
-                        [ viewNextAnswer lift model.mdc coding 4 10]
+                        [ viewNextAnswer lift model.mdc data coding 4 10]
                 ]
         ]
 
@@ -305,18 +308,18 @@ viewPreviousQuestion lift mdc (id,coding) cur max =
                     , Button.ripple
 --                    , Button.outlined
                     , Options.css "border-radius" "24px"
-                    , Button.onClick ((lift << (Click Previous Data.Question))  (id,coding))
+                    , Button.onClick ((lift << (Click Previous (Data.Question Nothing)))  (id,coding))
                     ]
                     
                     [Icon.view [Icon.size24] "navigate_before"]
             )
 
-viewPreviousAnswer : (Msg m -> m) -> Material.Model m -> Row Coding.Model -> Int -> Int -> (Html m)
-viewPreviousAnswer lift mdc (id,coding) cur max =
-    case cur of
-        0 ->
+viewPreviousAnswer : (Msg m -> m) -> Material.Model m -> I.Model -> Row Coding.Model -> Int -> Int -> (Html m)
+viewPreviousAnswer lift mdc data (id,coding) cur max =
+    case A.has_previous_coding_frame data (id,coding) of
+        False ->
             div [][]
-        _ ->
+        True ->
             (Button.view 
                     (lift << Mdc) 
                     "navigation-side-prev-answer"
@@ -326,7 +329,7 @@ viewPreviousAnswer lift mdc (id,coding) cur max =
                     , Options.css "width" "64px"
                     , Button.outlined
                     , Options.css "border-radius" "32px"
-                    , Button.onClick ((lift << (Click Previous Data.Answer)) (id,coding))
+                    , Button.onClick ((lift << (Click Previous (Data.Answer Nothing))) (id,coding))
                     ]
                     
                     [Icon.view [Icon.size48] "navigate_before"]
@@ -347,18 +350,18 @@ viewNextQuestion lift mdc (id,coding) cur max =
 --                    , Button.ripple
 --                    , Button.outlined
                     , Options.css "border-radius" "24px"
-                    , Button.onClick ((lift << (Click Next Data.Question))  (id,coding))
+                    , Button.onClick ((lift << (Click Next (Data.Question Nothing)))  (id,coding))
                     ]
                     
                     [Icon.view [Icon.size24] "navigate_next"]
             )
 
-viewNextAnswer : (Msg m -> m) -> Material.Model m -> Row Coding.Model -> Int -> Int -> (Html m)
-viewNextAnswer lift mdc (id,coding) cur max =
-    case cur == max of
-        True ->
-            div [][]
+viewNextAnswer : (Msg m -> m) -> Material.Model m -> I.Model -> Row Coding.Model -> Int -> Int -> (Html m)
+viewNextAnswer lift mdc data (id,coding) cur max =
+    case A.has_next_coding_frame data (id,coding) of
         False ->
+            div [][]
+        True ->
             (Button.view 
                     (lift << Mdc) 
                     "navigation-side-next-answer"
@@ -368,8 +371,33 @@ viewNextAnswer lift mdc (id,coding) cur max =
                     , Options.css "width" "64px"
                     , Button.outlined
                     , Options.css "border-radius" "32px"
-                    , Button.onClick ((lift << (Click Next Data.Answer)) (id,coding))
+                    , Button.onClick ((lift << (Click Next (Data.Answer Nothing))) (id,coding))
                     ]
                     
                     [Icon.view [Icon.size48] "navigate_next"]
             )
+viewDebug : I.Model -> Row Coding.Model -> Html m
+viewDebug model (cid,cmodel) =
+    let
+        coding = (cid, cmodel)
+        index = Maybe.withDefault 0 (A.current_codingFrame_index model coding)
+        (cfid,cfmodel) = Maybe.withDefault (Id.fromString "Nothing", CodingFrame.empty) (A.current_codingFrame model coding)
+        coding_frames = A.sorted_codingFrames model coding
+                        |> List.map (\(id,_)-> Id.toString id)
+                        |> String.join ", "
+        coding_answers = A.current_codingAnswers model coding
+                        |> List.map (\(id,_)-> Id.toString id)
+                        |> String.join ", "
+        coding_questions = A.current_codingQuestions model coding
+                            |> List.map (\(id,_)-> Id.toString id)
+                            |> String.join ", "
+    in
+        div []
+            [ p[][text ("Current index: " ++ (String.fromInt (index)))]
+            , p[][text ("Current coding id: " ++ (Id.toString cid))]
+            , p[][text ("Current coding frame: "++ (Id.toString cfid))]
+            , p[][text ("All relevant coding frames :"++ coding_frames)]
+            , p[][text ("Max CodingFrame index: " ++ String.fromInt (A.max_coding_frame_index model coding))]
+            , p[][text ("Current coding answers: " ++ coding_answers)]
+            , p[][text ("Current coding questions: "++ coding_questions)]
+            ]

@@ -312,8 +312,8 @@ coding2questionary model coding =
     |> coding_frame2question model 
     |> question2questionary model
 
-questionary2answers : I.Model -> Db Questionary.Model -> Db Answer.Model
-questionary2answers model questionary =
+questionary2answer : I.Model -> Db Questionary.Model -> Db Answer.Model
+questionary2answer model questionary =
     questionary2question model questionary
     |> question2answer model
 
@@ -326,5 +326,22 @@ question2coding_frame model question =
                 |> coding_questionary2coding_question model
                 |> coding_question2coding_answer model
                 |> coding_answer2coding_frame model
+    in
+        Db.Extra.union left right
+
+coding2answer : I.Model -> Db Coding.Model -> Db Answer.Model
+coding2answer model coding =
+    coding2coding_frame model coding
+    |> coding_frame2answer model
+
+coding_frame2coding_question : I.Model -> Db CodingFrame.Model -> Db CodingQuestion.Model
+coding_frame2coding_question model coding_frame = 
+    let
+        left = coding_frame2answer model coding_frame
+                |> answer2question model
+                |> question2coding_questionary model
+                |> coding_questionary2coding_question model
+        right = coding_frame2coding_answer model coding_frame
+                |> coding_answer2coding_question model
     in
         Db.Extra.union left right

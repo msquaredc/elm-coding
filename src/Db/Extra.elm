@@ -1,4 +1,4 @@
-module Db.Extra exposing (Error(..),getDB, union, selectFromRow, assertSizeGeq, assertSizeLeq, assertSizeEq, difference, get, getMulti, intersection, map, selectBy, selectFrom, size)
+module Db.Extra exposing (Error(..),chainable_get, getDB, union, selectFromRow, assertSizeGeq, assertSizeLeq, assertSizeEq, difference, get, getMulti, intersection, map, selectBy, selectFrom, size)
 
 import Db exposing (Db, Row)
 import Id exposing (Id)
@@ -78,7 +78,7 @@ intersection a b =
     in
     Db.fromList (List.filter (\c -> List.member c list_b) list_a)
 
-
+{- (lhs - rhs) = -}
 difference : Db a -> Db a -> Db a
 difference lhs rhs =
     let
@@ -141,3 +141,14 @@ map f a =
         |> List.map f
         |> Db.fromList
 
+chainable_get : Db a -> Id a -> Maybe (Row a)
+chainable_get db id = 
+    let
+        mb = Db.get db id
+    in
+        case mb of
+            Nothing ->
+                Nothing
+        
+            Just v ->
+                Just (id, v)

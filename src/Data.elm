@@ -3,16 +3,18 @@ module Data exposing
     , update
     , view
     , getCodingAnswers
-    , GenerateMsg(..)
-    , GenerationType(..)
+--    , GenerateMsg(..)
+--    , GenerationType(..)
     , maxCodingFrameIndex
     , Object(..)
     , Direction(..)
-    , currentCodingFrameIndex
     )
 
 import Data.Navigation as Nav
 import Data.Internal as I exposing (..)
+import Data.Access as A
+import Data.Generation as G
+import Data.Validation as Validate
 import Db exposing (Db, Row)
 import Db.Extra exposing (..)
 import Dict exposing (..)
@@ -43,6 +45,7 @@ import Task
 
 
 
+
 -- JSON-Representations
 -- ...a record that directly corresponds to the JSON page data...
 
@@ -56,36 +59,33 @@ import Task
 
 type Msg
     = Entity EntityMsg
-    | Generate GenerateMsg Seed
+    | Generate Object (Row Coding.Model) (Maybe (Row CodingFrame.Model))
     | SetTime TimedEntity Timestamp.Msg
     | Move Direction Object (Row Coding.Model)
+    | New Object
 
 type TimedEntity
     = TimedCodingFrame (Id CodingFrame.Model)
     | TimedCodingAnswer (Id CodingAnswer.Model)
 
-type GenerateMsg 
-    = GenerateCodingFrame GenerationType (Row Coding.Model) (Maybe (Row Questionary.Model))
+{- type GenerateMsg 
+    = GenerateCodingFrame (Row Coding.Model) (Maybe (Row Questionary.Model))
     | GenerateCodingAnswers (Row CodingFrame.Model)
---    | GenerateCodingAnswer (Row CodingFrame.Model) (Row CodingQuestion.Model)
+--    | GenerateCodingAnswer (Row CodingFrame.Model) (Row CodingQuestion.Model) -}
 
 type Object 
-    = Answer
-    | Coder
+    = Answer (Maybe (Row Answer.Model))
+    | Coder ()
     | Coding
-    | CodingFrame
-    | CodingQuestion
-    | CodingAnswer
-    | Question
+    | CodingFrame (Maybe (Row CodingFrame.Model))
+    | CodingQuestion (Maybe (Row CodingQuestion.Model))
+    | CodingAnswer (Maybe (Row CodingAnswer.Model))
+    | Question (Maybe (Row Question.Model))
 
 type Direction
     = Next
     | Previous 
 
-
-type GenerationType
-    = New
-    | Any
 
 type Error
     = NoResult
@@ -121,9 +121,16 @@ update msg model =
         Entity emsg ->
             updateEntity emsg model
 
-        Generate msg_ seed -> 
-            Debug.todo "Look at me. I'm the generator now"
-            updateGeneration msg_ seed model
+        Generate object coding coding_frame -> 
+            case (object,coding_frame) of
+                (CodingFrame _, _) ->
+                    generateCodingFrame model coding
+        
+                (CodingAnswer _, Just frame) -> 
+                    (model, generateMissingCodingAnswers model coding frame)
+
+                _ ->
+                    (model, Cmd.none)
         SetTime entity tmsg ->
             case entity of
                 TimedCodingAnswer id ->
@@ -133,30 +140,49 @@ update msg model =
                     ({model | coding_answers = new_coding_answers}, Cmd.none)   
                 TimedCodingFrame id ->
                     let
+                        mb_old_coding_frame = Db.get model.coding_frames id
                         new_coding_frames = Db.update id (Maybe.map (Timestamp.updateTimestamp tmsg)) model.coding_frames
+                        coding = Maybe.andThen (\x -> Db.Extra.chainable_get model.codings x.coding) mb_old_coding_frame
+                        missing_cmd = Maybe.map2 (generateMissingCodingAnswers model) coding (Db.Extra.chainable_get model.coding_frames id)
                     in 
-                    ({model | coding_frames = new_coding_frames}, Cmd.none)
+                        ({model | coding_frames = new_coding_frames}, Maybe.withDefault Cmd.none missing_cmd)
         Move direction object coding -> 
             case (object) of
 
-                Question -> 
+                Question _ -> 
                     Debug.log "moving Question"
                     moveQuestion model direction coding
                 
-                Answer ->
+                Answer _ ->
                     Debug.log "moving CodingFrame"
                     moveCodingFrame model direction coding
                 
                 (_) ->
                     (model, Cmd.none)
+        New object -> 
+            case object of
+                CodingFrame (Just coding_frame) ->
+                    Debug.log "new CodingFrame"
+                    ({model | coding_frames = Db.insert coding_frame model.coding_frames},
+                    updateTimestamp object Timestamp.All)
 
-currentQuestion : I.Model -> Row Coding.Model -> Maybe (Row Question.Model)
-currentQuestion model coding =
-    currentCodingFrame model coding
-    |> Maybe.map (\x -> Db.fromList [x] )
-    |> Maybe.map (Nav.coding_frame2question model)
-    |> Maybe.map (Db.toList)
-    |> Maybe.andThen (List.head)
+                CodingAnswer (Just (id,ca)) ->
+                    Debug.log "new CodingAnswer"
+                    ({model | coding_answers = Db.insert (id,ca) model.coding_answers},
+                    updateTimestamp object Timestamp.All) 
+                _ ->
+                    (model, Cmd.none)
+
+generateMissingCodingAnswers : I.Model -> Row Coding.Model -> Row CodingFrame.Model -> Cmd Msg
+generateMissingCodingAnswers model coding coding_frame=
+    let
+        generators = G.missing_codingAnswers model coding coding_frame
+    in
+        Debug.log "Generating"
+        generators
+        |> List.map (Random.generate (New << CodingAnswer << Just))
+        |> Cmd.batch
+
 
 moveQuestion : I.Model -> Direction -> Row Coding.Model -> (I.Model, Cmd Msg)
 moveQuestion model direction coding =
@@ -164,7 +190,7 @@ moveQuestion model direction coding =
         questions = Nav.coding2question model (Db.fromList [coding])
                     |> Db.toList
                     |> List.sortBy (\(id,_)-> Id.toString id)
-        current_question = currentQuestion model coding
+        current_question = A.current_question model coding
         current_index = current_question
                         |> Maybe.andThen (\x -> (List.Extra.elemIndex x questions))
     in
@@ -180,7 +206,7 @@ moveQuestion model direction coding =
                         let
                             new_question = List.Extra.getAt (index-1) questions
                         in
-                            accessCodingFrame model coding new_question
+                            accessFirstCodingFrameOfQuestion model coding new_question
                     (Next, _) ->
                         case (index == (List.length questions)-1) of
                             True ->
@@ -190,15 +216,15 @@ moveQuestion model direction coding =
                                 let
                                     new_question = List.Extra.getAt (index+1) questions
                                 in
-                                    accessCodingFrame model coding new_question
+                                    accessFirstCodingFrameOfQuestion model coding new_question
                                 
 
 {- Renew access timestamp -}
-accessCodingFrame : I.Model -> Row Coding.Model -> Maybe(Row Question.Model) -> (I.Model, Cmd Msg)
-accessCodingFrame model coding mbquestion = 
+accessFirstCodingFrameOfQuestion : I.Model -> Row Coding.Model -> Maybe(Row Question.Model) -> (I.Model, Cmd Msg)
+accessFirstCodingFrameOfQuestion model coding mbquestion = 
     let 
         mbsame=
-            (currentQuestion model coding)
+            (A.current_question model coding)
             |> Maybe.map2 (\a b -> a == b) mbquestion
     in
         case (mbsame, mbquestion) of
@@ -218,7 +244,7 @@ accessCodingFrame model coding mbquestion =
                             (model, Task.perform 
                                 (\x -> (SetTime 
                                     (TimedCodingFrame id)
-                                    (Timestamp.All x)
+                                    (Timestamp.Accessed x)
                                     )
                                 ) Time.now)
                         
@@ -232,34 +258,94 @@ accessCodingFrame model coding mbquestion =
 {- Build ANY new coding frame -}
 generateCodingFrame : I.Model -> Row Coding.Model -> (I.Model, Cmd Msg)
 generateCodingFrame model coding =
-    Debug.log "generateCodingFrame" Debug.todo ""
+    case G.row_coding_frame model coding of
+        Nothing ->
+            (model, Cmd.none)
+    
+        Just generator ->
+            (model, Random.generate (New << CodingFrame << Just) generator)
                 
 
 moveCodingFrame : I.Model -> Direction -> Row Coding.Model -> (I.Model, Cmd Msg)
 moveCodingFrame model direction coding =
     let
-        coding_frames = Nav.coding2coding_frame model (Db.fromList [coding])
-        current = recentAccess coding_frames
+        coding_frames = A.sorted_codingFrames model coding
+        current_index = A.current_codingFrame_index model coding
+        new_frame = 
+            case direction of
+                Next ->
+                    Maybe.andThen (\x -> List.Extra.getAt (x+1) coding_frames) current_index
+            
+                Previous ->
+                    Maybe.andThen (\x -> List.Extra.getAt (x-1) coding_frames) current_index
     in
-        Debug.log "moveCodingFrame" Debug.todo ""
+        case new_frame of
+            Nothing ->
+                generateCodingFrame model coding
+        
+            Just (id,frame) ->
+                (model, accessCodingFrame id)
 
+accessCodingFrame : Id CodingFrame.Model -> Cmd Msg
+accessCodingFrame id =
+    Task.perform 
+                (\x -> (SetTime 
+                    (TimedCodingFrame id)
+                    (Timestamp.Accessed x)
+                    )
+                ) Time.now
 
-updateGeneration : GenerateMsg -> Seed -> I.Model -> (I.Model, Cmd Msg, Maybe Seed)
+accessCodingAnswer : Id CodingAnswer.Model -> Cmd Msg
+accessCodingAnswer id =
+    Task.perform 
+                (\x -> (SetTime 
+                    (TimedCodingAnswer id)
+                    (Timestamp.Accessed x)
+                    )
+                ) Time.now
+
+updateTimestamp : Object -> (Time.Posix -> Timestamp.Msg) -> Cmd Msg
+updateTimestamp object tmsg =
+    let
+        mb_timed_entity = case object of
+            CodingAnswer mb ->
+                Maybe.map (\(id,_) -> TimedCodingAnswer id) mb
+        
+            CodingFrame mb ->
+                Maybe.map (\(id,_) -> TimedCodingFrame id) mb
+            
+            _ ->
+                Nothing
+                
+    in
+        case mb_timed_entity of
+            Nothing ->
+                Cmd.none
+        
+            Just timed_entity ->
+                Task.perform
+                            (\x -> (SetTime
+                                (timed_entity)
+                                (tmsg x)
+                            )
+                        ) Time.now
+
+{- updateGeneration : GenerateMsg -> Seed -> I.Model -> (I.Model, Cmd Msg, Maybe Seed)
 updateGeneration msg seed model = 
     case msg of
         GenerateCodingFrame gentype coding questionary ->
             let
-                current_frame = getCurrentFrame model coding
+                current_frame = A.current_codingFrame model coding
             in
                 case (gentype, current_frame) of
-                    (Any, Ok frame) ->
+                    (Any, Just frame) ->
                         updateGeneration (GenerateCodingAnswers frame) seed model
                 
                     _ ->
                         (model,Cmd.none, Nothing)
                         
         GenerateCodingAnswers coding_frame ->
-            generateCodingAnswers model seed coding_frame
+            generateCodingAnswers model seed coding_frame -}
 
 
 generateCodingAnswer : I.Model -> Seed-> Row CodingFrame.Model -> Row CodingQuestion.Model -> (I.Model, Cmd Msg, Maybe Seed)
@@ -543,17 +629,7 @@ viewTabContent model =
 
 -- Getters
 -- Coding.Frame
-getCurrentFrames : I.Model -> Row Coding.Model -> List(Row CodingFrame.Model)
-getCurrentFrames model coding = 
-    Db.Extra.selectFromRow model.coding_frames (\(value)-> value.coding) coding
-    |> Db.toList 
-    |> List.filter (hasValidFrameQuestionPath model)
 
-getCurrentFrame : I.Model -> Row Coding.Model -> Result Error (Row CodingFrame.Model)
-getCurrentFrame model coding =
-    getCurrentFrames model coding
-    |> List.Extra.maximumBy (\(id,m) -> m.timestamp.accessed)
-    |> Result.fromMaybe NoResult
 
 -- Coding.Answer
 getCodingAnswer : I.Model -> Row CodingFrame.Model -> Row CodingQuestion.Model -> Result Error (Row CodingAnswer.Model)
@@ -692,32 +768,9 @@ selectMissingAnswers model coder questionary =
 maxCodingFrameIndex : I.Model -> Row Coding.Model -> Int
 maxCodingFrameIndex model coding = 
     Nav.coding2questionary model (Db.fromList [coding])
-    |> Nav.questionary2answers model
+    |> Nav.questionary2answer model
     |> Db.toList
     |> List.length
-
-currentCodingFrame : I.Model -> Row Coding.Model -> Maybe (Row CodingFrame.Model)
-currentCodingFrame model coding = 
-    Nav.coding2coding_frame model (Db.fromList [coding])
-    |> recentAccess 
-
-
-currentCodingFrameIndex : I.Model -> Row Coding.Model -> Maybe (Int)
-currentCodingFrameIndex model coding =
-    let
-        coding_frames = Nav.coding2coding_frame model (Db.fromList [coding])
-        sorted_coding_frames = coding_frames
-                                |> Db.toList
-                                |> List.sortBy (\(_,m) -> m.timestamp.created)
-        current_frame = recentAccess coding_frames
-
-    in
-        case current_frame of
-            Nothing ->
-                Just 0
-        
-            Just value ->
-                List.Extra.elemIndex value sorted_coding_frames
 
 
                 
@@ -766,13 +819,6 @@ newCoding seed cid =
     ( ( id, Coding.Model cid )
     , nextSeed
     )
-
-
-recentAccess : Db {a|timestamp : Timestamp.Model} -> Maybe ( Row {a|timestamp : Timestamp.Model})
-recentAccess all_candidates =
-    all_candidates
-    |> Db.toList
-    |> List.Extra.maximumBy (\(id,m) -> m.timestamp.accessed)
 
 
 sanitize : I.Model -> I.Model

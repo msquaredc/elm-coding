@@ -4,6 +4,7 @@ import Browser
 import Browser.Navigation as Nav
 import Data
 import Data.Internal as I
+import Data.Validation as Validate
 import Dict
 import Html
 import Json.Decode as Decode exposing (Decoder, Value, decodeString, float, int, nullable, string)
@@ -128,8 +129,8 @@ update msg model =
                 
                     Just pmsg->
                         case pmsg of
-                            Page.GenerateFrame frame ->
-                                update (GotDataMsg (Data.Generate (Data.GenerateCodingFrame Data.Any frame Nothing) model.seed)) model
+                            Page.GenerateFrame coding ->
+                                update (GotDataMsg (Data.Generate (Data.CodingFrame Nothing) coding Nothing)) model
                             Page.SelectCoding coding -> 
                                 let
                                     old_page = model.page
@@ -143,7 +144,7 @@ update msg model =
                                     new_data = {old_data | coding_answers = Db.update caid (Maybe.map (\c -> {c|value = value})) old_data.coding_answers}
                                 in
                                     Debug.log "got changed" ({model|data = new_data}, Cmd.none)
-                            Page.Move direction object coding->
+                            Page.Move direction object coding ->
                                 update (GotDataMsg (Data.Move direction object coding)) model
                                 
         Noop ->

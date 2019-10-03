@@ -185,7 +185,7 @@ updatePage msg model data =
                             (case om of
                                 Page.Code.ChangedAnswer caid value ->
                                     Change caid value
-                                Page.Code.Generate direction object coding->
+                                Page.Code.Move direction object coding->
                                     Move direction object coding
                                     )
             in

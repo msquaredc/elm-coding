@@ -9,7 +9,12 @@ var data = {
             "user":"peter",
             "question":"question1",
             "value":"I have a value, i swear too!"
-        }
+        },
+        "answer3":{
+            "user":"karl-heinz",
+            "question":"question1",
+            "value":"Im the third answer"
+        },
     },
     coders: {
         "coder1":{
@@ -47,7 +52,7 @@ var data = {
         },
         "coding_questionary2":{
             name:"Second Coding Questionary", 
-            question:"question1"
+            question:"question2"
         },
     },
     coding_questions: {
@@ -57,13 +62,24 @@ var data = {
             input_type:"String"
         },
         "coding_question2a":{
-            coding_questionary:"coding_questionary1",
+            coding_questionary:"coding_questionary2",
             text:"Coding Question 2a",
             input_type:"String"
         }
     },
     name: "My very special Name",
-    questions: {"question1":{questionary:"questionary1",text:"Question 1",input_type:"String"}},
+    questions: {
+        "question1":{
+            questionary:"questionary1",
+            text:"Question 1",
+            input_type:"String"
+        },
+        "question2":{
+            questionary:"questionary1",
+            text:"Question 2",
+            input_type:"String"
+        }
+    },
     questionaries: {"questionary1":{name:"First Questionary"}},
     users: {"paul":{infos:{name:"Paul"}}} 
 }
