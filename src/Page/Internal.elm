@@ -86,6 +86,7 @@ viewBody lift bar document model=
         , Typography.typography
         ]
         [ bar
+        
         , Options.styled div
             [ Options.cs "demo-panel"
             , Options.css "display" "flex"
@@ -95,12 +96,12 @@ viewBody lift bar document model=
 --                [ Page.drawer Mdc "page-drawer" model.mdc CloseDrawer SelectDrawerItem model.url model.is_drawer_open
 --                   , Drawer.scrim [ Options.onClick CloseDrawer ] []
 --                   ]
-               
                 (viewDrawer lift model)
+               
             , Options.styled div
                 [ Options.cs "demo-content"
 
-                , DismissibleDrawer.appContent
+--               , DismissibleDrawer.appContent
                 , TopAppBar.fixedAdjust
                 , Options.css "width" "100%"
                 , Options.css "display" "flex"
@@ -109,6 +110,7 @@ viewBody lift bar document model=
                 , Options.css "align-items" "center"
                 ]
                 [ viewProgress document.progress,
+                    
                     Options.styled div
                     [ Options.cs "demo-content-transition"
                     , Options.css "width" "100%"
@@ -330,7 +332,7 @@ viewDrawer lift model =
               ]
         ]
     , Drawer.scrim [ Options.onClick (lift CloseDrawer) ] []
-    , Options.styled Html.div
+    {- , Options.styled Html.div
         [ Options.cs "drawer-frame-app-content" ]
-        [ Html.p [] [ text "content" ] ]
+        [ Html.p [] [ text "content" ] ] -}
     ]

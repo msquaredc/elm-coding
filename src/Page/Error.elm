@@ -39,8 +39,8 @@ defaultModel =
     }
 
 
-view : (Msg m -> m) -> Model m -> I.Model -> Row Coder.Model -> Document m
-view lift model _ user =
+view : (Msg m -> m) -> Model m -> I.Model -> Document m
+view lift model _ =
     { title = "Error"
     , body =
         Html.h2 [] [ text "Error:" ] :: List.map viewError model.error

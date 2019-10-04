@@ -9,6 +9,7 @@ import Number.Bounded as Bounded exposing (..)
 import Material.TextField as TextField
 import Material
 import Material.Options as Options
+import Id exposing (Id)
 
 
 type InputType
@@ -67,23 +68,23 @@ inputTypeToComparable input_type =
             "Choice"
 
 
-view : (Msg m -> m) -> Material.Model m -> InputType -> String -> Html m
-view lift mdc formtype value =
+view : (Msg m -> m) -> Material.Model m -> Id a ->  InputType -> String -> Html m
+view lift mdc id formtype value =
     case formtype of
         InputString ->
-            viewInputString lift mdc value
+            viewInputString lift mdc id value
 
         InputNumber n ->
-            viewInputNumber lift mdc value n
+            viewInputNumber lift mdc id value n
 
         InputChoice ->
-            viewInputChoice lift mdc value
+            viewInputChoice lift mdc id value
 
 
-viewInputString : (Msg m -> m) -> Material.Model m -> String -> Html m
-viewInputString lift mdc value =
+viewInputString : (Msg m -> m) -> Material.Model m -> Id a -> String -> Html m
+viewInputString lift mdc id value =
     TextField.view (lift << Mdc)
-        "my-text-field"
+        ("form-string-" ++ Id.toString id)
         mdc
         [ TextField.label "Text field"
         , Options.onInput (lift << Change)
@@ -95,8 +96,8 @@ viewInputString lift mdc value =
         []
 
 
-viewInputNumber : (Msg m -> m) -> Material.Model m -> String -> Maybe (Bounded Int) -> Html m
-viewInputNumber lift mdc value bounds =
+viewInputNumber : (Msg m -> m) -> Material.Model m -> Id a -> String -> Maybe (Bounded Int) -> Html m
+viewInputNumber lift mdc id value bounds =
     Html.div
         []
         [ Html.input
@@ -109,8 +110,8 @@ viewInputNumber lift mdc value bounds =
         ]
 
 
-viewInputChoice : (Msg m -> m) -> Material.Model m -> String -> Html m
-viewInputChoice lift mdc value =
+viewInputChoice : (Msg m -> m) -> Material.Model m -> Id a-> String -> Html m
+viewInputChoice lift mdc id value =
     Html.div
         []
         [ Html.input

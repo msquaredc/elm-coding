@@ -276,7 +276,7 @@ viewFormElement lift model ( qid, question ) ( aid, answer ) =
             , LayoutGrid.span6Desktop
             , LayoutGrid.alignLeft
             ]
-            [ (Form.view (lift << (msgAdapt aid)) model.mdc question.input_type answer.value) ]
+            [ (Form.view (lift << (msgAdapt aid)) model.mdc qid question.input_type answer.value) ]
         ]
 
 

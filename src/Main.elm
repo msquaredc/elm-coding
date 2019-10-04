@@ -26,7 +26,6 @@ type Msg
     | GotDataMsg Data.Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
-    | Noop
 
 
 type alias Model =
@@ -42,27 +41,14 @@ main : Program Value Model Msg
 main =
     Browser.application
         { init = init
-        , onUrlChange = UrlChanged
-        , onUrlRequest = LinkClicked
+        , onUrlChange = (UrlChanged)
+        , onUrlRequest = (LinkClicked)
         , update = update
         , subscriptions = subscriptions
         , view = view
         }
 
 
-onUrlChange : Url.Url -> Msg
-onUrlChange url =
-    Noop
-
-
-onUrlRequest : Browser.UrlRequest -> Msg
-onUrlRequest a =
-    case a of
-        Browser.Internal i ->
-            Noop
-
-        Browser.External e ->
-            Noop
 
 
 
@@ -147,8 +133,6 @@ update msg model =
                             Page.Move direction object coding ->
                                 update (GotDataMsg (Data.Move direction object coding)) model
                                 
-        Noop ->
-            ( model, Cmd.none )
 
         GotDataMsg msg_ ->
             let
@@ -168,7 +152,7 @@ update msg model =
         UrlChanged url ->
             let
                 ( page, effect, _) =
-                    Page.update (Page.UrlChanged url) model.data model.page
+                    Page.update (Page.onUrlChange url) model.data model.page
             in
                 ( { model | page = page }, Cmd.map GotPageMsg effect )
             

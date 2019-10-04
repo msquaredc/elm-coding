@@ -1,4 +1,4 @@
-module Page exposing (Model, Msg(..),OutMsg(..), Page, defaultModel, subscriptions, update, view)
+module Page exposing (Model, Msg(..),OutMsg(..), Page, onUrlChange, defaultModel, subscriptions, update, view)
 
 import Browser exposing (Document)
 import Data
@@ -50,8 +50,8 @@ type GotPageMsg
 type Msg
     = Mdc (Material.Msg Msg)
     | PageMsg GotPageMsg
-    | UrlChanged Url.Url
     | Internal (Page.Internal.Msg Msg)
+    | OnUrlChange Page.Url.Url
 
 type OutMsg
     = GenerateFrame (Row Coding.Model)
@@ -124,14 +124,14 @@ update msg data model =
                             updatePage m model.page data
                     in
                         ( { model | page = page }, effects, pmsg)
-        UrlChanged url -> 
-            ({model | url = Page.Url.fromUrl url}, Cmd.none, Nothing)
         Internal msg_ ->
             let
                 (internal, effects ) =
                     Page.Internal.update Internal msg_ model.internal
             in 
                 ({model | internal = internal},effects, Nothing)
+        OnUrlChange url -> 
+            ({model | url = url}, Cmd.none, Nothing)
 
 
 
@@ -207,13 +207,13 @@ view model data =
                 viewLoggedIn Page.Data.view GotDataMsg model.page.data
 
             Page.Url.Error ->
-                viewLoggedIn Page.Error.view GotErrorMsg model.page.error
+                Page.Internal.view Internal model.internal (Page.Error.view (PageMsg << GotErrorMsg) model.page.error data)
 
             Page.Url.StartPage ->
                 viewLoggedIn (Page.Home.view model.coding) GotHomeMsg model.page.home
 
             Page.Url.Error404 _ ->
-                viewLoggedIn Page.Error.view GotErrorMsg model.page.error
+                Page.Internal.view Internal model.internal (Page.Error.view (PageMsg << GotErrorMsg) model.page.error data)
             
             Page.Url.Home -> 
                 viewLoggedIn (Page.Home.view model.coding) GotHomeMsg model.page.home
@@ -226,6 +226,9 @@ view model data =
                     Nothing ->
                         viewLoggedIn (Page.Home.view model.coding) GotHomeMsg model.page.home
                 
+onUrlChange : Url.Url -> Msg
+onUrlChange url =
+    OnUrlChange (Page.Url.fromUrl url)
 
 
 
