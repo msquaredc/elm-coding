@@ -121,9 +121,11 @@ update msg model =
                                 let
                                     old_page = model.page
                                     new_page = {old_page | coding = Just coding}
-                                    newer_page = {new_page | url = Page.Url.Code}
+                                    (new_data, new_effect) = Data.update (Data.Generate (Data.CodingAnswer Nothing) coding Nothing) model.data
+                                    new_model = {model | data = new_data}
+                                    (newest_model, newest_effect) = update (GotPageMsg (Page.OnUrlChange Page.Url.Code)) {model|page = new_page}
                                 in
-                                    ({model|page = newer_page},Cmd.none)
+                                    (newest_model, Cmd.batch [newest_effect, (Cmd.map GotDataMsg new_effect)])
                             Page.Change caid value ->
                                 let
                                     old_data = model.data

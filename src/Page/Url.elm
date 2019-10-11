@@ -39,6 +39,22 @@ toString url =
         Code ->
             "#code"
 
+toIcon : Url -> String
+toIcon url = 
+    case url of
+        Home -> 
+            "home"
+        StartPage ->
+            "home"
+        Data -> 
+            "account_tree"
+        Code -> 
+            "ballot"
+        Error ->
+            "error"
+        Error404 _-> 
+            "error_outline"
+
 
 fromUrl : Url.Url -> Url
 fromUrl url =
@@ -69,3 +85,10 @@ fromString url =
 defaultUrl : Url
 defaultUrl =
     StartPage
+
+navigatableUrl : List (Url)
+navigatableUrl =
+    [ Home
+    , Code
+    , Data]
+

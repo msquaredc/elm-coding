@@ -126,6 +126,13 @@ update msg model =
                     Debug.log "Generating Missing coding answers"
                     (model, generateMissingCodingAnswers model coding frame)
 
+                (CodingAnswer _, Nothing) -> 
+                    let 
+                        cmd = A.current_codingFrame model coding
+                                |> Maybe.map (generateMissingCodingAnswers model coding)
+
+                    in
+                        (model, Maybe.withDefault Cmd.none cmd)
                 a ->
                     Debug.log "Generate empty"
                     (model, Cmd.none)
@@ -509,7 +516,7 @@ unwrap res =
         Err _ ->
             []
 
-viewContent : I.Model -> String -> String -> Html Msg
+{- viewContent : I.Model -> String -> String -> Html Msg
 viewContent model coder_name questionary_name =
     let
         coder_result =
@@ -544,7 +551,7 @@ viewContent model coder_name questionary_name =
             Html.map (Entity << CodingFrameMsg Nothing) (CodingFrame.viewTable coding)
 
         Err msg ->
-            text msg
+            text msg -}
 
 
 viewContent2 : I.Model -> String -> String -> Html Msg

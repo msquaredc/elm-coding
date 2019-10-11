@@ -46,6 +46,10 @@ view lift model _ =
         Html.h2 [] [ text "Error:" ] :: List.map viewError model.error
     , progress = Nothing
     , navigation = Nothing
+    , drawer = { header = Nothing,locations = [], favourites = [] }
+    , appbar = {title = text "Error",
+                action_items = [],
+                other = [] }
     }
 
 

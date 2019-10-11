@@ -32,6 +32,7 @@ import Material.Icon as Icon
 import Maybe.Extra
 import Page.Internal exposing (Document)
 import Set
+import Page.Internal.Drawer as Drawer
 
 
 type alias Model m =
@@ -92,8 +93,28 @@ view lift model data coding =
         viewBody lift model data mb_current coding
     , progress = Just(Page.Internal.Progress ((/) (toFloat (Maybe.withDefault 0 (A.current_codingFrame_index data coding))) (toFloat (A.max_coding_frame_index data coding))))
     , navigation = Maybe.map (\x -> Page.Internal.Paginate x (A.max_coding_frame_index data coding)) (A.current_codingFrame_index data coding)
+    , drawer = {header = Nothing, locations = [], favourites = []}
+    , appbar = {title = text "Coding",
+                action_items = [],
+                other = [] }
     }
 
+getDrawer : I.Model -> Row Coding.Model -> Drawer.Header m
+getDrawer data coding =
+    case A.current_coder data coding of
+        Nothing ->
+            {
+                title = text "Please Log in",
+                subtitle = text "Please Log in"
+            }
+            
+    
+        Just (id,coder) ->
+            {
+                title = text coder.name,
+                subtitle = text (Id.toString id)
+            }
+            
 
 viewBody : (Msg m -> m) -> Model m ->  I.Model-> Maybe ( Id CodingFrame.Model, CodingFrame.Model ) -> Row Coding.Model -> List (Html m)
 viewBody lift mdc data mb_current coding =

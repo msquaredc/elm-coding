@@ -12,6 +12,7 @@ import Entities.Coding.Frame as CodingFrame
 import Entities.Coding.Question as CodingQuestion
 import Entities.Timestamp as Timestamp
 import Entities.Coding.Answer as CodingAnswer
+import Entities.Coder as Coder 
 
 
 current_question : I.Model -> Row Coding.Model -> Maybe (Row Question.Model)
@@ -234,3 +235,9 @@ current_codingQuestions model coding =
             |> Nav.question2coding_questionary model 
             |> Nav.coding_questionary2coding_question model
             |> Db.toList
+
+current_coder : I.Model -> Row Coding.Model -> Maybe (Row Coder.Model)
+current_coder model coding = 
+    Nav.coding2coder model (Db.fromList [coding])
+    |> Db.toList
+    |> List.head

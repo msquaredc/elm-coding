@@ -70,6 +70,10 @@ view coding lift model data user =
         text "My codings in Process:" :: viewCodings lift model data user :: [viewMaybe coding]
     , progress = Nothing
     , navigation = Nothing
+    , drawer = {header = Nothing, locations = [], favourites = []}
+    , appbar = {title = text "Home",
+                action_items = [],
+                other = [] }
     }
 
 viewMaybe coding = 

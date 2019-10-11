@@ -1,14 +1,15 @@
-module Db.Extra exposing (Error(..),chainable_get, getDB, union, selectFromRow, assertSizeGeq, assertSizeLeq, assertSizeEq, difference, get, getMulti, intersection, map, selectBy, selectFrom, size)
+module Db.Extra exposing (Error(..), assertSizeEq, assertSizeGeq, assertSizeLeq, chainable_get, difference, encode, get, getDB, getMulti, intersection, map, selectBy, selectFrom, selectFromRow, size, union)
 
 import Db exposing (Db, Row)
 import Id exposing (Id)
+import Json.Encode as Encode exposing (Value)
 import Set
 
 
 type Error
-    = Absent 
+    = Absent
     | NotFound
-    | TooMuch Int Int 
+    | TooMuch Int Int
     | TooFew Int Int
 
 
@@ -20,7 +21,7 @@ selectBy db accessor evaluator =
     in
     case List.isEmpty (Db.toList result) of
         True ->
-            Err (NotFound) 
+            Err NotFound
 
         False ->
             Ok result
@@ -40,9 +41,10 @@ selectFrom db accessor id_db =
     in
     Db.filter (\( id, value ) -> List.member (accessor value) id_list) db
 
+
 selectFromRow : Db a -> (a -> Id b) -> Row b -> Db a
-selectFromRow db accessor (id,row) =
-    Db.filter (\(_, value ) -> accessor value == id) db
+selectFromRow db accessor ( id, row ) =
+    Db.filter (\( _, value ) -> accessor value == id) db
 
 
 assertSizeLeq : Int -> String -> Db a -> Result Error (Db a)
@@ -51,7 +53,7 @@ assertSizeLeq target_size error db =
         Ok db
 
     else
-        Err (TooMuch (size db) target_size )
+        Err (TooMuch (size db) target_size)
 
 
 assertSizeGeq : Int -> String -> Db a -> Result Error (Db a)
@@ -60,12 +62,15 @@ assertSizeGeq target_size error db =
         Ok db
 
     else
-        Err (TooFew (size db) target_size )
+        Err (TooFew (size db) target_size)
+
+
 assertSizeEq : Int -> String -> Db a -> Result Error (Db a)
 assertSizeEq target_size error db =
     db
-    |> assertSizeGeq target_size error
-    |> Result.andThen (assertSizeLeq target_size error)
+        |> assertSizeGeq target_size error
+        |> Result.andThen (assertSizeLeq target_size error)
+
 
 intersection : Db a -> Db a -> Db a
 intersection a b =
@@ -78,7 +83,11 @@ intersection a b =
     in
     Db.fromList (List.filter (\c -> List.member c list_b) list_a)
 
+
+
 {- (lhs - rhs) = -}
+
+
 difference : Db a -> Db a -> Db a
 difference lhs rhs =
     let
@@ -90,17 +99,24 @@ difference lhs rhs =
     in
     Db.fromList (List.filter (\c -> not (List.member c list_rhs)) list_lhs)
 
+
 union : Db a -> Db a -> Db a
 union a b =
     let
-        diff1 = difference a b
+        diff1 =
+            difference a b
                 |> Db.toList
-        diff2 = difference b a
+
+        diff2 =
+            difference b a
                 |> Db.toList
-        inter = intersection a b
+
+        inter =
+            intersection a b
                 |> Db.toList
     in
-        Db.fromList (diff1 ++ diff2 ++ inter)
+    Db.fromList (diff1 ++ diff2 ++ inter)
+
 
 get : Db b -> (a -> Id b) -> Row a -> Result Error (Row b)
 get b accessor ( ida, valuea ) =
@@ -113,17 +129,17 @@ get b accessor ( ida, valuea ) =
             Ok ( idb, valueb )
 
         Nothing ->
---            Err (Absent (Id.toString ida) (Id.toString idb))
+            --            Err (Absent (Id.toString ida) (Id.toString idb))
             Err Absent
 
+
 getDB : Db b -> (a -> Id b) -> Db a -> Db b
-getDB b accessor a = 
+getDB b accessor a =
     Db.toList a
-    |> List.map (\(id, m)-> accessor m)
-    |> Db.getMany b
-    |> Db.filterMissing
-    |> Db.fromList
-    
+        |> List.map (\( id, m ) -> accessor m)
+        |> Db.getMany b
+        |> Db.filterMissing
+        |> Db.fromList
 
 
 getMulti : Db b -> (a -> Id b) -> Db a -> Db b
@@ -141,14 +157,23 @@ map f a =
         |> List.map f
         |> Db.fromList
 
+
 chainable_get : Db a -> Id a -> Maybe (Row a)
-chainable_get db id = 
+chainable_get db id =
     let
-        mb = Db.get db id
+        mb =
+            Db.get db id
     in
-        case mb of
-            Nothing ->
-                Nothing
-        
-            Just v ->
-                Just (id, v)
+    case mb of
+        Nothing ->
+            Nothing
+
+        Just v ->
+            Just ( id, v )
+
+
+encode : (a -> Value) -> Db a ->  Value
+encode mapper db =
+    Db.toList db
+        |> List.map (\( x, y ) -> ( Id.toString x, mapper y ))
+        |> Encode.object

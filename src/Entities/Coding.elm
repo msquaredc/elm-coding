@@ -1,4 +1,4 @@
-module Entities.Coding exposing (Model, Msg(..), decoder, selectCodings, toTableRow, update, view, viewRow, viewTable)
+module Entities.Coding exposing (Model, Msg(..), encoder, decoder, selectCodings, toTableRow, update, view, viewRow, viewTable)
 
 import Db exposing (Db, Row)
 import Db.Extra exposing (..)
@@ -8,6 +8,7 @@ import Html.Attributes exposing (..)
 import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+import Json.Encode as Encode exposing (Value)
 import Material.DataTable as DataTable exposing (numeric, table, tbody, td, th, thead, tr, trh)
 import Result exposing (andThen)
 
@@ -16,6 +17,12 @@ decoder : Decode.Decoder Model
 decoder =
     Decode.succeed Model
         |> required "coder" Id.decoder
+
+
+encoder : Model -> Value
+encoder model =
+    Encode.object
+        [ ( "coder", Id.encode model.coder ) ]
 
 
 type alias Model =
@@ -85,6 +92,7 @@ selectCodings db coders =
     in
     Result.map (\c -> Db.filter (\( id, value ) -> List.member value.coder c) db) coder_ids
 
+
 selectCodings2 : Db Model -> Result String (Db Coder.Model) -> Result String (Db Model)
-selectCodings2 db coders = 
+selectCodings2 db coders =
     Result.map (Db.Extra.selectFrom db (\c -> c.coder)) coders

@@ -1,15 +1,16 @@
-module Form exposing (InputType(..), Model, Msg(..), inputTypeToComparable, inputTypeDecoder, update, view)
+module Form exposing (InputType(..), Model, Msg(..), encode, inputTypeDecoder, inputTypeToComparable, update, view)
 
 import Dict exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Id exposing (Id)
 import Json.Decode as Decode exposing (..)
-import Number.Bounded as Bounded exposing (..)
-import Material.TextField as TextField
+import Json.Encode as Encode exposing (Value)
 import Material
 import Material.Options as Options
-import Id exposing (Id)
+import Material.TextField as TextField
+import Number.Bounded as Bounded exposing (..)
 
 
 type InputType
@@ -23,23 +24,25 @@ type Msg m
     | Mdc (Material.Msg m)
 
 
-type alias Model m=
+type alias Model m =
     { mdc : Material.Model m
     }
 
 
+
 {- error =
-    Model "Error" InputString "Error" -}
-
-
+   Model "Error" InputString "Error"
+-}
 {- decoder : Decode.Decoder (Model m)
-decoder =
-    Decode.map3 Model
-        (Decode.field "label" Decode.string)
-        (Decode.field "formtype" inputTypeDecoder)
-        (Decode.succeed "") -}
+   decoder =
+       Decode.map3 Model
+           (Decode.field "label" Decode.string)
+           (Decode.field "formtype" inputTypeDecoder)
+           (Decode.succeed "")
+-}
 
 
+inputTypeDecoder : Decode.Decoder InputType
 inputTypeDecoder =
     Decode.string
         |> Decode.andThen
@@ -55,12 +58,18 @@ inputTypeDecoder =
                         Decode.fail <| "Unknown Type: " ++ somethingElse
             )
 
+
+encode : InputType -> Value
+encode input_type =
+    Encode.string (inputTypeToComparable input_type)
+
+
 inputTypeToComparable : InputType -> String
-inputTypeToComparable input_type = 
+inputTypeToComparable input_type =
     case input_type of
         InputString ->
             "String"
-    
+
         InputNumber _ ->
             "Number"
 
@@ -68,7 +77,7 @@ inputTypeToComparable input_type =
             "Choice"
 
 
-view : (Msg m -> m) -> Material.Model m -> Id a ->  InputType -> String -> Html m
+view : (Msg m -> m) -> Material.Model m -> Id a -> InputType -> String -> Html m
 view lift mdc id formtype value =
     case formtype of
         InputString ->
@@ -88,9 +97,10 @@ viewInputString lift mdc id value =
         mdc
         [ TextField.label "Text field"
         , Options.onInput (lift << Change)
-        , TextField.outlined
+--        , TextField.outlined
         , TextField.value value
---        , TextField.fullwidth
+
+        --        , TextField.fullwidth
         --, Options.cs "demo-text-field-outlined-shaped"
         ]
         []
@@ -110,7 +120,7 @@ viewInputNumber lift mdc id value bounds =
         ]
 
 
-viewInputChoice : (Msg m -> m) -> Material.Model m -> Id a-> String -> Html m
+viewInputChoice : (Msg m -> m) -> Material.Model m -> Id a -> String -> Html m
 viewInputChoice lift mdc id value =
     Html.div
         []
@@ -120,7 +130,8 @@ viewInputChoice lift mdc id value =
             , Html.Events.onInput (lift << Change)
             ]
             []
-        , text value]
+        , text value
+        ]
 
 
 
@@ -146,10 +157,11 @@ viewInputChoice lift mdc id value =
 -}
 
 
-update : (Msg m -> m) -> Msg m -> Model m-> ( Model m, Cmd m)
+update : (Msg m -> m) -> Msg m -> Model m -> ( Model m, Cmd m )
 update lift msg model =
     case msg of
         Change newContent ->
             ( model, Cmd.none )
-        Mdc msg_ -> 
-            Material.update (lift<<Mdc) msg_ model
+
+        Mdc msg_ ->
+            Material.update (lift << Mdc) msg_ model

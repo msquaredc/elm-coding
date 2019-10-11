@@ -1,4 +1,4 @@
-module Entities.Coding.Frame exposing (Model, Msg(..), decoder, empty, selectFramesFromCodings, toTableRow, update, view, viewRow, viewTable)
+module Entities.Coding.Frame exposing (Model, Msg(..), decoder, empty, encoder, toTableRow, update, view, viewRow, viewTable)
 
 import Db exposing (Db, Row)
 import Db.Extra
@@ -12,10 +12,11 @@ import Html exposing (Html, div, h3, p, text)
 import Html.Attributes exposing (..)
 import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
-import Json.Decode.Pipeline exposing (hardcoded, optional, required,custom)
+import Json.Decode.Pipeline exposing (custom, hardcoded, optional, required)
+import Json.Encode as Encode exposing (Value)
+import List.Extra
 import Material.DataTable as DataTable exposing (numeric, table, tbody, td, th, thead, tr, trh)
 import Time
-import List.Extra
 
 
 type alias Model =
@@ -31,7 +32,16 @@ decoder =
         |> required "answer" Id.decoder
         |> required "coding" Id.decoder
         |> custom Timestamp.decoder
-        
+
+
+encoder : Model -> Value
+encoder model =
+    Encode.object
+        ([ ( "answer", Encode.string (Id.toString model.answer) )
+         , ( "coding", Encode.string (Id.toString model.coding) )
+         ]
+            ++ Timestamp.encoder model.timestamp
+        )
 
 
 empty : Model
@@ -104,16 +114,18 @@ toTableRow ( id, model ) =
         ]
 
 
-selectFramesFromCodings : Db Model -> Result String (Db Coding.Model) -> Result String (Db Model)
-selectFramesFromCodings db coders =
-    let
-        coding_ids =
-            Result.map Db.toList coders
-                |> Result.map (List.map (\( id, _ ) -> id))
-    in
-    Result.map (\c -> Db.filter (\( id, value ) -> List.member value.coding c) db) coding_ids
 
-lastFrame : Db Model -> Row Model
-lastFrame frames =
-    Db.toList frames
-    |> List.foldl (\(idf,first) -> (\(ids,second) -> if first.timestamp.modified > second.timestamp.modified then (idf,first) else (ids,second))) (Id.fromString "empty", empty)
+{- selectFramesFromCodings : Db Model -> Result String (Db Coding.Model) -> Result String (Db Model)
+   selectFramesFromCodings db coders =
+       let
+           coding_ids =
+               Result.map Db.toList coders
+                   |> Result.map (List.map (\( id, _ ) -> id))
+       in
+       Result.map (\c -> Db.filter (\( id, value ) -> List.member value.coding c) db) coding_ids
+
+   lastFrame : Db Model -> Row Model
+   lastFrame frames =
+       Db.toList frames
+       |> List.foldl (\(idf,first) -> (\(ids,second) -> if first.timestamp.modified > second.timestamp.modified then (idf,first) else (ids,second))) (Id.fromString "empty", empty)
+-}

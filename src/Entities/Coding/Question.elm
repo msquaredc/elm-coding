@@ -1,13 +1,14 @@
-module Entities.Coding.Question exposing (Model, Msg(..), decoder, toTableRow, update, view, viewRow, viewTable)
+module Entities.Coding.Question exposing (Model, Msg(..), decoder, encoder, toTableRow, update, view, viewRow, viewTable)
 
 import Db exposing (Db, Row)
 import Entities.Coding.Questionary as CodingQuestionary
-import Form exposing (..)
+import Form
 import Html exposing (Html, div, h3, p, text)
 import Html.Attributes exposing (..)
 import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+import Json.Encode as Encode exposing (Value)
 import Material.DataTable as DataTable exposing (numeric, table, tbody, td, th, thead, tr, trh)
 
 
@@ -24,6 +25,15 @@ decoder =
         |> required "coding_questionary" Id.decoder
         |> required "text" string
         |> required "input_type" Form.inputTypeDecoder
+
+
+encoder : Model -> Value
+encoder model =
+    Encode.object
+        [ ( "coding_questionary", Encode.string (Id.toString model.coding_questionary) )
+        , ( "text", Encode.string model.text )
+        , ( "input_type", Form.encode model.input_type )
+        ]
 
 
 type Msg
@@ -84,4 +94,3 @@ toTableRow ( id, model ) =
         , td [] [ text model.text ]
         , td [] [ text "TODO" ]
         ]
-

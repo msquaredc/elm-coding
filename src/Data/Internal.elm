@@ -1,8 +1,8 @@
-module Data.Internal exposing (..)
+module Data.Internal exposing (Direction(..), Flags, Model, Msg(..), Object(..), ObjectDb(..), decoder, empty, encoder, init, initDictToDb)
 
 import Db exposing (Db, Row)
-import Id exposing (Id)
-import Json.Decode as Decode
+import Db.Extra
+import Dict exposing (Dict)
 import Entities.Answer as Answer
 import Entities.Coder as Coder
 import Entities.Coding as Coding
@@ -12,16 +12,19 @@ import Entities.Coding.Question as CodingQuestion
 import Entities.Coding.Questionary as CodingQuestionary
 import Entities.Question as Question
 import Entities.Questionary as Questionary
-import Entities.User as User
 import Entities.Timestamp as Timestamp
+import Entities.User as User
+import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
-import Dict exposing (Dict)
+import Json.Encode as Encode exposing (Value)
+
 
 type Msg
     = Noop
 
-type Object 
+
+type Object
     = Answer
     | Coder
     | Coding
@@ -32,6 +35,7 @@ type Object
     | Question
     | Questionary
     | User
+
 
 type ObjectDb
     = AnswerDb (Db Answer.Model)
@@ -45,9 +49,11 @@ type ObjectDb
     | CodingQuestionDb (Db CodingQuestion.Model)
     | CodingQuestionaryDb (Db CodingQuestionary.Model)
 
+
 type Direction
     = Next
-    | Previous 
+    | Previous
+
 
 type alias Flags =
     { answers : Dict String Answer.Model
@@ -82,7 +88,6 @@ decoder =
         |> optional "questions" (Decode.dict Question.decoder) Dict.empty
         |> optional "questionaries" (Decode.dict Questionary.decoder) Dict.empty
         |> optional "users" (Decode.dict User.decoder) Dict.empty
-
 
 
 
@@ -151,177 +156,196 @@ empty =
     , users = Db.empty
     }
 
+
+encoder : Model -> Value
+encoder model =
+    Encode.object
+        [ ("answers", Db.Extra.encode Answer.encoder model.answers)
+        , ("coders", Db.Extra.encode Coder.encoder model.coders)
+        , ("codings", Db.Extra.encode Coding.encoder model.codings)
+        , ("coding_answers", Db.Extra.encode CodingAnswer.encoder model.coding_answers)
+        , ("coding_frames", Db.Extra.encode CodingFrame.encoder model.coding_frames)
+        , ("coding_questionaries", Db.Extra.encode CodingQuestionary.encoder model.coding_questionaries)
+        , ("coding_questions", Db.Extra.encode CodingQuestion.encoder model.coding_questions)
+        , ("name", Encode.string model.name)
+        , ("questions", Db.Extra.encode Question.encoder model.questions)
+        , ("questionaries", Db.Extra.encode Questionary.encoder model.questionaries)
+        , ("users", Db.Extra.encode User.encoder model.users)]
+
+
+
 {- type DataMegaType
-    coder 
-    coding 
-    coding_frame 
-    coding_answer 
-    coding_question 
-    coding_questionary 
-    question 
-    questionary 
-    answer 
-    user
-    = CoderType coder
-    | CodingType coding
-    | CodingAnswerType coding_answer
-    | CodingFrameType coding_frame
-    | CodingQuestionType coding_question
-    | CodingQuestionaryType coding_questionary
-    | QuestionType question
-    | QuestionaryType questionary
-    | AnswerType answer
-    | UserType user
+       coder
+       coding
+       coding_frame
+       coding_answer
+       coding_question
+       coding_questionary
+       question
+       questionary
+       answer
+       user
+       = CoderType coder
+       | CodingType coding
+       | CodingAnswerType coding_answer
+       | CodingFrameType coding_frame
+       | CodingQuestionType coding_question
+       | CodingQuestionaryType coding_questionary
+       | QuestionType question
+       | QuestionaryType questionary
+       | AnswerType answer
+       | UserType user
 
 
 
-type alias DMT = DataMegaType 
-                    (Coder.Model)
-                    (Coding.Model)
-                    (CodingFrame.Model)
-                    (CodingAnswer.Model)
-                    (CodingQuestion.Model)
-                    (CodingQuestionary.Model)
-                    (Question.Model)
-                    (Questionary.Model)
-                    (Answer.Model)
-                    (User.Model)
+   type alias DMT = DataMegaType
+                       (Coder.Model)
+                       (Coding.Model)
+                       (CodingFrame.Model)
+                       (CodingAnswer.Model)
+                       (CodingQuestion.Model)
+                       (CodingQuestionary.Model)
+                       (Question.Model)
+                       (Questionary.Model)
+                       (Answer.Model)
+                       (User.Model)
 
-type alias DbDMT = DataMegaType 
-                    (Db Coder.Model)
-                    (Db Coding.Model)
-                    (Db CodingFrame.Model)
-                    (Db CodingAnswer.Model)
-                    (Db CodingQuestion.Model)
-                    (Db CodingQuestionary.Model)
-                    (Db Question.Model)
-                    (Db Questionary.Model)
-                    (Db Answer.Model)
-                    (Db User.Model)
+   type alias DbDMT = DataMegaType
+                       (Db Coder.Model)
+                       (Db Coding.Model)
+                       (Db CodingFrame.Model)
+                       (Db CodingAnswer.Model)
+                       (Db CodingQuestion.Model)
+                       (Db CodingQuestionary.Model)
+                       (Db Question.Model)
+                       (Db Questionary.Model)
+                       (Db Answer.Model)
+                       (Db User.Model)
 
-type alias IdDMT = DataMegaType 
-                    (Id Coder.Model)
-                    (Id Coding.Model)
-                    (Id CodingFrame.Model)
-                    (Id CodingAnswer.Model)
-                    (Id CodingQuestion.Model)
-                    (Id CodingQuestionary.Model)
-                    (Id Question.Model)
-                    (Id Questionary.Model)
-                    (Id Answer.Model)
-                    (Id User.Model)
+   type alias IdDMT = DataMegaType
+                       (Id Coder.Model)
+                       (Id Coding.Model)
+                       (Id CodingFrame.Model)
+                       (Id CodingAnswer.Model)
+                       (Id CodingQuestion.Model)
+                       (Id CodingQuestionary.Model)
+                       (Id Question.Model)
+                       (Id Questionary.Model)
+                       (Id Answer.Model)
+                       (Id User.Model)
 
-mappers : DMT -> DMT -> Maybe (IdDMT)
-mappers source target =
-    case (source, target) of
-        (CoderType _, _) -> 
-            Nothing
+   mappers : DMT -> DMT -> Maybe (IdDMT)
+   mappers source target =
+       case (source, target) of
+           (CoderType _, _) ->
+               Nothing
 
-        (CodingType coding, CoderType _) ->
-            Just (CoderType coding.coder)
-    
-        (CodingType _, _) ->
-            Nothing
-        
-        (CodingFrameType frame, CodingType _) ->
-            Just (CodingType frame.coding)
-        
-        (CodingFrameType frame, AnswerType _) ->
-            Just (AnswerType frame.answer)
-        
-        (CodingFrameType _, _) ->
-            Nothing
-        
-        (CodingAnswerType answer, CodingFrameType _) ->
-            Just (CodingFrameType answer.coding_frame)
-        
-        (CodingAnswerType answer, CodingQuestionType _)->
-            Just (CodingQuestionType answer.coding_question)
-        
-        (CodingAnswerType _, _) ->
-            Nothing
+           (CodingType coding, CoderType _) ->
+               Just (CoderType coding.coder)
 
-        (CodingQuestionType question, CodingQuestionaryType _) ->
-            Just (CodingQuestionaryType question.coding_questionary)
+           (CodingType _, _) ->
+               Nothing
 
-        (CodingQuestionType _, _) -> 
-            Nothing
-        
-        (CodingQuestionaryType questionary, QuestionType _) ->
-            Just (QuestionType questionary.question)
+           (CodingFrameType frame, CodingType _) ->
+               Just (CodingType frame.coding)
 
-        (CodingQuestionaryType _, _) ->
-            Nothing
+           (CodingFrameType frame, AnswerType _) ->
+               Just (AnswerType frame.answer)
 
-        (QuestionType question, QuestionaryType _) ->
-            Just (QuestionaryType question.questionary)
-        
-        (QuestionType _, _) ->
-            Nothing
-        
-        (QuestionaryType _, _) ->
-            Nothing
-        
-        (AnswerType answer, UserType _) ->
-            Just (UserType answer.user)
-        
-        (AnswerType answer, QuestionType _) ->
-            Just (QuestionType answer.question)
-        
-        (AnswerType _, _) ->
-            Nothing
-        
-        (UserType _, _) ->
-            Nothing
-        
+           (CodingFrameType _, _) ->
+               Nothing
+
+           (CodingAnswerType answer, CodingFrameType _) ->
+               Just (CodingFrameType answer.coding_frame)
+
+           (CodingAnswerType answer, CodingQuestionType _)->
+               Just (CodingQuestionType answer.coding_question)
+
+           (CodingAnswerType _, _) ->
+               Nothing
+
+           (CodingQuestionType question, CodingQuestionaryType _) ->
+               Just (CodingQuestionaryType question.coding_questionary)
+
+           (CodingQuestionType _, _) ->
+               Nothing
+
+           (CodingQuestionaryType questionary, QuestionType _) ->
+               Just (QuestionType questionary.question)
+
+           (CodingQuestionaryType _, _) ->
+               Nothing
+
+           (QuestionType question, QuestionaryType _) ->
+               Just (QuestionaryType question.questionary)
+
+           (QuestionType _, _) ->
+               Nothing
+
+           (QuestionaryType _, _) ->
+               Nothing
+
+           (AnswerType answer, UserType _) ->
+               Just (UserType answer.user)
+
+           (AnswerType answer, QuestionType _) ->
+               Just (QuestionType answer.question)
+
+           (AnswerType _, _) ->
+               Nothing
+
+           (UserType _, _) ->
+               Nothing
 
 
-accessors : I.Model -> DMT -> DbDMT
-accessors model object_type = 
-    case object_type of
-        CoderType _ ->
-            CoderType model.coders
-        CodingType _ ->
-            CodingType model.codings
-        CodingFrameType _ ->
-            CodingFrameType model.coding_frames
-        CodingAnswerType _ ->
-            CodingAnswerType model.coding_answers
-        CodingQuestionType _ ->
-            CodingQuestionType model.coding_questions
-        CodingQuestionaryType _ ->
-            CodingQuestionaryType model.coding_questionaries
-        QuestionType _ ->
-            QuestionType model.questions
-        QuestionaryType _ ->
-            QuestionaryType model.questionaries
-        AnswerType _ ->
-            AnswerType model.answers
-        UserType _ ->
-            UserType model.users
 
-getValue dmt =
-    case dmt of
-        CoderType value ->
-            value
-        CodingType value ->
-            value
-        QuestionType value ->
-            value
-            
+   accessors : I.Model -> DMT -> DbDMT
+   accessors model object_type =
+       case object_type of
+           CoderType _ ->
+               CoderType model.coders
+           CodingType _ ->
+               CodingType model.codings
+           CodingFrameType _ ->
+               CodingFrameType model.coding_frames
+           CodingAnswerType _ ->
+               CodingAnswerType model.coding_answers
+           CodingQuestionType _ ->
+               CodingQuestionType model.coding_questions
+           CodingQuestionaryType _ ->
+               CodingQuestionaryType model.coding_questionaries
+           QuestionType _ ->
+               QuestionType model.questions
+           QuestionaryType _ ->
+               QuestionaryType model.questionaries
+           AnswerType _ ->
+               AnswerType model.answers
+           UserType _ ->
+               UserType model.users
 
-move : I.Model -> DbDMT -> DMT -> Maybe DbDMT
-move model source target =
-    let
-        first = Db.toList (getValue source)
-                |> Maybe.map accessors
-    in
-        first
+   getValue dmt =
+       case dmt of
+           CoderType value ->
+               value
+           CodingType value ->
+               value
+           QuestionType value ->
+               value
 
-route : I.Model -> DbDMT -> DbDMT -> DbDMT
-route model source dest = 
-    case (source, dest) of 
-        (CoderType _, CoderType _) -> 
-            source
-        (CoderType _, _) ->
-            source -}
+
+   move : I.Model -> DbDMT -> DMT -> Maybe DbDMT
+   move model source target =
+       let
+           first = Db.toList (getValue source)
+                   |> Maybe.map accessors
+       in
+           first
+
+   route : I.Model -> DbDMT -> DbDMT -> DbDMT
+   route model source dest =
+       case (source, dest) of
+           (CoderType _, CoderType _) ->
+               source
+           (CoderType _, _) ->
+               source
+-}
