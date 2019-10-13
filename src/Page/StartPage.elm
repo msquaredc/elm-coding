@@ -37,7 +37,6 @@ view : (Msg m -> m) -> Material.Model m -> Document m
 view lift mdc =
     { title = "Start Page"
     , body = [ longBody ]
-    , drawer = { header = Just (getDrawer lift mdc),locations = [], favourites = [] }
     , appbar = getAppBar lift mdc
     , navigation = Nothing
     , progress = Nothing

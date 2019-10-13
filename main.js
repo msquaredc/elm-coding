@@ -11240,6 +11240,77 @@ var author$project$Main$update = F2(
 			}
 		}
 	});
+var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
+var author$project$Page$Internal$Drawer$headerFromCoder = function (_n0) {
+	var cid = _n0.a;
+	var model = _n0.b;
+	return {
+		subtitle: elm$html$Html$text(
+			Chadtech$elm_relational_database$Id$toString(cid)),
+		title: elm$html$Html$text(model.name)
+	};
+};
+var author$project$Page$Url$toIcon = function (url) {
+	switch (url.$) {
+		case 'Home':
+			return 'home';
+		case 'StartPage':
+			return 'home';
+		case 'Data':
+			return 'account_tree';
+		case 'Code':
+			return 'ballot';
+		case 'Error':
+			return 'error';
+		default:
+			return 'error_outline';
+	}
+};
+var author$project$Page$Url$toString = function (url) {
+	switch (url.$) {
+		case 'StartPage':
+			return '#';
+		case 'Error404':
+			var requestedHash = url.a;
+			return requestedHash;
+		case 'Data':
+			return '#data';
+		case 'Error':
+			return '#error';
+		case 'Home':
+			return '#home';
+		default:
+			return '#code';
+	}
+};
+var author$project$Page$Internal$Drawer$locationFromUrl = F2(
+	function (url, active) {
+		return {
+			active: active,
+			href: author$project$Page$Url$toString(url),
+			icon: elm$core$Maybe$Just(
+				author$project$Page$Url$toIcon(url)),
+			label: author$project$Page$Url$toString(url)
+		};
+	});
+var author$project$Page$Url$navigatableUrl = _List_fromArray(
+	[author$project$Page$Url$Home, author$project$Page$Url$Code, author$project$Page$Url$Data]);
+var author$project$Page$drawerConfig = function (model) {
+	return {
+		favourites: _List_Nil,
+		header: A2(elm$core$Maybe$map, author$project$Page$Internal$Drawer$headerFromCoder, model.user),
+		locations: A2(
+			elm$core$List$map,
+			function (x) {
+				return A2(
+					author$project$Page$Internal$Drawer$locationFromUrl,
+					x,
+					_Utils_eq(x, model.url));
+			},
+			author$project$Page$Url$navigatableUrl)
+	};
+};
 var author$project$Data$Navigation$question2questionary = F2(
 	function (model, question) {
 		return A3(
@@ -11701,8 +11772,6 @@ var author$project$Internal$Typography$Implementation$headline4 = author$project
 var author$project$Material$Typography$headline4 = author$project$Internal$Typography$Implementation$headline4;
 var author$project$Internal$Typography$Implementation$typography = author$project$Internal$Options$cs('mdc-typography');
 var author$project$Material$Typography$typography = author$project$Internal$Typography$Implementation$typography;
-var elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
 var author$project$Page$Code$viewAnswer = function (answer) {
 	var text_ = function () {
 		if (answer.$ === 'Ok') {
@@ -13625,7 +13694,6 @@ var author$project$Page$Code$view = F4(
 				title: elm$html$Html$text('Coding')
 			},
 			body: A5(author$project$Page$Code$viewBody, lift, model, data, mb_current, coding),
-			drawer: {favourites: _List_Nil, header: elm$core$Maybe$Nothing, locations: _List_Nil},
 			navigation: A2(
 				elm$core$Maybe$map,
 				function (x) {
@@ -13664,7 +13732,6 @@ var author$project$Page$Data$view = F4(
 					A2(elm$core$Basics$composeL, lift, author$project$Page$Data$GotDBMsg),
 					A2(elm$html$Html$div, _List_Nil, _List_Nil))
 				]),
-			drawer: {favourites: _List_Nil, header: elm$core$Maybe$Nothing, locations: _List_Nil},
 			navigation: elm$core$Maybe$Nothing,
 			progress: elm$core$Maybe$Nothing,
 			title: 'Data'
@@ -13694,7 +13761,6 @@ var author$project$Page$Error$view = F3(
 							elm$html$Html$text('Error:')
 						])),
 				A2(elm$core$List$map, author$project$Page$Error$viewError, model.error)),
-			drawer: {favourites: _List_Nil, header: elm$core$Maybe$Nothing, locations: _List_Nil},
 			navigation: elm$core$Maybe$Nothing,
 			progress: elm$core$Maybe$Nothing,
 			title: 'Error'
@@ -14627,7 +14693,6 @@ var author$project$Page$Home$view = F5(
 						[
 							author$project$Page$Home$viewMaybe(coding)
 						]))),
-			drawer: {favourites: _List_Nil, header: elm$core$Maybe$Nothing, locations: _List_Nil},
 			navigation: elm$core$Maybe$Nothing,
 			progress: elm$core$Maybe$Nothing,
 			title: 'Home'
@@ -15880,13 +15945,13 @@ var author$project$Page$Internal$viewNavigation = F3(
 			return A2(elm$html$Html$div, _List_Nil, _List_Nil);
 		}
 	});
-var author$project$Page$Internal$view = F3(
-	function (lift, model, document) {
+var author$project$Page$Internal$view = F4(
+	function (lift, model, document, drawer) {
 		var header = A3(author$project$Page$Internal$viewHeader, lift, model, document.appbar);
 		return {
 			body: A2(
 				elm$core$List$cons,
-				A5(author$project$Page$Internal$viewBody, lift, header, document, model, document.drawer),
+				A5(author$project$Page$Internal$viewBody, lift, header, document, model, drawer),
 				_List_fromArray(
 					[
 						A3(author$project$Page$Internal$viewNavigation, lift, model.mdc, document.navigation)
@@ -16008,7 +16073,6 @@ var author$project$Page$Login$viewSearch = F3(
 							A4(author$project$Page$Login$showResults, lift, model.field, data.coders, model)
 						]))
 				]),
-			drawer: {favourites: _List_Nil, header: elm$core$Maybe$Nothing, locations: _List_Nil},
 			navigation: elm$core$Maybe$Nothing,
 			progress: elm$core$Maybe$Nothing,
 			title: 'Please log in.'
@@ -16030,7 +16094,6 @@ var author$project$Page$Login$view = F4(
 					[
 						elm$html$Html$text('You\'re already logged in as')
 					]),
-				drawer: {favourites: _List_Nil, header: elm$core$Maybe$Nothing, locations: _List_Nil},
 				navigation: elm$core$Maybe$Nothing,
 				progress: elm$core$Maybe$Just(
 					author$project$Page$Internal$Progress(1.0)),
@@ -16047,31 +16110,6 @@ var author$project$Page$StartPage$getAppBar = F2(
 				]),
 			other: _List_Nil,
 			title: elm$html$Html$text('Start Page')
-		};
-	});
-var author$project$Page$StartPage$Click = {$: 'Click'};
-var author$project$Page$StartPage$getDrawer = F2(
-	function (lift, mdc) {
-		return {
-			subtitle: A2(
-				elm$html$Html$map,
-				lift,
-				elm$html$Html$text('')),
-			title: A5(
-				author$project$Material$Button$view,
-				A2(elm$core$Basics$composeL, lift, author$project$Page$StartPage$Mdc),
-				'login-button',
-				mdc,
-				_List_fromArray(
-					[
-						author$project$Material$Button$ripple,
-						author$project$Material$Options$onClick(
-						lift(author$project$Page$StartPage$Click))
-					]),
-				_List_fromArray(
-					[
-						elm$html$Html$text('Log in')
-					]))
 		};
 	});
 var author$project$Page$StartPage$longBody = A2(
@@ -16324,12 +16362,6 @@ var author$project$Page$StartPage$view = F2(
 			appbar: A2(author$project$Page$StartPage$getAppBar, lift, mdc),
 			body: _List_fromArray(
 				[author$project$Page$StartPage$longBody]),
-			drawer: {
-				favourites: _List_Nil,
-				header: elm$core$Maybe$Just(
-					A2(author$project$Page$StartPage$getDrawer, lift, mdc)),
-				locations: _List_Nil
-			},
 			navigation: elm$core$Maybe$Nothing,
 			progress: elm$core$Maybe$Nothing,
 			title: 'Start Page'
@@ -16342,7 +16374,7 @@ var author$project$Page$view = F2(
 				var _n2 = model.user;
 				if (_n2.$ === 'Just') {
 					var user = _n2.a;
-					return A3(
+					return A4(
 						author$project$Page$Internal$view,
 						author$project$Page$Internal,
 						model.internal,
@@ -16351,9 +16383,10 @@ var author$project$Page$view = F2(
 							A2(elm$core$Basics$composeL, author$project$Page$PageMsg, msg),
 							page,
 							data,
-							user));
+							user),
+						author$project$Page$drawerConfig(model));
 				} else {
-					return A3(
+					return A4(
 						author$project$Page$Internal$view,
 						author$project$Page$Internal,
 						model.internal,
@@ -16362,7 +16395,8 @@ var author$project$Page$view = F2(
 							A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotLoginMsg),
 							model.page.login,
 							data,
-							model.user));
+							model.user),
+						author$project$Page$drawerConfig(model));
 				}
 			});
 		var _n0 = model.url;
@@ -16370,7 +16404,7 @@ var author$project$Page$view = F2(
 			case 'Data':
 				return A3(viewLoggedIn, author$project$Page$Data$view, author$project$Page$GotDataMsg, model.page.data);
 			case 'Error':
-				return A3(
+				return A4(
 					author$project$Page$Internal$view,
 					author$project$Page$Internal,
 					model.internal,
@@ -16378,18 +16412,20 @@ var author$project$Page$view = F2(
 						author$project$Page$Error$view,
 						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotErrorMsg),
 						model.page.error,
-						data));
+						data),
+					author$project$Page$drawerConfig(model));
 			case 'StartPage':
-				return A3(
+				return A4(
 					author$project$Page$Internal$view,
 					author$project$Page$Internal,
 					model.internal,
 					A2(
 						author$project$Page$StartPage$view,
 						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotStartPageMsg),
-						model.mdc));
+						model.mdc),
+					author$project$Page$drawerConfig(model));
 			case 'Error404':
-				return A3(
+				return A4(
 					author$project$Page$Internal$view,
 					author$project$Page$Internal,
 					model.internal,
@@ -16397,7 +16433,8 @@ var author$project$Page$view = F2(
 						author$project$Page$Error$view,
 						A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotErrorMsg),
 						model.page.error,
-						data));
+						data),
+					author$project$Page$drawerConfig(model));
 			case 'Home':
 				return A3(
 					viewLoggedIn,
@@ -16408,7 +16445,7 @@ var author$project$Page$view = F2(
 				var _n1 = model.coding;
 				if (_n1.$ === 'Just') {
 					var coding = _n1.a;
-					return A3(
+					return A4(
 						author$project$Page$Internal$view,
 						author$project$Page$Internal,
 						model.internal,
@@ -16417,7 +16454,8 @@ var author$project$Page$view = F2(
 							A2(elm$core$Basics$composeL, author$project$Page$PageMsg, author$project$Page$GotCodeMsg),
 							model.page.code,
 							data,
-							coding));
+							coding),
+						author$project$Page$drawerConfig(model));
 				} else {
 					return A3(
 						viewLoggedIn,

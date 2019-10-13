@@ -76,7 +76,6 @@ type alias Document m =
     , body : List (Html m)
     , progress : Maybe ProgressType
     , navigation : Maybe NavigationType
-    , drawer : Drawer.Config m
     , appbar : AppBar.Config m
     }
 
@@ -90,14 +89,14 @@ type NavigationType
     = Paginate Int Int
 
 
-view : (Msg m -> m) -> Model m -> Document m -> Browser.Document m
-view lift model document =
+view : (Msg m -> m) -> Model m -> Document m -> Drawer.Config m-> Browser.Document m
+view lift model document drawer=
     let
         header =
             viewHeader lift model document.appbar
     in
     { title = document.title ++ " - M²C"
-    , body = viewBody lift header document model document.drawer :: [ viewNavigation lift model.mdc document.navigation ]
+    , body = viewBody lift header document model drawer :: [ viewNavigation lift model.mdc document.navigation ]
     }
 
 

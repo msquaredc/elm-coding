@@ -93,7 +93,6 @@ view lift model data coding =
         viewBody lift model data mb_current coding
     , progress = Just(Page.Internal.Progress ((/) (toFloat (Maybe.withDefault 0 (A.current_codingFrame_index data coding))) (toFloat (A.max_coding_frame_index data coding))))
     , navigation = Maybe.map (\x -> Page.Internal.Paginate x (A.max_coding_frame_index data coding)) (A.current_codingFrame_index data coding)
-    , drawer = {header = Nothing, locations = [], favourites = []}
     , appbar = {title = text "Coding",
                 action_items = [],
                 other = [] }

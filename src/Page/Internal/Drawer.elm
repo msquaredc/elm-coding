@@ -1,4 +1,4 @@
-module Page.Internal.Drawer exposing (Config, Header, Model, Msg(..), defaultModel, headerFromCoder, update, view)
+module Page.Internal.Drawer exposing (Config, Header, Model, Msg(..), defaultModel, headerFromCoder, locationFromUrl, update, view)
 
 import Db exposing (Db, Row)
 import Entities.Coder as Coder
@@ -10,6 +10,7 @@ import Material.Drawer.Dismissible as DismissibleDrawer
 import Material.Drawer.Modal as Drawer
 import Material.List as Lists
 import Material.Options as Options
+import Page.Url
 
 
 type alias Model m =
@@ -20,8 +21,8 @@ type alias Model m =
 
 type alias Config m =
     { header : Maybe (Header m)
-    , locations : List (Location)
-    , favourites : List (Favourite)
+    , locations : List Location
+    , favourites : List Favourite
     }
 
 
@@ -32,26 +33,35 @@ type alias Header m =
 
 
 type alias Location =
-    { icon : Maybe (String)
+    { icon : Maybe String
     , label : String
     , href : String
     , active : Bool
     }
 
-type alias Favourite = 
-      {
-      icon : Maybe (String)
-      , label : String
-      , href : String
-      , active : Bool
-      , progress : Maybe Float
-      }
+
+type alias Favourite =
+    { icon : Maybe String
+    , label : String
+    , href : String
+    , active : Bool
+    , progress : Maybe Float
+    }
 
 
 headerFromCoder : Row Coder.Model -> Header m
 headerFromCoder ( cid, model ) =
     { title = text model.name
     , subtitle = text (Id.toString cid)
+    }
+
+
+locationFromUrl : Page.Url.Url -> Bool -> Location
+locationFromUrl url active =
+    { icon = Just (Page.Url.toIcon url)
+    , label = Page.Url.toString url
+    , href = Page.Url.toString url
+    , active = active
     }
 
 
@@ -95,36 +105,41 @@ view lift model config =
                 [ Lists.singleSelection
                 , Lists.useActivated
                 ]
-                  (List.concat [(viewLocations lift model config.locations),
-                  [Lists.divider [][]]
-                  ,(viewFavourites lift model config.favourites)])
-                {- [ Lists.a
-                    [ Options.attribute (Attributes.href "#persistent-drawer")
-                    , Lists.activated
+                (List.concat
+                    [ viewLocations lift model config.locations
+                    , [ Lists.divider [] [] ]
+                    , viewFavourites lift model config.favourites
                     ]
-                    [ Lists.graphicIcon [] "inbox"
-                    , text "Inbox"
-                    ]
-                , Lists.a
-                    [ Options.attribute (Attributes.href "#persistent-drawer")
-                    ]
-                    [ Lists.graphicIcon [] "star"
-                    , text "Star"
-                    ]
-                , Lists.divider [] []
-                , Lists.a
-                    [ Options.attribute (Attributes.href "#persistent-drawer")
-                    ]
-                    [ Lists.graphicIcon [] "send"
-                    , text "Sent Mail"
-                    ]
-                , Lists.a
-                    [ Options.attribute (Attributes.href "#persistent-drawer")
-                    ]
-                    [ Lists.graphicIcon [] "drafts"
-                    , text "Drafts"
-                    ]
-                ] -}
+                )
+
+            {- [ Lists.a
+                   [ Options.attribute (Attributes.href "#persistent-drawer")
+                   , Lists.activated
+                   ]
+                   [ Lists.graphicIcon [] "inbox"
+                   , text "Inbox"
+                   ]
+               , Lists.a
+                   [ Options.attribute (Attributes.href "#persistent-drawer")
+                   ]
+                   [ Lists.graphicIcon [] "star"
+                   , text "Star"
+                   ]
+               , Lists.divider [] []
+               , Lists.a
+                   [ Options.attribute (Attributes.href "#persistent-drawer")
+                   ]
+                   [ Lists.graphicIcon [] "send"
+                   , text "Sent Mail"
+                   ]
+               , Lists.a
+                   [ Options.attribute (Attributes.href "#persistent-drawer")
+                   ]
+                   [ Lists.graphicIcon [] "drafts"
+                   , text "Drafts"
+                   ]
+               ]
+            -}
             ]
         ]
     , Drawer.scrim [ Options.onClick (lift CloseDrawer) ] []
@@ -135,39 +150,44 @@ view lift model config =
     -}
     ]
 
+
 locationOptions : Location -> List (Lists.Property m)
 locationOptions location =
-      case location.active of
-          True ->
-            [ Options.attribute (Attributes.href location.href), Lists.activated]
-      
-          False ->
-            [ Options.attribute (Attributes.href location.href)]
+    case location.active of
+        True ->
+            [ Options.attribute (Attributes.href location.href), Lists.activated ]
+
+        False ->
+            [ Options.attribute (Attributes.href location.href) ]
+
 
 locationContent : Location -> List (Html m)
 locationContent location =
-      case location.icon of
-          Nothing ->
-              [text location.label]
-      
-          Just icon ->
-              [ Lists.graphicIcon [] icon
-                    , text location.label
-                    ]
+    case location.icon of
+        Nothing ->
+            [ text location.label ]
 
-viewLocations : (Msg m -> m) -> Model m -> List (Location) -> List (Lists.ListItem m)
+        Just icon ->
+            [ Lists.graphicIcon [] icon
+            , text location.label
+            ]
+
+
+viewLocations : (Msg m -> m) -> Model m -> List Location -> List (Lists.ListItem m)
 viewLocations lift model locations =
-      let
-          f location =
-                  Lists.a
-                    (locationOptions location)
-                    (locationContent location)
-      in
-            List.map f locations
+    let
+        f location =
+            Lists.a
+                (locationOptions location)
+                (locationContent location)
+    in
+    List.map f locations
 
-viewFavourites : (Msg m -> m) -> Model m -> List (Favourite) -> List (Lists.ListItem m)
+
+viewFavourites : (Msg m -> m) -> Model m -> List Favourite -> List (Lists.ListItem m)
 viewFavourites lift model favourites =
-      []
+    []
+
 
 viewHeader : (Msg m -> m) -> Model m -> Maybe (Header m) -> Html m
 viewHeader lift model mb_config =

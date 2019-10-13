@@ -4,6 +4,8 @@ module Page.Url exposing
     , fromString
     , fromUrl
     , toString
+    , navigatableUrl
+    , toIcon
     )
 
 import Url

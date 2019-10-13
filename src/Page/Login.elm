@@ -83,7 +83,6 @@ view lift model data user =
             , body = [ text "You're already logged in as" ]
             , progress = Just (Page.Internal.Progress 1.0)
             , navigation = Nothing
-            , drawer = { header = Nothing, locations = [], favourites = [] }
             , appbar = {title = text "Login",
                 action_items = [],
                 other = [] }
@@ -96,7 +95,6 @@ viewSearch lift model data =
              , p[][ask lift model data]
              , p[][showResults lift model.field data.coders model]]
     , progress = Nothing
-    , drawer = { header = Nothing, locations = [], favourites = [] }
     , appbar = {title = text "Login",
                 action_items = [],
                 other = [] }

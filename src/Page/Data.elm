@@ -28,7 +28,6 @@ view lift model data user =
     , body = [Html.map (lift << GotDBMsg) (div [][])]
     , progress = Nothing
     , navigation = Nothing
-    , drawer = { header = Nothing,locations = [], favourites = []}
     , appbar = {title = text "Data",
                 action_items = [],
                 other = [] }

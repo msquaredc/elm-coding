@@ -226,23 +226,23 @@ view model data =
         viewLoggedIn viewf msg page =
             case model.user of
                 Just user ->
-                    Page.Internal.view Internal model.internal (viewf (PageMsg << msg) page data user)
+                    Page.Internal.view Internal model.internal (viewf (PageMsg << msg) page data user) (drawerConfig model)
 
                 Nothing ->
-                    Page.Internal.view Internal model.internal (Page.Login.view (PageMsg << GotLoginMsg) model.page.login data model.user)
+                    Page.Internal.view Internal model.internal (Page.Login.view (PageMsg << GotLoginMsg) model.page.login data model.user) (drawerConfig model)
     in
     case model.url of
         Page.Url.Data ->
             viewLoggedIn Page.Data.view GotDataMsg model.page.data
 
         Page.Url.Error ->
-            Page.Internal.view Internal model.internal (Page.Error.view (PageMsg << GotErrorMsg) model.page.error data)
+            Page.Internal.view Internal model.internal (Page.Error.view (PageMsg << GotErrorMsg) model.page.error data) (drawerConfig model)
 
         Page.Url.StartPage ->
-            Page.Internal.view Internal model.internal (Page.StartPage.view (PageMsg << GotStartPageMsg) model.mdc)
+            Page.Internal.view Internal model.internal (Page.StartPage.view (PageMsg << GotStartPageMsg) model.mdc) (drawerConfig model)
 
         Page.Url.Error404 _ ->
-            Page.Internal.view Internal model.internal (Page.Error.view (PageMsg << GotErrorMsg) model.page.error data) 
+            Page.Internal.view Internal model.internal (Page.Error.view (PageMsg << GotErrorMsg) model.page.error data) (drawerConfig model)
 
         Page.Url.Home ->
             viewLoggedIn (Page.Home.view model.coding) GotHomeMsg model.page.home
@@ -250,7 +250,7 @@ view model data =
         Page.Url.Code ->
             case model.coding of
                 Just coding ->
-                    Page.Internal.view Internal model.internal (Page.Code.view (PageMsg << GotCodeMsg) model.page.code data coding) 
+                    Page.Internal.view Internal model.internal (Page.Code.view (PageMsg << GotCodeMsg) model.page.code data coding) (drawerConfig model)
 
                 Nothing ->
                     viewLoggedIn (Page.Home.view model.coding) GotHomeMsg model.page.home
@@ -264,3 +264,11 @@ onUrlChange url =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Material.subscriptions Mdc model
+
+drawerConfig : Model -> Drawer.Config m
+drawerConfig model =
+    {
+        header = Maybe.map Drawer.headerFromCoder model.user,
+        favourites = [],
+        locations = List.map (\x -> Drawer.locationFromUrl x (x==model.url)) Page.Url.navigatableUrl
+    }
