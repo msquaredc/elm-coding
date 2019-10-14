@@ -10682,14 +10682,23 @@ var author$project$Page$Home$update = F3(
 							return _Utils_Tuple3(model, elm$core$Platform$Cmd$none, elm$core$Maybe$Nothing);
 					}
 				default:
-					var msg_ = msg.a.a;
-					var $temp$lift = lift,
-						$temp$msg = author$project$Page$Home$Mdc(msg_),
-						$temp$model = model;
-					lift = $temp$lift;
-					msg = $temp$msg;
-					model = $temp$model;
-					continue update;
+					if (msg.a.$ === 'Mdc') {
+						var msg_ = msg.a.a;
+						var $temp$lift = lift,
+							$temp$msg = author$project$Page$Home$Mdc(msg_),
+							$temp$model = model;
+						lift = $temp$lift;
+						msg = $temp$msg;
+						model = $temp$model;
+						continue update;
+					} else {
+						var coding = msg.a.a;
+						return _Utils_Tuple3(
+							model,
+							elm$core$Platform$Cmd$none,
+							elm$core$Maybe$Just(
+								author$project$Page$Home$GotSelection(coding)));
+					}
 			}
 		}
 	});
@@ -10864,11 +10873,11 @@ var author$project$Page$updatePage = F3(
 					elm$core$Maybe$Nothing);
 		}
 	});
-var author$project$Page$Internal$AppBarMsg = function (a) {
-	return {$: 'AppBarMsg', a: a};
-};
 var author$project$Page$Internal$DrawerMsg = function (a) {
 	return {$: 'DrawerMsg', a: a};
+};
+var author$project$Page$Internal$AppBarMsg = function (a) {
+	return {$: 'AppBarMsg', a: a};
 };
 var author$project$Page$Internal$Mdc = function (a) {
 	return {$: 'Mdc', a: a};
@@ -10973,6 +10982,7 @@ var author$project$Page$Internal$update = F3(
 				return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 		}
 	});
+var author$project$Page$Internal$Drawer$CloseDrawer = {$: 'CloseDrawer'};
 var elm$core$String$toLower = _String_toLower;
 var author$project$Page$Login$getFilteredList = F2(
 	function (db, name) {
@@ -11034,12 +11044,21 @@ var author$project$Page$update = F3(
 					elm$core$Maybe$Nothing);
 			default:
 				var url = msg.a;
+				var _n5 = A3(
+					author$project$Page$update,
+					author$project$Page$Internal(
+						author$project$Page$Internal$DrawerMsg(author$project$Page$Internal$Drawer$CloseDrawer)),
+					data,
+					model);
+				var newmodel = _n5.a;
+				var effects = _n5.b;
+				var outmsg = _n5.c;
 				return _Utils_Tuple3(
 					_Utils_update(
-						model,
+						newmodel,
 						{url: url}),
-					elm$core$Platform$Cmd$none,
-					elm$core$Maybe$Nothing);
+					effects,
+					outmsg);
 		}
 	});
 var elm$browser$Browser$Navigation$load = _Browser_load;
@@ -13766,22 +13785,673 @@ var author$project$Page$Error$view = F3(
 			title: 'Error'
 		};
 	});
-var author$project$Internal$List$Implementation$avatarList = author$project$Internal$Options$cs('mdc-list--avatar-list');
-var author$project$Material$List$avatarList = author$project$Internal$List$Implementation$avatarList;
-var author$project$Internal$List$Implementation$onSelectListItem = function (handler) {
+var author$project$Internal$LayoutGrid$Implementation$span12 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 12);
+var author$project$Material$LayoutGrid$span12 = author$project$Internal$LayoutGrid$Implementation$span12;
+var elm$core$List$singleton = function (value) {
+	return _List_fromArray(
+		[value]);
+};
+var author$project$Internal$LayoutGrid$Implementation$view = function (options) {
+	return A2(
+		elm$core$Basics$composeL,
+		A2(
+			elm$core$Basics$composeL,
+			A2(
+				author$project$Internal$Options$styled,
+				elm$html$Html$div,
+				A2(
+					elm$core$List$cons,
+					author$project$Internal$Options$cs('mdc-layout-grid'),
+					options)),
+			elm$core$List$singleton),
+		author$project$Internal$LayoutGrid$Implementation$inner(_List_Nil));
+};
+var author$project$Material$LayoutGrid$view = author$project$Internal$LayoutGrid$Implementation$view;
+var author$project$Internal$LayoutGrid$Implementation$span4 = A2(author$project$Internal$LayoutGrid$Implementation$span, elm$core$Maybe$Nothing, 4);
+var author$project$Material$LayoutGrid$span4 = author$project$Internal$LayoutGrid$Implementation$span4;
+var author$project$Internal$Card$Implementation$actionButton = author$project$Internal$Options$cs('mdc-card__action mdc-card__action-button');
+var author$project$Material$Card$actionButton = author$project$Internal$Card$Implementation$actionButton;
+var author$project$Internal$Card$Implementation$actionButtons = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-card__action-buttons'),
+			options));
+};
+var author$project$Material$Card$actionButtons = author$project$Internal$Card$Implementation$actionButtons;
+var author$project$Internal$Card$Implementation$actionIcon = author$project$Internal$Options$cs('mdc-card__action mdc-card__action-icon');
+var author$project$Material$Card$actionIcon = author$project$Internal$Card$Implementation$actionIcon;
+var author$project$Internal$Card$Implementation$actionIcons = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-card__action-icons'),
+			options));
+};
+var author$project$Material$Card$actionIcons = author$project$Internal$Card$Implementation$actionIcons;
+var author$project$Internal$Card$Implementation$actions = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-card__actions'),
+			options));
+};
+var author$project$Material$Card$actions = author$project$Internal$Card$Implementation$actions;
+var author$project$Internal$Card$Implementation$aspect16To9 = author$project$Internal$Options$cs('mdc-card__media--16-9');
+var author$project$Material$Card$aspect16To9 = author$project$Internal$Card$Implementation$aspect16To9;
+var author$project$Internal$Card$Implementation$backgroundImage = function (url) {
+	return A2(author$project$Internal$Options$css, 'background-image', 'url(' + (url + ')'));
+};
+var author$project$Material$Card$backgroundImage = author$project$Internal$Card$Implementation$backgroundImage;
+var author$project$Internal$Card$Implementation$fullBleed = author$project$Internal$Options$cs('mdc-card__actions--full-bleed');
+var author$project$Material$Card$fullBleed = author$project$Internal$Card$Implementation$fullBleed;
+var author$project$Internal$Card$Implementation$media = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-card__media'),
+			options));
+};
+var author$project$Material$Card$media = author$project$Internal$Card$Implementation$media;
+var author$project$Internal$Card$Implementation$primaryAction = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-card__primary-action'),
+			options));
+};
+var author$project$Material$Card$primaryAction = author$project$Internal$Card$Implementation$primaryAction;
+var author$project$Internal$Card$Implementation$stroked = author$project$Internal$Options$cs('mdc-card--stroked');
+var author$project$Material$Card$stroked = author$project$Internal$Card$Implementation$stroked;
+var author$project$Internal$Card$Implementation$view = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-card'),
+			options));
+};
+var author$project$Material$Card$view = author$project$Internal$Card$Implementation$view;
+var author$project$Internal$IconButton$Implementation$icon = function (value) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{icon: value});
+		});
+};
+var author$project$Material$IconButton$icon = author$project$Internal$IconButton$Implementation$icon;
+var author$project$Internal$IconButton$Implementation$label = function (value) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{label: value});
+		});
+};
+var author$project$Material$IconButton$label = author$project$Internal$IconButton$Implementation$label;
+var author$project$Internal$IconButton$Implementation$defaultConfig = {
+	alternativeIconLibrary: elm$core$Maybe$Nothing,
+	disabled: false,
+	icon: {off: '', on: ''},
+	label: {off: '', on: ''},
+	on: false
+};
+var author$project$Internal$IconButton$Implementation$iconElement = author$project$Internal$Options$cs('mdc-icon-button__icon');
+var author$project$Internal$IconButton$Implementation$onIconElement = author$project$Internal$Options$cs('mdc-icon-button__icon--on');
+var author$project$Internal$IconButton$Implementation$iconButton = F5(
+	function (domId, lift, model, options, list) {
+		var ripple = A5(
+			author$project$Internal$Ripple$Implementation$view,
+			true,
+			domId,
+			A2(elm$core$Basics$composeL, lift, author$project$Internal$IconButton$Model$RippleMsg),
+			model.ripple,
+			_List_Nil);
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$IconButton$Implementation$defaultConfig, options);
+		var config = summary.config;
+		var icons = _List_fromArray(
+			[
+				A3(
+				author$project$Internal$Options$styled,
+				elm$html$Html$i,
+				_List_fromArray(
+					[
+						author$project$Internal$IconButton$Implementation$iconElement,
+						author$project$Internal$Options$cs('material-icons'),
+						author$project$Internal$IconButton$Implementation$onIconElement
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(config.icon.on)
+					])),
+				A3(
+				author$project$Internal$Options$styled,
+				elm$html$Html$i,
+				_List_fromArray(
+					[
+						author$project$Internal$IconButton$Implementation$iconElement,
+						author$project$Internal$Options$cs('material-icons')
+					]),
+				_List_fromArray(
+					[
+						elm$html$Html$text(config.icon.off)
+					]))
+			]);
+		var isToggle = !_Utils_eq(config.icon.on, config.icon.off);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			elm$html$Html$button,
+			_List_fromArray(
+				[
+					author$project$Internal$Options$cs('mdc-icon-button'),
+					A2(
+					author$project$Internal$Options$when,
+					_Utils_eq(config.alternativeIconLibrary, elm$core$Maybe$Nothing),
+					author$project$Internal$Options$cs('material-icons')),
+					A2(
+					author$project$Internal$Options$when,
+					config.on,
+					author$project$Internal$Options$cs('mdc-icon-button--on')),
+					A2(
+					author$project$Internal$Options$aria,
+					'label',
+					config.on ? config.label.on : config.label.off),
+					A2(
+					author$project$Internal$Options$when,
+					isToggle,
+					A2(author$project$Internal$Options$aria, 'hidden', 'True')),
+					A2(
+					author$project$Internal$Options$when,
+					isToggle && config.on,
+					A2(author$project$Internal$Options$aria, 'pressed', 'True')),
+					A2(
+					author$project$Internal$Options$when,
+					isToggle && (!config.on),
+					A2(author$project$Internal$Options$aria, 'pressed', 'False')),
+					A2(
+					author$project$Internal$Options$when,
+					config.disabled,
+					author$project$Internal$Options$attribute(
+						elm$html$Html$Attributes$disabled(true))),
+					author$project$Internal$Options$many(
+					_List_fromArray(
+						[ripple.interactionHandler, ripple.properties]))
+				]),
+			_List_Nil,
+			_Utils_ap(
+				list,
+				(!_Utils_eq(config.alternativeIconLibrary, elm$core$Maybe$Nothing)) ? _List_fromArray(
+					[
+						A3(
+						author$project$Internal$Options$styled,
+						elm$html$Html$i,
+						_List_fromArray(
+							[
+								author$project$Internal$Options$cs(
+								A2(elm$core$Maybe$withDefault, 'material-icons', config.alternativeIconLibrary)),
+								config.on ? author$project$Internal$Options$cs(config.icon.on) : author$project$Internal$Options$cs(config.icon.off)
+							]),
+						_List_Nil)
+					]) : (_Utils_eq(config.icon.on, config.icon.off) ? _List_fromArray(
+					[
+						elm$html$Html$text(config.icon.on)
+					]) : icons)));
+	});
+var author$project$Internal$IconButton$Implementation$view = F2(
+	function (lift, index) {
+		return A5(
+			author$project$Internal$Component$render,
+			author$project$Internal$IconButton$Implementation$getSet.get,
+			author$project$Internal$IconButton$Implementation$iconButton(index),
+			author$project$Internal$Msg$IconButtonMsg,
+			lift,
+			index);
+	});
+var author$project$Material$IconButton$view = author$project$Internal$IconButton$Implementation$view;
+var author$project$Material$Options$onClick = author$project$Internal$Options$onClick;
+var author$project$Material$SimplifiedCard$Mdc = function (a) {
+	return {$: 'Mdc', a: a};
+};
+var author$project$Material$SimplifiedCard$Select = function (a) {
+	return {$: 'Select', a: a};
+};
+var author$project$Internal$Typography$Implementation$subtitle1 = author$project$Internal$Options$cs('mdc-typography--subtitle1');
+var author$project$Material$Typography$subtitle1 = author$project$Internal$Typography$Implementation$subtitle1;
+var author$project$Material$Typography$subheading1 = author$project$Material$Typography$subtitle1;
+var elm$html$Html$h3 = _VirtualDom_node('h3');
+var author$project$Material$SimplifiedCard$viewSubtitle = function (card) {
+	var _n0 = card.subtitle;
+	if (_n0.$ === 'Nothing') {
+		return A2(elm$html$Html$div, _List_Nil, _List_Nil);
+	} else {
+		var subtitle = _n0.a;
+		return A3(
+			author$project$Material$Options$styled,
+			elm$html$Html$h3,
+			_List_fromArray(
+				[
+					author$project$Material$Typography$subheading1,
+					A2(author$project$Material$Options$css, 'margin', '0')
+				]),
+			_List_fromArray(
+				[
+					elm$html$Html$text('by Kurt Wagner')
+				]));
+	}
+};
+var author$project$Internal$Typography$Implementation$body1 = author$project$Internal$Options$cs('mdc-typography--body1');
+var author$project$Material$Typography$body1 = author$project$Internal$Typography$Implementation$body1;
+var author$project$Internal$Typography$Implementation$headline5 = author$project$Internal$Options$cs('mdc-typography--headline5');
+var author$project$Material$Typography$title = author$project$Internal$Typography$Implementation$headline5;
+var author$project$Material$SimplifiedCard$view = F3(
+	function (lift, mdc, card) {
+		return A2(
+			author$project$Material$Card$view,
+			_List_fromArray(
+				[author$project$Material$Card$stroked, author$project$Material$Card$fullBleed]),
+			_List_fromArray(
+				[
+					A2(
+					author$project$Material$Card$primaryAction,
+					_List_fromArray(
+						[
+							author$project$Material$Options$onClick(
+							A2(elm$core$Basics$composeL, lift, author$project$Material$SimplifiedCard$Select)(card.return_value))
+						]),
+					_List_fromArray(
+						[
+							A2(
+							author$project$Material$Card$media,
+							_List_fromArray(
+								[
+									author$project$Material$Card$aspect16To9,
+									author$project$Material$Card$backgroundImage('images/16-9.jpg')
+								]),
+							_List_Nil),
+							A3(
+							author$project$Material$Options$styled,
+							elm$html$Html$div,
+							_List_fromArray(
+								[
+									A2(author$project$Material$Options$css, 'padding', '1rem')
+								]),
+							_List_fromArray(
+								[
+									A3(
+									author$project$Material$Options$styled,
+									elm$html$Html$h2,
+									_List_fromArray(
+										[
+											author$project$Material$Typography$title,
+											A2(author$project$Material$Options$css, 'margin', '0')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text(card.title)
+										])),
+									author$project$Material$SimplifiedCard$viewSubtitle(card)
+								])),
+							A3(
+							author$project$Material$Options$styled,
+							elm$html$Html$div,
+							_List_fromArray(
+								[
+									A2(author$project$Material$Options$css, 'padding', '0 1rem 8px 1rem'),
+									A2(author$project$Material$Options$css, 'color', 'rgba(0, 0, 0, 0.54)'),
+									author$project$Material$Typography$body1
+								]),
+							_List_fromArray(
+								[
+									elm$html$Html$text('\n      Visit ten places on our planet that are undergoing the\n      biggest changes today.')
+								]))
+						])),
+					A2(
+					author$project$Material$Card$actions,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							author$project$Material$Card$actionButtons,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A5(
+									author$project$Material$Button$view,
+									A2(elm$core$Basics$composeL, lift, author$project$Material$SimplifiedCard$Mdc),
+									'my-read-action',
+									mdc,
+									_List_fromArray(
+										[author$project$Material$Card$actionButton, author$project$Material$Button$ripple]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Read')
+										]))
+								])),
+							A2(
+							author$project$Material$Card$actionIcons,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A5(
+									author$project$Material$IconButton$view,
+									A2(elm$core$Basics$composeL, lift, author$project$Material$SimplifiedCard$Mdc),
+									'my-favorite-action',
+									mdc,
+									_List_fromArray(
+										[
+											author$project$Material$Card$actionIcon,
+											author$project$Material$IconButton$icon(
+											{off: 'favorite_border', on: 'favorite'}),
+											author$project$Material$IconButton$label(
+											{off: 'Add to favorites', on: 'Remove from favorites'})
+										]),
+									_List_Nil)
+								]))
+						]))
+				]));
+	});
+var author$project$Page$Home$CardMsg = function (a) {
+	return {$: 'CardMsg', a: a};
+};
+var author$project$Page$Home$coding2card = function (_n0) {
+	var id = _n0.a;
+	var value = _n0.b;
+	return {
+		description: elm$core$Maybe$Nothing,
+		return_value: _Utils_Tuple2(id, value),
+		subtitle: elm$core$Maybe$Nothing,
+		title: Chadtech$elm_relational_database$Id$toString(id)
+	};
+};
+var author$project$Page$Home$viewCodingsCards = F4(
+	function (lift, model, data, coder) {
+		var cards = A2(
+			elm$core$List$map,
+			function (x) {
+				return A2(
+					author$project$Material$LayoutGrid$cell,
+					_List_fromArray(
+						[author$project$Material$LayoutGrid$span4]),
+					_List_fromArray(
+						[x]));
+			},
+			A2(
+				elm$core$List$map,
+				A2(
+					author$project$Material$SimplifiedCard$view,
+					A2(elm$core$Basics$composeL, lift, author$project$Page$Home$CardMsg),
+					model.mdc),
+				A2(
+					elm$core$List$map,
+					author$project$Page$Home$coding2card,
+					Chadtech$elm_relational_database$Db$toList(
+						A3(
+							author$project$Db$Extra$selectFrom,
+							data.codings,
+							function (c) {
+								return c.coder;
+							},
+							Chadtech$elm_relational_database$Db$fromList(
+								_List_fromArray(
+									[coder])))))));
+		return cards;
+	});
+var author$project$Page$Home$viewMaybe = function (coding) {
+	if (coding.$ === 'Just') {
+		var _n1 = coding.a;
+		var id = _n1.a;
+		var value = _n1.b;
+		return elm$html$Html$text(
+			Chadtech$elm_relational_database$Id$toString(id));
+	} else {
+		var option2 = coding;
+		return elm$html$Html$text('NoCoding');
+	}
+};
+var author$project$Page$Home$viewBody = F5(
+	function (lift, model, data, user, coding) {
+		return A2(
+			author$project$Material$LayoutGrid$view,
+			_List_Nil,
+			elm$core$List$concat(
+				_List_fromArray(
+					[
+						_List_fromArray(
+						[
+							A2(
+							author$project$Material$LayoutGrid$cell,
+							_List_fromArray(
+								[author$project$Material$LayoutGrid$span12]),
+							_List_fromArray(
+								[
+									elm$html$Html$text('My codings in Process:')
+								]))
+						]),
+						A4(author$project$Page$Home$viewCodingsCards, lift, model, data, user),
+						_List_fromArray(
+						[
+							A2(
+							author$project$Material$LayoutGrid$cell,
+							_List_fromArray(
+								[author$project$Material$LayoutGrid$span12]),
+							_List_fromArray(
+								[
+									author$project$Page$Home$viewMaybe(coding)
+								]))
+						])
+					])));
+	});
+var author$project$Page$Home$view = F5(
+	function (coding, lift, model, data, user) {
+		return {
+			appbar: {
+				action_items: _List_Nil,
+				other: _List_Nil,
+				title: elm$html$Html$text('Home')
+			},
+			body: _List_fromArray(
+				[
+					A5(author$project$Page$Home$viewBody, lift, model, data, user, coding)
+				]),
+			navigation: elm$core$Maybe$Nothing,
+			progress: elm$core$Maybe$Nothing,
+			title: 'Home'
+		};
+	});
+var author$project$Material$Options$cs = author$project$Internal$Options$cs;
+var author$project$Internal$TopAppBar$Implementation$fixedAdjust = author$project$Internal$Options$cs('mdc-top-app-bar--fixed-adjust');
+var author$project$Material$TopAppBar$fixedAdjust = author$project$Internal$TopAppBar$Implementation$fixedAdjust;
+var author$project$Internal$Drawer$Implementation$content = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-drawer__content'),
+			options));
+};
+var author$project$Internal$Drawer$Modal$Implementation$content = author$project$Internal$Drawer$Implementation$content;
+var author$project$Material$Drawer$Modal$content = author$project$Internal$Drawer$Modal$Implementation$content;
+var author$project$Internal$Drawer$Implementation$open = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{open: true});
+	});
+var author$project$Internal$Drawer$Modal$Implementation$open = author$project$Internal$Drawer$Implementation$open;
+var author$project$Material$Drawer$Modal$open = author$project$Internal$Drawer$Modal$Implementation$open;
+var author$project$Internal$Drawer$Modal$Implementation$scrim = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$div,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-drawer-scrim'),
+			options));
+};
+var author$project$Material$Drawer$Modal$scrim = author$project$Internal$Drawer$Modal$Implementation$scrim;
+var author$project$Internal$Drawer$Implementation$defaultConfig = {onClose: elm$core$Maybe$Nothing, open: false};
+var author$project$Internal$Drawer$Model$EndAnimation = {$: 'EndAnimation'};
+var author$project$Internal$Drawer$Model$NoOp = {$: 'NoOp'};
+var author$project$Internal$Drawer$Model$StartAnimation = function (a) {
+	return {$: 'StartAnimation', a: a};
+};
+var elm$html$Html$aside = _VirtualDom_node('aside');
+var author$project$Internal$Drawer$Implementation$view = F5(
+	function (className, lift, model, options, nodes) {
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$Drawer$Implementation$defaultConfig, options);
+		var config = summary.config;
+		var stateChanged = (!model.closeOnAnimationEnd) && (!_Utils_eq(config.open, model.open));
+		return A3(
+			author$project$Internal$Options$styled,
+			elm$html$Html$aside,
+			_Utils_ap(
+				_List_fromArray(
+					[
+						author$project$Internal$Options$cs('mdc-drawer'),
+						author$project$Internal$Options$cs(className),
+						A2(
+						author$project$Internal$Options$when,
+						stateChanged,
+						author$project$Internal$GlobalEvents$onTick(
+							elm$json$Json$Decode$succeed(
+								lift(
+									author$project$Internal$Drawer$Model$StartAnimation(config.open))))),
+						A2(
+						author$project$Internal$Options$when,
+						config.open || model.open,
+						author$project$Internal$Options$cs('mdc-drawer--open')),
+						A2(
+						author$project$Internal$Options$when,
+						config.open && (stateChanged || model.animating),
+						author$project$Internal$Options$cs('mdc-drawer--animate')),
+						A2(
+						author$project$Internal$Options$when,
+						config.open && model.animating,
+						author$project$Internal$Options$cs('mdc-drawer--opening')),
+						A2(
+						author$project$Internal$Options$when,
+						(!config.open) && model.animating,
+						author$project$Internal$Options$cs('mdc-drawer--closing')),
+						A2(
+						author$project$Internal$Options$when,
+						model.animating,
+						A2(
+							author$project$Internal$Options$on,
+							'transitionend',
+							elm$json$Json$Decode$succeed(
+								lift(author$project$Internal$Drawer$Model$EndAnimation)))),
+						A2(
+						author$project$Internal$Options$when,
+						(!elm$core$String$isEmpty(className)) && (config.open || model.open),
+						A2(author$project$Internal$Options$data, 'focustrap', '{}')),
+						A2(
+						author$project$Internal$Options$on,
+						'keydown',
+						A3(
+							elm$json$Json$Decode$map2,
+							F2(
+								function (key, keyCode) {
+									return (_Utils_eq(
+										key,
+										elm$core$Maybe$Just('Escape')) || (keyCode === 27)) ? A2(
+										elm$core$Maybe$withDefault,
+										lift(author$project$Internal$Drawer$Model$NoOp),
+										config.onClose) : lift(author$project$Internal$Drawer$Model$NoOp);
+								}),
+							elm$json$Json$Decode$oneOf(
+								_List_fromArray(
+									[
+										A2(
+										elm$json$Json$Decode$map,
+										elm$core$Maybe$Just,
+										A2(
+											elm$json$Json$Decode$at,
+											_List_fromArray(
+												['key']),
+											elm$json$Json$Decode$string)),
+										elm$json$Json$Decode$succeed(elm$core$Maybe$Nothing)
+									])),
+							A2(
+								elm$json$Json$Decode$at,
+								_List_fromArray(
+									['keyCode']),
+								elm$json$Json$Decode$int)))
+					]),
+				options),
+			nodes);
+	});
+var author$project$Internal$Drawer$Implementation$render = function (className) {
+	return A3(
+		author$project$Internal$Component$render,
+		author$project$Internal$Drawer$Implementation$getSet.get,
+		author$project$Internal$Drawer$Implementation$view(className),
+		author$project$Internal$Msg$DrawerMsg);
+};
+var author$project$Internal$Drawer$Modal$Implementation$className = 'mdc-drawer--modal';
+var author$project$Internal$Drawer$Modal$Implementation$view = author$project$Internal$Drawer$Implementation$render(author$project$Internal$Drawer$Modal$Implementation$className);
+var author$project$Material$Drawer$Modal$view = author$project$Internal$Drawer$Modal$Implementation$view;
+var author$project$Internal$List$Implementation$defaultConfig = {activated: false, isRadioGroup: false, isSingleSelectionList: false, node: elm$core$Maybe$Nothing, onSelectListItem: elm$core$Maybe$Nothing, selected: false, selectedIndex: elm$core$Maybe$Nothing, useActivated: false};
+var author$project$Internal$List$Implementation$asListItemView = F9(
+	function (domId, lift, model, config, listItemsIds, focusedIndex, index, options, children) {
+		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
+		return A5(
+			author$project$Internal$Options$apply,
+			summary,
+			A2(elm$core$Maybe$withDefault, elm$html$Html$div, summary.config.node),
+			_List_Nil,
+			_List_Nil,
+			children);
+	});
+var author$project$Internal$List$Implementation$node = function (nodeFunc) {
 	return author$project$Internal$Options$option(
 		function (config) {
 			return _Utils_update(
 				config,
 				{
-					onSelectListItem: elm$core$Maybe$Just(handler)
+					node: elm$core$Maybe$Just(nodeFunc)
 				});
 		});
 };
-var author$project$Material$List$onSelectListItem = author$project$Internal$List$Implementation$onSelectListItem;
-var author$project$Internal$List$Implementation$twoLine = author$project$Internal$Options$cs('mdc-list--two-line');
-var author$project$Material$List$twoLine = author$project$Internal$List$Implementation$twoLine;
-var author$project$Internal$List$Implementation$defaultConfig = {activated: false, isRadioGroup: false, isSingleSelectionList: false, node: elm$core$Maybe$Nothing, onSelectListItem: elm$core$Maybe$Nothing, selected: false, selectedIndex: elm$core$Maybe$Nothing, useActivated: false};
+var author$project$Internal$List$Implementation$asListItem = F3(
+	function (dom_node, options, children) {
+		return {
+			children: children,
+			focusable: false,
+			options: A2(
+				elm$core$List$cons,
+				author$project$Internal$List$Implementation$node(dom_node),
+				options),
+			view: author$project$Internal$List$Implementation$asListItemView
+		};
+	});
+var elm$html$Html$li = _VirtualDom_node('li');
+var author$project$Internal$List$Implementation$divider = function (options) {
+	return A2(
+		author$project$Internal$List$Implementation$asListItem,
+		elm$html$Html$li,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-divider'),
+			A2(
+				elm$core$List$cons,
+				author$project$Internal$Options$role('separator'),
+				options)));
+};
+var author$project$Material$List$divider = author$project$Internal$List$Implementation$divider;
 var author$project$Internal$List$Implementation$listItemDomId = F2(
 	function (domId, index) {
 		return domId + ('--' + elm$core$String$fromInt(index));
@@ -13966,30 +14636,86 @@ var author$project$Internal$List$Implementation$view = F2(
 			lift,
 			domId);
 	});
-var author$project$Material$List$ul = author$project$Internal$List$Implementation$view;
-var author$project$Material$SimplifiedList$Mdc = function (a) {
-	return {$: 'Mdc', a: a};
+var elm$html$Html$nav = _VirtualDom_node('nav');
+var author$project$Material$List$nav = F5(
+	function (lift, domId, model, options, items) {
+		return A5(
+			author$project$Internal$List$Implementation$view,
+			lift,
+			domId,
+			model,
+			A2(
+				elm$core$List$cons,
+				author$project$Internal$List$Implementation$node(elm$html$Html$nav),
+				options),
+			items);
+	});
+var author$project$Internal$List$Implementation$singleSelection = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{isRadioGroup: false, isSingleSelectionList: true});
+	});
+var author$project$Material$List$singleSelection = author$project$Internal$List$Implementation$singleSelection;
+var author$project$Internal$List$Implementation$useActivated = author$project$Internal$Options$option(
+	function (config) {
+		return _Utils_update(
+			config,
+			{useActivated: true});
+	});
+var author$project$Material$List$useActivated = author$project$Internal$List$Implementation$useActivated;
+var author$project$Material$Options$when = author$project$Internal$Options$when;
+var author$project$Page$Internal$Drawer$viewFavourites = F3(
+	function (lift, model, favourites) {
+		return _List_Nil;
+	});
+var elm$html$Html$header = _VirtualDom_node('header');
+var author$project$Internal$Drawer$Implementation$header = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$header,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-drawer__header'),
+			options));
 };
-var author$project$Material$SimplifiedList$Noop = {$: 'Noop'};
-var author$project$Material$SimplifiedList$Select = function (a) {
-	return {$: 'Select', a: a};
-};
-var author$project$Material$SimplifiedList$onSelect = F2(
-	function (objects, index) {
-		var _n0 = A2(elm_community$list_extra$List$Extra$getAt, index, objects);
-		if (_n0.$ === 'Just') {
-			var object = _n0.a;
-			return author$project$Material$SimplifiedList$Select(object);
+var author$project$Internal$Drawer$Modal$Implementation$header = author$project$Internal$Drawer$Implementation$header;
+var author$project$Material$Drawer$Modal$header = author$project$Internal$Drawer$Modal$Implementation$header;
+var author$project$Internal$Drawer$Implementation$subTitle = author$project$Internal$Options$cs('mdc-drawer__subtitle');
+var author$project$Internal$Drawer$Modal$Implementation$subTitle = author$project$Internal$Drawer$Implementation$subTitle;
+var author$project$Material$Drawer$Modal$subTitle = author$project$Internal$Drawer$Modal$Implementation$subTitle;
+var author$project$Internal$Drawer$Implementation$title = author$project$Internal$Options$cs('mdc-drawer__title');
+var author$project$Internal$Drawer$Modal$Implementation$title = author$project$Internal$Drawer$Implementation$title;
+var author$project$Material$Drawer$Modal$title = author$project$Internal$Drawer$Modal$Implementation$title;
+var elm$html$Html$h6 = _VirtualDom_node('h6');
+var author$project$Page$Internal$Drawer$viewHeader = F3(
+	function (lift, model, mb_config) {
+		if (mb_config.$ === 'Nothing') {
+			return A2(elm$html$Html$div, _List_Nil, _List_Nil);
 		} else {
-			return author$project$Material$SimplifiedList$Noop;
+			var config = mb_config.a;
+			return A2(
+				author$project$Material$Drawer$Modal$header,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A3(
+						author$project$Material$Options$styled,
+						elm$html$Html$h3,
+						_List_fromArray(
+							[author$project$Material$Drawer$Modal$title]),
+						_List_fromArray(
+							[config.title])),
+						A3(
+						author$project$Material$Options$styled,
+						elm$html$Html$h6,
+						_List_fromArray(
+							[author$project$Material$Drawer$Modal$subTitle]),
+						_List_fromArray(
+							[config.subtitle]))
+					]));
 		}
 	});
-var author$project$Internal$List$Implementation$graphicClass = author$project$Internal$Options$cs('mdc-list-item__graphic');
-var author$project$Internal$List$Implementation$graphicIcon = function (options) {
-	return author$project$Internal$Icon$Implementation$view(
-		A2(elm$core$List$cons, author$project$Internal$List$Implementation$graphicClass, options));
-};
-var author$project$Material$List$graphicIcon = author$project$Internal$List$Implementation$graphicIcon;
 var author$project$Internal$List$Implementation$find = F2(
 	function (predicate, list) {
 		find:
@@ -14327,7 +15053,6 @@ var elm$core$Array$get = F2(
 			A2(elm$core$Elm$JsArray$unsafeGet, elm$core$Array$bitMask & index, tail)) : elm$core$Maybe$Just(
 			A3(elm$core$Array$getHelp, startShift, index, tree)));
 	});
-var elm$html$Html$li = _VirtualDom_node('li');
 var author$project$Internal$List$Implementation$liView = F9(
 	function (domId, lift, model, config, listItemIds, focusedIndex, index, options, children) {
 		var tab_index = _Utils_eq(focusedIndex, index) ? 0 : (-1);
@@ -14521,445 +15246,6 @@ var author$project$Internal$List$Implementation$li = F2(
 	function (options, children) {
 		return {children: children, focusable: true, options: options, view: author$project$Internal$List$Implementation$liView};
 	});
-var author$project$Material$List$li = author$project$Internal$List$Implementation$li;
-var author$project$Internal$List$Implementation$metaClass = author$project$Internal$Options$cs('mdc-list-item__meta');
-var author$project$Internal$List$Implementation$metaIcon = function (options) {
-	return author$project$Internal$Icon$Implementation$view(
-		A2(elm$core$List$cons, author$project$Internal$List$Implementation$metaClass, options));
-};
-var author$project$Material$List$metaIcon = author$project$Internal$List$Implementation$metaIcon;
-var elm$html$Html$span = _VirtualDom_node('span');
-var author$project$Internal$List$Implementation$primaryText = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$span,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-list-item__primary-text'),
-			options));
-};
-var author$project$Material$List$primaryText = author$project$Internal$List$Implementation$primaryText;
-var author$project$Internal$List$Implementation$secondaryText = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$span,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-list-item__secondary-text'),
-			options));
-};
-var author$project$Material$List$secondaryText = author$project$Internal$List$Implementation$secondaryText;
-var author$project$Internal$List$Implementation$text = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$span,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-list-item__text'),
-			options));
-};
-var author$project$Material$List$text = author$project$Internal$List$Implementation$text;
-var author$project$Material$SimplifiedList$viewModel = function (item) {
-	return A2(
-		author$project$Material$List$li,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(author$project$Material$List$graphicIcon, _List_Nil, item.icon),
-				A2(
-				author$project$Material$List$text,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						author$project$Material$List$primaryText,
-						_List_Nil,
-						_List_fromArray(
-							[
-								elm$html$Html$text(item.primary)
-							])),
-						A2(
-						author$project$Material$List$secondaryText,
-						_List_Nil,
-						_List_fromArray(
-							[
-								elm$html$Html$text(item.secondary)
-							]))
-					])),
-				A2(author$project$Material$List$metaIcon, _List_Nil, 'info')
-			]));
-};
-var author$project$Material$SimplifiedList$view = F4(
-	function (lift, mdc, mapper, objects) {
-		return A5(
-			author$project$Material$List$ul,
-			A2(elm$core$Basics$composeL, lift, author$project$Material$SimplifiedList$Mdc),
-			'my-list',
-			mdc,
-			_List_fromArray(
-				[
-					author$project$Material$List$twoLine,
-					author$project$Material$List$avatarList,
-					author$project$Material$List$onSelectListItem(
-					A2(
-						elm$core$Basics$composeL,
-						lift,
-						author$project$Material$SimplifiedList$onSelect(objects)))
-				]),
-			A2(
-				elm$core$List$map,
-				author$project$Material$SimplifiedList$viewModel,
-				A2(elm$core$List$map, mapper, objects)));
-	});
-var author$project$Page$Home$ListMsg = function (a) {
-	return {$: 'ListMsg', a: a};
-};
-var author$project$Page$Home$codingRowToListItem = F2(
-	function (data, _n0) {
-		var id = _n0.a;
-		var coding = _n0.b;
-		var row = elm$core$List$head(
-			Chadtech$elm_relational_database$Db$toList(
-				A2(
-					author$project$Data$Navigation$coding2questionary,
-					data,
-					Chadtech$elm_relational_database$Db$fromList(
-						_List_fromArray(
-							[
-								_Utils_Tuple2(id, coding)
-							])))));
-		if (row.$ === 'Just') {
-			var _n2 = row.a;
-			var qid = _n2.a;
-			var questionary = _n2.b;
-			return {
-				icon: 'person',
-				primary: questionary.name,
-				secondary: Chadtech$elm_relational_database$Id$toString(id)
-			};
-		} else {
-			return {
-				icon: 'error',
-				primary: 'Invalid Questionary',
-				secondary: Chadtech$elm_relational_database$Id$toString(id)
-			};
-		}
-	});
-var author$project$Page$Home$viewCodings = F4(
-	function (lift, model, data, coder) {
-		return A4(
-			author$project$Material$SimplifiedList$view,
-			A2(elm$core$Basics$composeL, lift, author$project$Page$Home$ListMsg),
-			model.mdc,
-			author$project$Page$Home$codingRowToListItem(data),
-			Chadtech$elm_relational_database$Db$toList(
-				A3(
-					author$project$Db$Extra$selectFrom,
-					data.codings,
-					function (c) {
-						return c.coder;
-					},
-					Chadtech$elm_relational_database$Db$fromList(
-						_List_fromArray(
-							[coder])))));
-	});
-var author$project$Page$Home$viewMaybe = function (coding) {
-	if (coding.$ === 'Just') {
-		var _n1 = coding.a;
-		var id = _n1.a;
-		var value = _n1.b;
-		return elm$html$Html$text(
-			Chadtech$elm_relational_database$Id$toString(id));
-	} else {
-		var option2 = coding;
-		return elm$html$Html$text('NoCoding');
-	}
-};
-var author$project$Page$Home$view = F5(
-	function (coding, lift, model, data, user) {
-		return {
-			appbar: {
-				action_items: _List_Nil,
-				other: _List_Nil,
-				title: elm$html$Html$text('Home')
-			},
-			body: A2(
-				elm$core$List$cons,
-				elm$html$Html$text('My codings in Process:'),
-				A2(
-					elm$core$List$cons,
-					A4(author$project$Page$Home$viewCodings, lift, model, data, user),
-					_List_fromArray(
-						[
-							author$project$Page$Home$viewMaybe(coding)
-						]))),
-			navigation: elm$core$Maybe$Nothing,
-			progress: elm$core$Maybe$Nothing,
-			title: 'Home'
-		};
-	});
-var author$project$Material$Options$cs = author$project$Internal$Options$cs;
-var author$project$Internal$TopAppBar$Implementation$fixedAdjust = author$project$Internal$Options$cs('mdc-top-app-bar--fixed-adjust');
-var author$project$Material$TopAppBar$fixedAdjust = author$project$Internal$TopAppBar$Implementation$fixedAdjust;
-var author$project$Internal$Drawer$Implementation$content = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$div,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-drawer__content'),
-			options));
-};
-var author$project$Internal$Drawer$Modal$Implementation$content = author$project$Internal$Drawer$Implementation$content;
-var author$project$Material$Drawer$Modal$content = author$project$Internal$Drawer$Modal$Implementation$content;
-var author$project$Internal$Drawer$Implementation$open = author$project$Internal$Options$option(
-	function (config) {
-		return _Utils_update(
-			config,
-			{open: true});
-	});
-var author$project$Internal$Drawer$Modal$Implementation$open = author$project$Internal$Drawer$Implementation$open;
-var author$project$Material$Drawer$Modal$open = author$project$Internal$Drawer$Modal$Implementation$open;
-var author$project$Internal$Drawer$Modal$Implementation$scrim = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$div,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-drawer-scrim'),
-			options));
-};
-var author$project$Material$Drawer$Modal$scrim = author$project$Internal$Drawer$Modal$Implementation$scrim;
-var author$project$Internal$Drawer$Implementation$defaultConfig = {onClose: elm$core$Maybe$Nothing, open: false};
-var author$project$Internal$Drawer$Model$EndAnimation = {$: 'EndAnimation'};
-var author$project$Internal$Drawer$Model$NoOp = {$: 'NoOp'};
-var author$project$Internal$Drawer$Model$StartAnimation = function (a) {
-	return {$: 'StartAnimation', a: a};
-};
-var elm$html$Html$aside = _VirtualDom_node('aside');
-var author$project$Internal$Drawer$Implementation$view = F5(
-	function (className, lift, model, options, nodes) {
-		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$Drawer$Implementation$defaultConfig, options);
-		var config = summary.config;
-		var stateChanged = (!model.closeOnAnimationEnd) && (!_Utils_eq(config.open, model.open));
-		return A3(
-			author$project$Internal$Options$styled,
-			elm$html$Html$aside,
-			_Utils_ap(
-				_List_fromArray(
-					[
-						author$project$Internal$Options$cs('mdc-drawer'),
-						author$project$Internal$Options$cs(className),
-						A2(
-						author$project$Internal$Options$when,
-						stateChanged,
-						author$project$Internal$GlobalEvents$onTick(
-							elm$json$Json$Decode$succeed(
-								lift(
-									author$project$Internal$Drawer$Model$StartAnimation(config.open))))),
-						A2(
-						author$project$Internal$Options$when,
-						config.open || model.open,
-						author$project$Internal$Options$cs('mdc-drawer--open')),
-						A2(
-						author$project$Internal$Options$when,
-						config.open && (stateChanged || model.animating),
-						author$project$Internal$Options$cs('mdc-drawer--animate')),
-						A2(
-						author$project$Internal$Options$when,
-						config.open && model.animating,
-						author$project$Internal$Options$cs('mdc-drawer--opening')),
-						A2(
-						author$project$Internal$Options$when,
-						(!config.open) && model.animating,
-						author$project$Internal$Options$cs('mdc-drawer--closing')),
-						A2(
-						author$project$Internal$Options$when,
-						model.animating,
-						A2(
-							author$project$Internal$Options$on,
-							'transitionend',
-							elm$json$Json$Decode$succeed(
-								lift(author$project$Internal$Drawer$Model$EndAnimation)))),
-						A2(
-						author$project$Internal$Options$when,
-						(!elm$core$String$isEmpty(className)) && (config.open || model.open),
-						A2(author$project$Internal$Options$data, 'focustrap', '{}')),
-						A2(
-						author$project$Internal$Options$on,
-						'keydown',
-						A3(
-							elm$json$Json$Decode$map2,
-							F2(
-								function (key, keyCode) {
-									return (_Utils_eq(
-										key,
-										elm$core$Maybe$Just('Escape')) || (keyCode === 27)) ? A2(
-										elm$core$Maybe$withDefault,
-										lift(author$project$Internal$Drawer$Model$NoOp),
-										config.onClose) : lift(author$project$Internal$Drawer$Model$NoOp);
-								}),
-							elm$json$Json$Decode$oneOf(
-								_List_fromArray(
-									[
-										A2(
-										elm$json$Json$Decode$map,
-										elm$core$Maybe$Just,
-										A2(
-											elm$json$Json$Decode$at,
-											_List_fromArray(
-												['key']),
-											elm$json$Json$Decode$string)),
-										elm$json$Json$Decode$succeed(elm$core$Maybe$Nothing)
-									])),
-							A2(
-								elm$json$Json$Decode$at,
-								_List_fromArray(
-									['keyCode']),
-								elm$json$Json$Decode$int)))
-					]),
-				options),
-			nodes);
-	});
-var author$project$Internal$Drawer$Implementation$render = function (className) {
-	return A3(
-		author$project$Internal$Component$render,
-		author$project$Internal$Drawer$Implementation$getSet.get,
-		author$project$Internal$Drawer$Implementation$view(className),
-		author$project$Internal$Msg$DrawerMsg);
-};
-var author$project$Internal$Drawer$Modal$Implementation$className = 'mdc-drawer--modal';
-var author$project$Internal$Drawer$Modal$Implementation$view = author$project$Internal$Drawer$Implementation$render(author$project$Internal$Drawer$Modal$Implementation$className);
-var author$project$Material$Drawer$Modal$view = author$project$Internal$Drawer$Modal$Implementation$view;
-var author$project$Internal$List$Implementation$asListItemView = F9(
-	function (domId, lift, model, config, listItemsIds, focusedIndex, index, options, children) {
-		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$List$Implementation$defaultConfig, options);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			A2(elm$core$Maybe$withDefault, elm$html$Html$div, summary.config.node),
-			_List_Nil,
-			_List_Nil,
-			children);
-	});
-var author$project$Internal$List$Implementation$node = function (nodeFunc) {
-	return author$project$Internal$Options$option(
-		function (config) {
-			return _Utils_update(
-				config,
-				{
-					node: elm$core$Maybe$Just(nodeFunc)
-				});
-		});
-};
-var author$project$Internal$List$Implementation$asListItem = F3(
-	function (dom_node, options, children) {
-		return {
-			children: children,
-			focusable: false,
-			options: A2(
-				elm$core$List$cons,
-				author$project$Internal$List$Implementation$node(dom_node),
-				options),
-			view: author$project$Internal$List$Implementation$asListItemView
-		};
-	});
-var author$project$Internal$List$Implementation$divider = function (options) {
-	return A2(
-		author$project$Internal$List$Implementation$asListItem,
-		elm$html$Html$li,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-list-divider'),
-			A2(
-				elm$core$List$cons,
-				author$project$Internal$Options$role('separator'),
-				options)));
-};
-var author$project$Material$List$divider = author$project$Internal$List$Implementation$divider;
-var elm$html$Html$nav = _VirtualDom_node('nav');
-var author$project$Material$List$nav = F5(
-	function (lift, domId, model, options, items) {
-		return A5(
-			author$project$Internal$List$Implementation$view,
-			lift,
-			domId,
-			model,
-			A2(
-				elm$core$List$cons,
-				author$project$Internal$List$Implementation$node(elm$html$Html$nav),
-				options),
-			items);
-	});
-var author$project$Internal$List$Implementation$singleSelection = author$project$Internal$Options$option(
-	function (config) {
-		return _Utils_update(
-			config,
-			{isRadioGroup: false, isSingleSelectionList: true});
-	});
-var author$project$Material$List$singleSelection = author$project$Internal$List$Implementation$singleSelection;
-var author$project$Internal$List$Implementation$useActivated = author$project$Internal$Options$option(
-	function (config) {
-		return _Utils_update(
-			config,
-			{useActivated: true});
-	});
-var author$project$Material$List$useActivated = author$project$Internal$List$Implementation$useActivated;
-var author$project$Material$Options$onClick = author$project$Internal$Options$onClick;
-var author$project$Material$Options$when = author$project$Internal$Options$when;
-var author$project$Page$Internal$Drawer$CloseDrawer = {$: 'CloseDrawer'};
-var author$project$Page$Internal$Drawer$viewFavourites = F3(
-	function (lift, model, favourites) {
-		return _List_Nil;
-	});
-var elm$html$Html$header = _VirtualDom_node('header');
-var author$project$Internal$Drawer$Implementation$header = function (options) {
-	return A2(
-		author$project$Internal$Options$styled,
-		elm$html$Html$header,
-		A2(
-			elm$core$List$cons,
-			author$project$Internal$Options$cs('mdc-drawer__header'),
-			options));
-};
-var author$project$Internal$Drawer$Modal$Implementation$header = author$project$Internal$Drawer$Implementation$header;
-var author$project$Material$Drawer$Modal$header = author$project$Internal$Drawer$Modal$Implementation$header;
-var author$project$Internal$Drawer$Implementation$subTitle = author$project$Internal$Options$cs('mdc-drawer__subtitle');
-var author$project$Internal$Drawer$Modal$Implementation$subTitle = author$project$Internal$Drawer$Implementation$subTitle;
-var author$project$Material$Drawer$Modal$subTitle = author$project$Internal$Drawer$Modal$Implementation$subTitle;
-var author$project$Internal$Drawer$Implementation$title = author$project$Internal$Options$cs('mdc-drawer__title');
-var author$project$Internal$Drawer$Modal$Implementation$title = author$project$Internal$Drawer$Implementation$title;
-var author$project$Material$Drawer$Modal$title = author$project$Internal$Drawer$Modal$Implementation$title;
-var elm$html$Html$h3 = _VirtualDom_node('h3');
-var elm$html$Html$h6 = _VirtualDom_node('h6');
-var author$project$Page$Internal$Drawer$viewHeader = F3(
-	function (lift, model, mb_config) {
-		if (mb_config.$ === 'Nothing') {
-			return A2(elm$html$Html$div, _List_Nil, _List_Nil);
-		} else {
-			var config = mb_config.a;
-			return A2(
-				author$project$Material$Drawer$Modal$header,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A3(
-						author$project$Material$Options$styled,
-						elm$html$Html$h3,
-						_List_fromArray(
-							[author$project$Material$Drawer$Modal$title]),
-						_List_fromArray(
-							[config.title])),
-						A3(
-						author$project$Material$Options$styled,
-						elm$html$Html$h6,
-						_List_fromArray(
-							[author$project$Material$Drawer$Modal$subTitle]),
-						_List_fromArray(
-							[config.subtitle]))
-					]));
-		}
-	});
 var author$project$Material$List$a = F2(
 	function (options, items) {
 		return A2(
@@ -14970,6 +15256,12 @@ var author$project$Material$List$a = F2(
 				options),
 			items);
 	});
+var author$project$Internal$List$Implementation$graphicClass = author$project$Internal$Options$cs('mdc-list-item__graphic');
+var author$project$Internal$List$Implementation$graphicIcon = function (options) {
+	return author$project$Internal$Icon$Implementation$view(
+		A2(elm$core$List$cons, author$project$Internal$List$Implementation$graphicClass, options));
+};
+var author$project$Material$List$graphicIcon = author$project$Internal$List$Implementation$graphicIcon;
 var author$project$Page$Internal$Drawer$locationContent = function (location) {
 	var _n0 = location.icon;
 	if (_n0.$ === 'Nothing') {
@@ -15079,268 +15371,6 @@ var author$project$Page$Internal$viewDrawer = F3(
 			model.drawer,
 			config);
 	});
-var elm$core$List$singleton = function (value) {
-	return _List_fromArray(
-		[value]);
-};
-var author$project$Internal$LayoutGrid$Implementation$view = function (options) {
-	return A2(
-		elm$core$Basics$composeL,
-		A2(
-			elm$core$Basics$composeL,
-			A2(
-				author$project$Internal$Options$styled,
-				elm$html$Html$div,
-				A2(
-					elm$core$List$cons,
-					author$project$Internal$Options$cs('mdc-layout-grid'),
-					options)),
-			elm$core$List$singleton),
-		author$project$Internal$LayoutGrid$Implementation$inner(_List_Nil));
-};
-var author$project$Material$LayoutGrid$view = author$project$Internal$LayoutGrid$Implementation$view;
-var author$project$Page$Internal$viewLayout = F3(
-	function (left, middle, right) {
-		return A3(
-			author$project$Material$Options$styled,
-			elm$html$Html$div,
-			_List_fromArray(
-				[
-					author$project$Material$Options$cs('hero')
-				]),
-			_List_fromArray(
-				[
-					A2(
-					author$project$Material$LayoutGrid$view,
-					_List_Nil,
-					_List_fromArray(
-						[
-							A2(
-							author$project$Material$LayoutGrid$cell,
-							_List_fromArray(
-								[author$project$Material$LayoutGrid$span4Phone, author$project$Material$LayoutGrid$span8Tablet, author$project$Material$LayoutGrid$span12Desktop]),
-							middle)
-						]))
-				]));
-	});
-var author$project$Internal$IconButton$Implementation$icon = function (value) {
-	return author$project$Internal$Options$option(
-		function (config) {
-			return _Utils_update(
-				config,
-				{icon: value});
-		});
-};
-var author$project$Material$IconButton$icon = author$project$Internal$IconButton$Implementation$icon;
-var author$project$Internal$IconButton$Implementation$label = function (value) {
-	return author$project$Internal$Options$option(
-		function (config) {
-			return _Utils_update(
-				config,
-				{label: value});
-		});
-};
-var author$project$Material$IconButton$label = author$project$Internal$IconButton$Implementation$label;
-var author$project$Internal$IconButton$Implementation$on = author$project$Internal$Options$option(
-	function (config) {
-		return _Utils_update(
-			config,
-			{on: true});
-	});
-var author$project$Material$IconButton$on = author$project$Internal$IconButton$Implementation$on;
-var author$project$Internal$IconButton$Implementation$defaultConfig = {
-	alternativeIconLibrary: elm$core$Maybe$Nothing,
-	disabled: false,
-	icon: {off: '', on: ''},
-	label: {off: '', on: ''},
-	on: false
-};
-var author$project$Internal$IconButton$Implementation$iconElement = author$project$Internal$Options$cs('mdc-icon-button__icon');
-var author$project$Internal$IconButton$Implementation$onIconElement = author$project$Internal$Options$cs('mdc-icon-button__icon--on');
-var author$project$Internal$IconButton$Implementation$iconButton = F5(
-	function (domId, lift, model, options, list) {
-		var ripple = A5(
-			author$project$Internal$Ripple$Implementation$view,
-			true,
-			domId,
-			A2(elm$core$Basics$composeL, lift, author$project$Internal$IconButton$Model$RippleMsg),
-			model.ripple,
-			_List_Nil);
-		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$IconButton$Implementation$defaultConfig, options);
-		var config = summary.config;
-		var icons = _List_fromArray(
-			[
-				A3(
-				author$project$Internal$Options$styled,
-				elm$html$Html$i,
-				_List_fromArray(
-					[
-						author$project$Internal$IconButton$Implementation$iconElement,
-						author$project$Internal$Options$cs('material-icons'),
-						author$project$Internal$IconButton$Implementation$onIconElement
-					]),
-				_List_fromArray(
-					[
-						elm$html$Html$text(config.icon.on)
-					])),
-				A3(
-				author$project$Internal$Options$styled,
-				elm$html$Html$i,
-				_List_fromArray(
-					[
-						author$project$Internal$IconButton$Implementation$iconElement,
-						author$project$Internal$Options$cs('material-icons')
-					]),
-				_List_fromArray(
-					[
-						elm$html$Html$text(config.icon.off)
-					]))
-			]);
-		var isToggle = !_Utils_eq(config.icon.on, config.icon.off);
-		return A5(
-			author$project$Internal$Options$apply,
-			summary,
-			elm$html$Html$button,
-			_List_fromArray(
-				[
-					author$project$Internal$Options$cs('mdc-icon-button'),
-					A2(
-					author$project$Internal$Options$when,
-					_Utils_eq(config.alternativeIconLibrary, elm$core$Maybe$Nothing),
-					author$project$Internal$Options$cs('material-icons')),
-					A2(
-					author$project$Internal$Options$when,
-					config.on,
-					author$project$Internal$Options$cs('mdc-icon-button--on')),
-					A2(
-					author$project$Internal$Options$aria,
-					'label',
-					config.on ? config.label.on : config.label.off),
-					A2(
-					author$project$Internal$Options$when,
-					isToggle,
-					A2(author$project$Internal$Options$aria, 'hidden', 'True')),
-					A2(
-					author$project$Internal$Options$when,
-					isToggle && config.on,
-					A2(author$project$Internal$Options$aria, 'pressed', 'True')),
-					A2(
-					author$project$Internal$Options$when,
-					isToggle && (!config.on),
-					A2(author$project$Internal$Options$aria, 'pressed', 'False')),
-					A2(
-					author$project$Internal$Options$when,
-					config.disabled,
-					author$project$Internal$Options$attribute(
-						elm$html$Html$Attributes$disabled(true))),
-					author$project$Internal$Options$many(
-					_List_fromArray(
-						[ripple.interactionHandler, ripple.properties]))
-				]),
-			_List_Nil,
-			_Utils_ap(
-				list,
-				(!_Utils_eq(config.alternativeIconLibrary, elm$core$Maybe$Nothing)) ? _List_fromArray(
-					[
-						A3(
-						author$project$Internal$Options$styled,
-						elm$html$Html$i,
-						_List_fromArray(
-							[
-								author$project$Internal$Options$cs(
-								A2(elm$core$Maybe$withDefault, 'material-icons', config.alternativeIconLibrary)),
-								config.on ? author$project$Internal$Options$cs(config.icon.on) : author$project$Internal$Options$cs(config.icon.off)
-							]),
-						_List_Nil)
-					]) : (_Utils_eq(config.icon.on, config.icon.off) ? _List_fromArray(
-					[
-						elm$html$Html$text(config.icon.on)
-					]) : icons)));
-	});
-var author$project$Internal$IconButton$Implementation$view = F2(
-	function (lift, index) {
-		return A5(
-			author$project$Internal$Component$render,
-			author$project$Internal$IconButton$Implementation$getSet.get,
-			author$project$Internal$IconButton$Implementation$iconButton(index),
-			author$project$Internal$Msg$IconButtonMsg,
-			lift,
-			index);
-	});
-var author$project$Material$IconButton$view = author$project$Internal$IconButton$Implementation$view;
-var author$project$Page$Internal$viewNext = F3(
-	function (lift, mdc, mb_navtype) {
-		if (mb_navtype.$ === 'Nothing') {
-			return elm$core$Maybe$Nothing;
-		} else {
-			var navtype = mb_navtype.a;
-			var a = navtype.a;
-			var b = navtype.b;
-			var _n2 = _Utils_eq(a, b);
-			if (_n2) {
-				return elm$core$Maybe$Nothing;
-			} else {
-				return elm$core$Maybe$Just(
-					A5(
-						author$project$Material$IconButton$view,
-						A2(elm$core$Basics$composeL, lift, author$project$Page$Internal$Mdc),
-						'my-icon-button',
-						mdc,
-						_List_fromArray(
-							[
-								author$project$Material$IconButton$icon(
-								{off: 'navigate_next', on: 'navigate_next_border'}),
-								author$project$Material$IconButton$label(
-								{off: 'Add to favorites', on: 'Remove from favorites'}),
-								author$project$Material$IconButton$on
-							]),
-						_List_Nil));
-			}
-		}
-	});
-var author$project$Internal$Button$Implementation$icon = function (str) {
-	return author$project$Internal$Options$option(
-		function (config) {
-			return _Utils_update(
-				config,
-				{
-					icon: elm$core$Maybe$Just(str)
-				});
-		});
-};
-var author$project$Material$Button$icon = author$project$Internal$Button$Implementation$icon;
-var author$project$Page$Internal$viewPrev = F3(
-	function (lift, mdc, mb_navtype) {
-		if (mb_navtype.$ === 'Nothing') {
-			return elm$core$Maybe$Nothing;
-		} else {
-			var navtype = mb_navtype.a;
-			if (!navtype.a) {
-				return elm$core$Maybe$Nothing;
-			} else {
-				return elm$core$Maybe$Just(
-					A5(
-						author$project$Material$Button$view,
-						A2(elm$core$Basics$composeL, lift, author$project$Page$Internal$Mdc),
-						'navigation-side-previous',
-						mdc,
-						A2(
-							elm$core$List$cons,
-							A2(author$project$Material$Options$css, 'margin', '32px 32px'),
-							A2(
-								elm$core$List$cons,
-								author$project$Material$Button$ripple,
-								A2(
-									elm$core$List$cons,
-									author$project$Material$Button$outlined,
-									A2(
-										elm$core$List$cons,
-										author$project$Material$Button$icon('navigate_before'),
-										_List_Nil)))),
-						_List_Nil));
-			}
-		}
-	});
 var author$project$Internal$LinearProgress$Implementation$determinate = function (value) {
 	return author$project$Internal$Options$option(
 		function (config) {
@@ -15358,6 +15388,7 @@ var author$project$Internal$LinearProgress$Implementation$indeterminate = author
 	});
 var author$project$Material$LinearProgress$indeterminate = author$project$Internal$LinearProgress$Implementation$indeterminate;
 var author$project$Internal$LinearProgress$Implementation$defaultConfig = {buffer: 0, buffered: false, determinate: false, indeterminate: false, reversed: false, value: 0};
+var elm$html$Html$span = _VirtualDom_node('span');
 var author$project$Internal$LinearProgress$Implementation$view = F2(
 	function (options, _n0) {
 		var summary = A2(author$project$Internal$Options$collect, author$project$Internal$LinearProgress$Implementation$defaultConfig, options);
@@ -15527,14 +15558,7 @@ var author$project$Page$Internal$viewBody = F5(
 											A2(author$project$Material$Options$css, 'width', '100%'),
 											A2(author$project$Material$Options$css, 'max-width', '1200px')
 										]),
-									_List_fromArray(
-										[
-											A3(
-											author$project$Page$Internal$viewLayout,
-											A3(author$project$Page$Internal$viewPrev, lift, model.mdc, document.navigation),
-											document.body,
-											A3(author$project$Page$Internal$viewNext, lift, model.mdc, document.navigation))
-										]))
+									document.body)
 								]))
 						]))
 				]));
@@ -15860,6 +15884,17 @@ var author$project$Internal$Elevation$Implementation$z3 = author$project$Interna
 var author$project$Material$Elevation$z3 = author$project$Internal$Elevation$Implementation$z3;
 var author$project$Internal$Theme$Implementation$primaryBg = author$project$Internal$Options$cs('mdc-theme--primary-bg');
 var author$project$Material$Theme$primaryBg = author$project$Internal$Theme$Implementation$primaryBg;
+var author$project$Internal$Button$Implementation$icon = function (str) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{
+					icon: elm$core$Maybe$Just(str)
+				});
+		});
+};
+var author$project$Material$Button$icon = author$project$Internal$Button$Implementation$icon;
 var author$project$Internal$LayoutGrid$Implementation$fixedColumnWidth = author$project$Internal$Options$cs('mdc-layout-grid--fixed-column-width');
 var author$project$Material$LayoutGrid$fixedColumnWidth = author$project$Internal$LayoutGrid$Implementation$fixedColumnWidth;
 var author$project$Internal$Theme$Implementation$textIconOnBackground = author$project$Internal$Options$cs('mdc-theme--text-icon-on-background');
@@ -15986,9 +16021,62 @@ var author$project$Page$Login$ask = F3(
 				]),
 			_List_Nil);
 	});
+var author$project$Internal$List$Implementation$avatarList = author$project$Internal$Options$cs('mdc-list--avatar-list');
+var author$project$Material$List$avatarList = author$project$Internal$List$Implementation$avatarList;
+var author$project$Internal$List$Implementation$onSelectListItem = function (handler) {
+	return author$project$Internal$Options$option(
+		function (config) {
+			return _Utils_update(
+				config,
+				{
+					onSelectListItem: elm$core$Maybe$Just(handler)
+				});
+		});
+};
+var author$project$Material$List$onSelectListItem = author$project$Internal$List$Implementation$onSelectListItem;
+var author$project$Internal$List$Implementation$twoLine = author$project$Internal$Options$cs('mdc-list--two-line');
+var author$project$Material$List$twoLine = author$project$Internal$List$Implementation$twoLine;
+var author$project$Material$List$ul = author$project$Internal$List$Implementation$view;
 var author$project$Page$Login$Select = function (a) {
 	return {$: 'Select', a: a};
 };
+var author$project$Material$List$li = author$project$Internal$List$Implementation$li;
+var author$project$Internal$List$Implementation$metaClass = author$project$Internal$Options$cs('mdc-list-item__meta');
+var author$project$Internal$List$Implementation$metaIcon = function (options) {
+	return author$project$Internal$Icon$Implementation$view(
+		A2(elm$core$List$cons, author$project$Internal$List$Implementation$metaClass, options));
+};
+var author$project$Material$List$metaIcon = author$project$Internal$List$Implementation$metaIcon;
+var author$project$Internal$List$Implementation$primaryText = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$span,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-item__primary-text'),
+			options));
+};
+var author$project$Material$List$primaryText = author$project$Internal$List$Implementation$primaryText;
+var author$project$Internal$List$Implementation$secondaryText = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$span,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-item__secondary-text'),
+			options));
+};
+var author$project$Material$List$secondaryText = author$project$Internal$List$Implementation$secondaryText;
+var author$project$Internal$List$Implementation$text = function (options) {
+	return A2(
+		author$project$Internal$Options$styled,
+		elm$html$Html$span,
+		A2(
+			elm$core$List$cons,
+			author$project$Internal$Options$cs('mdc-list-item__text'),
+			options));
+};
+var author$project$Material$List$text = author$project$Internal$List$Implementation$text;
 var author$project$Page$Login$viewCoderRow = function (_n0) {
 	var id = _n0.a;
 	var model = _n0.b;

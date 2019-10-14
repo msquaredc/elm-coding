@@ -143,7 +143,8 @@ viewBody lift bar document model drawer_config =
                     , Options.css "width" "100%"
                     , Options.css "max-width" "1200px"
                     ]
-                    [ viewLayout (viewPrev lift model.mdc document.navigation) document.body (viewNext lift model.mdc document.navigation) ]
+--                    [ viewLayout (viewPrev lift model.mdc document.navigation) document.body (viewNext lift model.mdc document.navigation) ]
+                    document.body
                 ]
             ]
         ]

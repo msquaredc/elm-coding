@@ -15,13 +15,14 @@ import Material
 import Material.List as Lists
 import Material.SimplifiedList as SL
 import Material.SimplifiedCard as SC
+import Material.LayoutGrid as LayoutGrid
 
 
 
 type Msg m
     = Mdc (Material.Msg m)
     | ListMsg (SL.Msg m (Row Coding.Model))
-    | CardMsg (SC.Msg m)
+    | CardMsg (SC.Msg m (Row Coding.Model))
 
 type OutMsg 
     = GotSelection (Row Coding.Model)
@@ -47,6 +48,8 @@ update lift msg model =
                     (model, Cmd.none, Nothing)
         CardMsg (SC.Mdc msg_) -> 
             update lift (Mdc msg_) model
+        CardMsg (SC.Select coding) ->
+            (model, Cmd.none, Just(GotSelection coding))
     
 type Error
     = DecodeError Decode.Error
@@ -66,14 +69,26 @@ defaultModel =
 view : Maybe (Row Coding.Model) -> (Msg m -> m) -> Model m -> I.Model-> Row Coder.Model -> Document m
 view coding lift model data user =
     { title = "Home"
-    , body =
-        text "My codings in Process:" :: viewCodings lift model data user :: [viewMaybe coding]
+    , body = [viewBody lift model data user coding]
     , progress = Nothing
     , navigation = Nothing
     , appbar = {title = text "Home",
                 action_items = [],
                 other = [] }
     }
+
+viewBody : (Msg m -> m) -> Model m -> I.Model -> Row Coder.Model -> Maybe (Row Coding.Model) -> Html m
+viewBody lift model data user coding =
+    LayoutGrid.view []
+        (List.concat [[
+        LayoutGrid.cell [LayoutGrid.span12][
+            text "My codings in Process:"
+        ]]
+        ,(viewCodingsCards lift model data user)
+        ,[LayoutGrid.cell [LayoutGrid.span12][
+            viewMaybe coding
+        ]]])
+    
 
 viewMaybe coding = 
     case coding of
@@ -89,6 +104,24 @@ viewCodings lift model data coder =
         |> Db.toList
         |> SL.view (lift<<ListMsg) model.mdc (codingRowToListItem data)
 
+viewCodingsCards : (Msg m -> m) -> Model m -> I.Model -> Row Coder.Model -> List (Html m)
+viewCodingsCards lift model data coder = 
+    let
+        cards =
+            Db.Extra.selectFrom data.codings (\c -> c.coder) (Db.fromList [ coder ])
+                |> Db.toList
+                |> List.map coding2card
+                |> List.map (SC.view (lift<<CardMsg) model.mdc)
+                |> List.map (\x -> LayoutGrid.cell [LayoutGrid.span4][x])
+    in
+        cards
+
+coding2card : Row Coding.Model -> SC.Card (Row Coding.Model)
+coding2card (id, value) = 
+    {title = Id.toString id,
+    subtitle = Nothing,
+    description = Nothing,
+    return_value = (id, value)}
 
 codingRowToListItem : I.Model-> Row Coding.Model -> SL.Item
 codingRowToListItem data (id,coding) =

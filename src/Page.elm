@@ -145,7 +145,11 @@ update msg data model =
             ( { model | internal = internal }, effects, Nothing )
 
         OnUrlChange url ->
-            ( { model | url = url }, Cmd.none, Nothing )
+            let
+                (newmodel, effects, outmsg) = 
+                    update (Internal (Page.Internal.DrawerMsg Drawer.CloseDrawer)) data model
+            in
+                ( { newmodel | url = url }, effects, outmsg )
 
 
 updatePage : GotPageMsg -> Page -> I.Model -> ( Page, Cmd Msg, Maybe OutMsg )
