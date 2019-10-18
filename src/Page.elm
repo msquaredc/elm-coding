@@ -148,7 +148,7 @@ update msg data model =
             let
                 (newmodel, effects, outmsg) = 
                     update (Internal (Page.Internal.DrawerMsg Drawer.CloseDrawer)) data model
-            in
+            in 
                 ( { newmodel | url = url }, effects, outmsg )
 
 

@@ -9,7 +9,7 @@ import Entities.Question as Question
 import Entities.Questionary as Questionary
 import Entities.Timestamp as Timestamp
 import Html exposing (Html, div, h3, p, text)
-import Html.Attributes exposing (..)
+import Html.Attributes as Attributes
 import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
 import Json.Decode.Pipeline exposing (custom, hardcoded, optional, required)

@@ -4,7 +4,7 @@ import Db exposing (Db, Row)
 import Entities.Question exposing (..)
 import Entities.User exposing (..)
 import Html exposing (Html, div, h3, p, text)
-import Html.Attributes exposing (..)
+import Html.Attributes as Attributes
 import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)

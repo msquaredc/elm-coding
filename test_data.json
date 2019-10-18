@@ -15,6 +15,16 @@ var data = {
             "question":"question1",
             "value":"Im the third answer"
         },
+        "answer4":{
+            "user":"karl-heinz",
+            "question":"question2",
+            "value":"Stuff and answer 'bout."
+        },
+        "answer5":{
+            "user":"peter",
+            "question":"question2",
+            "value":"I have here an answer, too y'all"
+        }
     },
     coders: {
         "coder1":{
