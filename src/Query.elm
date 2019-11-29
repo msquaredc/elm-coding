@@ -1,17 +1,15 @@
 module Query exposing (Query(..), custom, run, join)
 
+import Entities.Internal exposing (Entity)
 
-type Query database err a
-    = Query (database -> Result (List err) a)
+type alias Query db result =
+    Query (db -> result )
 
+query : Query db result -> db -> result
+query Query (q) datasource =
+    q datasource
 
-run : Query database err a -> database -> Result (List err) a
-run (Query f) a =
-    f a
+begin : Query 
 
-
-custom : (database -> Result (List err) a) -> Query database err a
-custom =
-    Query
-
-join : 
+myaccess : Query Model Coder.Model
+myaccess = 

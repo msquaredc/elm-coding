@@ -5,6 +5,7 @@ import Browser.Navigation as Nav
 import Data
 import Data.Internal as I
 import Data.Validation as Validate
+import Db
 import Dict
 import Html
 import Json.Decode as Decode exposing (Decoder, Value, decodeString, float, int, nullable, string)
@@ -16,9 +17,8 @@ import Page.Data
 import Page.Error
 import Page.Login
 import Page.Url
-import Url
-import Db
 import Random exposing (Seed)
+import Url
 
 
 type Msg
@@ -36,19 +36,16 @@ type alias Model =
     }
 
 
-
 main : Program Value Model Msg
 main =
     Browser.application
         { init = init
-        , onUrlChange = (UrlChanged)
-        , onUrlRequest = (LinkClicked)
+        , onUrlChange = UrlChanged
+        , onUrlRequest = LinkClicked
         , update = update
         , subscriptions = subscriptions
         , view = view
         }
-
-
 
 
 
@@ -82,15 +79,27 @@ init flags url key =
 
         Err error ->
             let
-                page_model_new = Page.defaultModel
-                page_new1 = {page_model_new | url = Page.Url.Error}
-                page_error = page_new1.page.error
-                page_error_new = {page_error | error = [Page.Error.DecodeError error]}
-                page = page_new1.page
-                page_new = {page | error = page_error_new}
-                res_page = {page_new1|page  =page_new}
+                page_model_new =
+                    Page.defaultModel
+
+                page_new1 =
+                    { page_model_new | url = Page.Url.Error }
+
+                page_error =
+                    page_new1.page.error
+
+                page_error_new =
+                    { page_error | error = [ Page.Error.DecodeError error ] }
+
+                page =
+                    page_new1.page
+
+                page_new =
+                    { page | error = page_error_new }
+
+                res_page =
+                    { page_new1 | page = page_new }
             in
-            
             ( { page = res_page
               , data = I.empty
               , key = key
@@ -106,35 +115,54 @@ update msg model =
         GotPageMsg msg_ ->
             let
                 ( page, effect, mbpmsg ) =
-                    Page.update msg_ model.data model.page 
-                newmodel = { model | page = page }
+                    Page.update msg_ model.data model.page
+
+                newmodel =
+                    { model | page = page }
             in
-                case mbpmsg of
-                    Nothing ->
-                        ( newmodel, Cmd.map GotPageMsg effect )
-                
-                    Just pmsg->
-                        case pmsg of
-                            Page.GenerateFrame coding ->
-                                update (GotDataMsg (Data.Generate (Data.CodingFrame Nothing) coding Nothing)) model
-                            Page.SelectCoding coding -> 
-                                let
-                                    old_page = model.page
-                                    new_page = {old_page | coding = Just coding}
-                                    (new_data, new_effect) = Data.update (Data.Generate (Data.CodingAnswer Nothing) coding Nothing) model.data
-                                    new_model = {model | data = new_data}
-                                    (newest_model, newest_effect) = update (GotPageMsg (Page.OnUrlChange Page.Url.Code)) {model|page = new_page}
-                                in
-                                    (newest_model, Cmd.batch [newest_effect, (Cmd.map GotDataMsg new_effect)])
-                            Page.Change caid value ->
-                                let
-                                    old_data = model.data
-                                    new_data = {old_data | coding_answers = Db.update caid (Maybe.map (\c -> {c|value = value})) old_data.coding_answers}
-                                in
-                                    Debug.log "got changed" ({model|data = new_data}, Cmd.none)
-                            Page.Move direction object coding ->
-                                update (GotDataMsg (Data.Move direction object coding)) model
-                                
+            case mbpmsg of
+                Nothing ->
+                    ( newmodel, Cmd.map GotPageMsg effect )
+
+                Just pmsg ->
+                    case pmsg of
+                        Page.GenerateFrame coding ->
+                            update (GotDataMsg (Data.Generate (Data.CodingFrame Nothing) coding Nothing)) model
+
+                        Page.SelectCoding coding ->
+                            let
+                                old_page =
+                                    model.page
+
+                                new_page =
+                                    { old_page | coding = Just coding }
+
+                                ( new_data, new_effect ) =
+                                    Data.update (Data.Generate (Data.CodingAnswer Nothing) coding Nothing) model.data
+
+                                new_model =
+                                    { model | data = new_data }
+
+                                ( newest_model, newest_effect ) =
+                                    update (GotPageMsg (Page.OnUrlChange Page.Url.Code)) { model | page = new_page }
+                            in
+                            ( newest_model, Cmd.batch [ newest_effect, Cmd.map GotDataMsg new_effect ] )
+
+                        Page.Change caid value ->
+                            let
+                                old_data =
+                                    model.data
+
+                                new_data =
+                                    { old_data | coding_answers = Db.update caid (Maybe.map (\c -> { c | value = value })) old_data.coding_answers }
+                            in
+                            Debug.log "got changed" ( { model | data = new_data }, Cmd.none )
+
+                        Page.Move direction object coding ->
+                            update (GotDataMsg (Data.Move direction object coding)) model
+
+                        Page.UpdateDB ->
+                            ( model, Cmd.none )
 
         GotDataMsg msg_ ->
             let
@@ -153,11 +181,10 @@ update msg model =
 
         UrlChanged url ->
             let
-                ( page, effect, _) =
+                ( page, effect, _ ) =
                     Page.update (Page.onUrlChange url) model.data model.page
             in
-                ( { model | page = page }, Cmd.map GotPageMsg effect )
-            
+            ( { model | page = page }, Cmd.map GotPageMsg effect )
 
 
 subscriptions : Model -> Sub Msg

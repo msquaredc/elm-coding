@@ -14,15 +14,20 @@ import Entities.Question as Question
 import Entities.Questionary as Questionary
 import Entities.Timestamp as Timestamp
 import Entities.User as User
+import Entities.Internal exposing (Entity, Datatype(..))
 import Id exposing (Id)
 import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullable, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
+import Validate exposing (Validator)
 
 
 type Msg
     = Noop
 
+type CustomType 
+    = Identifier
+    | Database ObjectDb
 
 type Object
     = Answer
@@ -70,6 +75,19 @@ type alias Flags =
     }
 
 
+definition : Entity Model Flags Object msg CustomType
+definition =
+    {
+        name = "Main Database",
+        decoder = decoder,
+        encoder = encoder,
+        default = empty,
+        init = init,
+        field_types = fieldTypes,
+        validator = validator
+    }
+
+
 
 -- Decoders
 
@@ -113,7 +131,7 @@ type alias Model =
 -- Inits
 
 
-init : Flags -> ( Model, Cmd Msg )
+init : Flags -> ( Model, Cmd msg )
 init flags =
     let
         model =
@@ -160,19 +178,45 @@ empty =
 encoder : Model -> Value
 encoder model =
     Encode.object
-        [ ("answers", Db.Extra.encode Answer.encoder model.answers)
-        , ("coders", Db.Extra.encode Coder.encoder model.coders)
-        , ("codings", Db.Extra.encode Coding.encoder model.codings)
-        , ("coding_answers", Db.Extra.encode CodingAnswer.encoder model.coding_answers)
-        , ("coding_frames", Db.Extra.encode CodingFrame.encoder model.coding_frames)
-        , ("coding_questionaries", Db.Extra.encode CodingQuestionary.encoder model.coding_questionaries)
-        , ("coding_questions", Db.Extra.encode CodingQuestion.encoder model.coding_questions)
-        , ("name", Encode.string model.name)
-        , ("questions", Db.Extra.encode Question.encoder model.questions)
-        , ("questionaries", Db.Extra.encode Questionary.encoder model.questionaries)
-        , ("users", Db.Extra.encode User.encoder model.users)]
+        [ ( "answers", Db.Extra.encode Answer.encoder model.answers )
+        , ( "coders", Db.Extra.encode Coder.encoder model.coders )
+        , ( "codings", Db.Extra.encode Coding.encoder model.codings )
+        , ( "coding_answers", Db.Extra.encode CodingAnswer.encoder model.coding_answers )
+        , ( "coding_frames", Db.Extra.encode CodingFrame.encoder model.coding_frames )
+        , ( "coding_questionaries", Db.Extra.encode CodingQuestionary.encoder model.coding_questionaries )
+        , ( "coding_questions", Db.Extra.encode CodingQuestion.encoder model.coding_questions )
+        , ( "name", Encode.string model.name )
+        , ( "questions", Db.Extra.encode Question.encoder model.questions )
+        , ( "questionaries", Db.Extra.encode Questionary.encoder model.questionaries )
+        , ( "users", Db.Extra.encode User.encoder model.users )
+        ]
 
+fieldTypes : Model -> Object -> Datatype CustomType
+fieldTypes model field =
+    case field of
+        Answer ->
+            Custom (Database (AnswerDb model.answers))
+        Coder ->
+            Custom (Database (CoderDb model.coders))
 
+validator : Validator (Object, String) Model
+validator = 
+    Validate.all
+        []
+
+type Query db result =
+    Query (db -> result)
+
+query : Query db result -> db -> result
+query (Query (q)) datasource =
+    q datasource
+
+{-
+begin : Query 
+
+myaccess : Query Model Coder.Model
+myaccess = 
+-}
 
 {- type DataMegaType
        coder

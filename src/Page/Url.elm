@@ -18,6 +18,7 @@ type Url
     | Error404 String
     | Error
     | Code
+    | Upload
 
 
 toString : Url -> String
@@ -40,6 +41,9 @@ toString url =
         
         Code ->
             "#code"
+        
+        Upload -> 
+            "#upload"
 
 toIcon : Url -> String
 toIcon url = 
@@ -56,6 +60,8 @@ toIcon url =
             "error"
         Error404 _-> 
             "error_outline"
+        Upload -> 
+            "upload"
 
 
 fromUrl : Url.Url -> Url
@@ -80,6 +86,9 @@ fromString url =
 
         "code" ->
             Code
+
+        "upload" -> 
+            Upload
         _ ->
             Error404 url
 
@@ -92,5 +101,6 @@ navigatableUrl : List (Url)
 navigatableUrl =
     [ Home
     , Code
-    , Data]
+    , Data
+    , Upload]
 

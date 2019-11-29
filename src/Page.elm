@@ -28,6 +28,7 @@ import Page.Internal
 import Page.Internal.Drawer as Drawer
 import Page.Login
 import Page.StartPage
+import Page.Upload
 import Page.Url
 import Url
 
@@ -39,6 +40,7 @@ type alias Page =
     , home : Page.Home.Model Msg
     , code : Page.Code.Model Msg
     , start_page : Page.StartPage.Model Msg
+    , upload : Page.Upload.Model Msg
     }
 
 
@@ -49,6 +51,7 @@ type GotPageMsg
     | GotHomeMsg (Page.Home.Msg Msg)
     | GotCodeMsg (Page.Code.Msg Msg)
     | GotStartPageMsg (Page.StartPage.Msg Msg)
+    | GotUploadMsg (Page.Upload.Msg Msg)
 
 
 type Msg
@@ -63,6 +66,7 @@ type OutMsg
     | SelectCoding (Row Coding.Model)
     | Change (Id CodingAnswer.Model) String
     | Move Data.Direction Data.Object (Row Coding.Model)
+    | UpdateDB
 
 
 type alias Model =
@@ -105,6 +109,7 @@ defaultPage =
     , home = Page.Home.defaultModel
     , code = Page.Code.defaultModel
     , start_page = Page.StartPage.defaultModel
+    , upload = Page.Upload.defaultModel
     }
 
 
@@ -129,7 +134,8 @@ update msg data model =
                             List.Extra.getAt index list
                     in
                     ( { model | user = mb_row }, Cmd.none, Nothing )
-
+{-                 GotHomeMsg Page.Home.UploadButtonClicked ->
+                    update (OnUrlChange Page.Url.Upload) data {model|url = Page.Url.Upload} -}
                 _ ->
                     let
                         ( page, effects, pmsg ) =
@@ -146,10 +152,10 @@ update msg data model =
 
         OnUrlChange url ->
             let
-                (newmodel, effects, outmsg) = 
+                ( newmodel, effects, outmsg ) =
                     update (Internal (Page.Internal.DrawerMsg Drawer.CloseDrawer)) data model
-            in 
-                ( { newmodel | url = url }, effects, outmsg )
+            in
+            ( { newmodel | url = url }, effects, outmsg )
 
 
 updatePage : GotPageMsg -> Page -> I.Model -> ( Page, Cmd Msg, Maybe OutMsg )
@@ -176,52 +182,61 @@ updatePage msg model data =
             in
             ( { model | data = datam }, effects, Nothing )
 
+
         GotHomeMsg msg_ ->
             let
-                ( homem, effects, mb ) =
+                ( homem, effects, outmsg ) =
                     Page.Home.update (PageMsg << GotHomeMsg) msg_ model.home
-
-                outmessage =
-                    case mb of
-                        Nothing ->
-                            Nothing
-
-                        Just om ->
-                            Just
-                                (case om of
-                                    Page.Home.GotSelection coding ->
-                                        SelectCoding coding
-                                )
             in
-            ( { model | home = homem }, effects, outmessage )
+            ( { model | home = homem }, effects, Maybe.map matchHomeOutMsg outmsg )
 
         GotCodeMsg msg_ ->
             let
-                ( codem, effects, mb ) =
+                ( codem, effects, outmsg ) =
                     Page.Code.update (PageMsg << GotCodeMsg) msg_ model.code
-
-                outmessage =
-                    case mb of
-                        Nothing ->
-                            Nothing
-
-                        Just om ->
-                            Just
-                                (case om of
-                                    Page.Code.ChangedAnswer caid value ->
-                                        Change caid value
-
-                                    Page.Code.Move direction object coding ->
-                                        Move direction object coding
-                                )
             in
-            ( { model | code = codem }, effects, outmessage )
+            ( { model | code = codem }, effects, Maybe.map matchCodeOutMsg outmsg )
+
         GotStartPageMsg msg_ ->
             let
-                (startpage, effect) = 
+                ( startpage, effect ) =
                     Page.StartPage.update (PageMsg << GotStartPageMsg) msg_ model.start_page
             in
-                ({model|start_page = startpage},effect,Nothing)
+            ( { model | start_page = startpage }, effect, Nothing )
+
+        GotUploadMsg msg_ ->
+            let
+                ( upload, effect, upmsg ) =
+                    Page.Upload.update (PageMsg << GotUploadMsg) msg_ model.upload
+            in
+            ( { model | upload = upload }, effect, Maybe.map matchUploadOutMsg upmsg )
+
+
+matchUploadOutMsg : Page.Upload.OutMsg -> OutMsg
+matchUploadOutMsg msg =
+    case msg of
+        Page.Upload.Found ->
+            UpdateDB
+
+
+matchCodeOutMsg : Page.Code.OutMsg -> OutMsg
+matchCodeOutMsg msg =
+    case msg of
+        Page.Code.ChangedAnswer caid value ->
+            Change caid value
+
+        Page.Code.Move direction object coding ->
+            Move direction object coding
+
+
+matchHomeOutMsg : Page.Home.OutMsg -> OutMsg
+matchHomeOutMsg msg =
+    case msg of
+        Page.Home.GotSelection coding ->
+            SelectCoding coding
+
+        Page.Home.Upload ->
+            UpdateDB
 
 
 view : Model -> I.Model -> Document Msg
@@ -259,6 +274,9 @@ view model data =
                 Nothing ->
                     viewLoggedIn (Page.Home.view model.coding) GotHomeMsg model.page.home
 
+        Page.Url.Upload ->
+            Page.Internal.view Internal model.internal (Page.Upload.view (PageMsg << GotUploadMsg) model.page.upload data) (drawerConfig model)
+
 
 onUrlChange : Url.Url -> Msg
 onUrlChange url =
@@ -269,10 +287,10 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Material.subscriptions Mdc model
 
+
 drawerConfig : Model -> Drawer.Config m
 drawerConfig model =
-    {
-        header = Maybe.map Drawer.headerFromCoder model.user,
-        favourites = [],
-        locations = List.map (\x -> Drawer.locationFromUrl x (x==model.url)) Page.Url.navigatableUrl
+    { header = Maybe.map Drawer.headerFromCoder model.user
+    , favourites = []
+    , locations = List.map (\x -> Drawer.locationFromUrl x (x == model.url)) Page.Url.navigatableUrl
     }

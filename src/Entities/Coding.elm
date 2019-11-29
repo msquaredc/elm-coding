@@ -96,3 +96,8 @@ selectCodings db coders =
 selectCodings2 : Db Model -> Result String (Db Coder.Model) -> Result String (Db Model)
 selectCodings2 db coders =
     Result.map (Db.Extra.selectFrom db (\c -> c.coder)) coders
+
+
+creationView : Model -> (Model, Html m)
+creationView model = 
+    (model, text "CodingCreation")

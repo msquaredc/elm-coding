@@ -1,6 +1,8 @@
-module Entities.Coder exposing (Model, Msg(..), Name(..), decoder, encoder, selectCoder, toTableRow, update, view, viewRow, viewTable)
+module Entities.Coder exposing (Model, definition, decoder, encoder, selectCoder, toTableRow, update, view, viewRow, viewTable)
+
 
 import Db exposing (Db, Row)
+import Entities.Internal as EI exposing (Entity, Datatype,string,init)
 import Entities.Question exposing (..)
 import Entities.User exposing (..)
 import Html exposing (Html, div, h3, p, text)
@@ -10,31 +12,59 @@ import Json.Decode as Decode exposing (Decoder, decodeString, float, int, nullab
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
 import Material.DataTable as DataTable exposing (numeric, table, tbody, td, th, thead, tr, trh)
+import Validate exposing (..)
+
+definition : Entity Model Model Field msg ctype
+definition =
+    { 
+        name = "Coder",
+        decoder = decoder,
+        encoder = encoder,
+        init = EI.init,
+        default = default,
+        field_types = fieldTypes,
+        validator = validator
+    }
 
 
 decoder : Decode.Decoder Model
 decoder =
     Decode.succeed Model
-        |> required "name" string
-
+        |> required "name" Decode.string
 
 encoder : Model -> Value
 encoder model =
     Encode.object
         [ ( "name", Encode.string model.name ) ]
 
+default : Model 
+default = 
+    {name = ""}
+
+
+fieldTypes : Model -> Field -> Datatype m
+fieldTypes model field =
+    case field of
+        Name ->
+           EI.string model.name
+
+validator : Validator (Field, String) Model
+validator =
+    Validate.all 
+        [
+            ifBlank .name (Name, "Please enter a name.")
+        ]
+
 
 type alias Model =
     { name : String
     }
 
+type Field = 
+    Name
 
-type Name
-    = String
 
 
-type Msg
-    = NoOp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

@@ -5,8 +5,8 @@ import Material
 import Material.Button as Button
 import Material.Options as Options
 import Page.Internal exposing (Document)
-import Page.Internal.Drawer as Drawer
 import Page.Internal.AppBar as AppBar
+import Page.Internal.Drawer as Drawer
 
 
 type Msg m
@@ -57,12 +57,13 @@ getDrawer lift mdc =
     , subtitle = Html.map lift (text "")
     }
 
+
 getAppBar : (Msg m -> m) -> Material.Model m -> AppBar.Config m
 getAppBar lift mdc =
-    {title = text "Start Page",
-    action_items = [("person",[])],
-    other = [
-        {- Button.view (lift << Mdc)
+    { title = text "Start Page"
+    , action_items = [ { icon = "person", configs = [] } ]
+    , other =
+        [{- Button.view (lift << Mdc)
             "login-button2"
             mdc
             [ Button.ripple
@@ -71,45 +72,47 @@ getAppBar lift mdc =
             , Button.raised
             ]
             [ text "Log in"
-            ] -}
-    ]}
+            ]
+         -}
+        ]
+    }
 
-longBody : Html m 
-longBody = 
-    Html.div [][
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"],
-        Html.p [][text "Line"]
-        
-    ]
+
+longBody : Html m
+longBody =
+    Html.div []
+        [ Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        , Html.p [] [ text "Line" ]
+        ]
